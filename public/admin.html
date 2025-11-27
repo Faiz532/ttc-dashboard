@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TTC Service Alert Dashboard - Live</title>
+    <title>TTC Ops - Admin Panel</title>
     <!-- 1. Include FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     
@@ -12,7 +12,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
     <style>
-        /* --- COPYING STYLES FROM PREVIOUS DASHBOARD --- */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap');
 
         :root {
@@ -85,13 +84,8 @@
         #alert-list::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
         
         /* Toggle Switch */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #3b82f6;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #3b82f6;
-        }
+        .toggle-checkbox:checked { right: 0; border-color: #3b82f6; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #3b82f6; }
     </style>
 </head>
 <body>
@@ -110,7 +104,7 @@
     <div class="fixed top-6 right-6 z-50">
         <div id="connection-status" class="glass-card px-4 py-2 rounded-full flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-yellow-500" id="status-dot"></div>
-            <span class="text-xs font-bold text-gray-400" id="status-text">Checking...</span>
+            <span class="text-xs font-bold text-gray-400" id="status-text">Manual Mode</span>
         </div>
     </div>
 
@@ -122,10 +116,10 @@
                     <i data-lucide="radio-tower" class="w-5 h-5 opacity-50"></i>
                 </div>
                 <div>
-                    <h1 class="text-sm font-bold text-gray-200 uppercase tracking-wider">TTC Live Ops</h1>
+                    <h1 class="text-sm font-bold text-gray-200 uppercase tracking-wider">TTC Ops Admin</h1>
                     <div class="flex items-center gap-2 mt-0.5">
                         <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                        <span class="text-xs text-blue-500 font-mono">REAL-TIME DATA</span>
+                        <span class="text-xs text-blue-500 font-mono">CONTROL PANEL</span>
                     </div>
                 </div>
             </div>
@@ -202,12 +196,12 @@
 
                     <button onclick="publishAlert()" class="w-full py-3 mt-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold rounded-md shadow-lg shadow-red-900/30 flex items-center justify-center gap-2 transition-all active:scale-95">
                         <i data-lucide="radio" class="w-4 h-4"></i>
-                        BROADCAST ALERT
+                        CREATE ALERT
                     </button>
                     
                     <button onclick="clearAlerts()" class="w-full py-2 text-xs font-medium text-gray-500 hover:text-white transition flex items-center justify-center gap-1">
                         <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
-                        Reset System
+                        Clear All
                     </button>
                 </div>
             </div>
@@ -215,13 +209,10 @@
             <!-- Active Alert List Container -->
             <div id="alert-list-container" class="border-t border-gray-800 pt-3">
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase">Live Alerts</h3>
-                    <button onclick="fetchAlerts()" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded transition">
-                        Refresh
-                    </button>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase">Active Alerts</h3>
                 </div>
                 <div id="alert-list" class="space-y-2 max-h-64 overflow-y-auto pr-1 min-h-[50px] flex flex-col justify-center text-center text-gray-600 text-xs italic">
-                    Waiting for data...
+                    No alerts configured.
                 </div>
             </div>
         </div>
@@ -248,10 +239,8 @@
     </div>
 
     <script>
-        // --- GLOBAL VARIABLES ---
         lucide.createIcons();
         let activeAlerts = [];
-        let pollingInterval = null;
         let currentLine = '1';  
         let zoomState = { x: 0, y: 0, scale: 1 }; 
 
@@ -261,118 +250,30 @@
         const mapRoot = document.getElementById('map-root');
         const viewport = document.getElementById('viewport');
 
-        // --- SCHEMATIC DATA (X, Y) ---
         const rawMapData = [
-  {
-    "line": "1",
-    "stations": [
-      { "name": "Vaughan Metropolitan Centre", "x": 220, "y": 50, "accessible": true },
-      { "name": "Highway 407", "x": 240, "y": 80, "accessible": true },
-      { "name": "Pioneer Village", "x": 260, "y": 110, "accessible": true },
-      { "name": "York University", "x": 280, "y": 140, "accessible": true },
-      { "name": "Finch West", "x": 300, "y": 170, "accessible": true },
-      { "name": "Downsview Park", "x": 320, "y": 200, "accessible": true },
-      { "name": "Sheppard West", "x": 340, "y": 230, "accessible": true },
-      { "name": "Wilson", "x": 360, "y": 260, "accessible": true },
-      { "name": "Yorkdale", "x": 360, "y": 290, "accessible": true },
-      { "name": "Lawrence West", "x": 360, "y": 320, "accessible": true },
-      { "name": "Glencairn", "x": 360, "y": 350, "accessible": false },
-      { "name": "Eglinton West", "x": 360, "y": 380, "accessible": true },
-      { "name": "St Clair West", "x": 360, "y": 410, "accessible": true },
-      { "name": "Dupont", "x": 360, "y": 440, "accessible": true },
-      { "name": "Spadina", "x": 360, "y": 500, "interchange": true, "accessible": true },
-      { "name": "St George", "x": 400, "y": 500, "interchange": true, "accessible": true },
-      { "name": "Museum", "x": 400, "y": 550, "accessible": false },
-      { "name": "Queen's Park", "x": 400, "y": 580, "accessible": true },
-      { "name": "St Patrick", "x": 400, "y": 610, "accessible": true },
-      { "name": "Osgoode", "x": 400, "y": 640, "accessible": true },
-      { "name": "St Andrew", "x": 400, "y": 670, "accessible": true },
-      { "name": "Union", "x": 520, "y": 700, "accessible": true },
-      { "name": "King", "x": 640, "y": 670, "accessible": false },
-      { "name": "Queen", "x": 640, "y": 640, "accessible": true },
-      { "name": "Dundas", "x": 640, "y": 610, "accessible": true },
-      { "name": "College", "x": 640, "y": 580, "accessible": false },
-      { "name": "Wellesley", "x": 640, "y": 550, "accessible": true },
-      { "name": "Bloor-Yonge", "x": 640, "y": 500, "interchange": true, "accessible": true },
-      { "name": "Rosedale", "x": 640, "y": 460, "accessible": false },
-      { "name": "Summerhill", "x": 640, "y": 430, "accessible": false },
-      { "name": "St Clair", "x": 640, "y": 400, "accessible": true },
-      { "name": "Davisville", "x": 640, "y": 370, "accessible": true },
-      { "name": "Eglinton", "x": 640, "y": 340, "accessible": true },
-      { "name": "Lawrence", "x": 640, "y": 310, "accessible": true },
-      { "name": "York Mills", "x": 640, "y": 280, "accessible": true },
-      { "name": "Sheppard-Yonge", "x": 640, "y": 200, "interchange": true, "accessible": true },
-      { "name": "North York Centre", "x": 640, "y": 150, "accessible": true },
-      { "name": "Finch", "x": 640, "y": 100, "accessible": true }
-    ]
-  },
-  {
-    "line": "2",
-    "stations": [
-      { "name": "Kipling", "x": 30, "y": 500, "accessible": true },
-      { "name": "Islington", "x": 53, "y": 500, "accessible": false },
-      { "name": "Royal York", "x": 76, "y": 500, "accessible": true },
-      { "name": "Old Mill", "x": 99, "y": 500, "accessible": false },
-      { "name": "Jane", "x": 122, "y": 500, "accessible": true },
-      { "name": "Runnymede", "x": 145, "y": 500, "accessible": true },
-      { "name": "High Park", "x": 168, "y": 500, "accessible": false },
-      { "name": "Keele", "x": 191, "y": 500, "accessible": true },
-      { "name": "Dundas West", "x": 214, "y": 500, "accessible": true },
-      { "name": "Lansdowne", "x": 237, "y": 500, "accessible": false },
-      { "name": "Dufferin", "x": 260, "y": 500, "accessible": true },
-      { "name": "Ossington", "x": 283, "y": 500, "accessible": true },
-      { "name": "Christie", "x": 306, "y": 500, "accessible": false },
-      { "name": "Bathurst", "x": 329, "y": 500, "accessible": true },
-      { "name": "Spadina", "x": 360, "y": 500, "interchange": true, "accessible": true },
-      { "name": "St George", "x": 400, "y": 500, "interchange": true, "accessible": true },
-      { "name": "Bay", "x": 520, "y": 500, "accessible": true },
-      { "name": "Bloor-Yonge", "x": 640, "y": 500, "interchange": true, "accessible": true },
-      { "name": "Sherbourne", "x": 670, "y": 500, "accessible": true },
-      { "name": "Castle Frank", "x": 695, "y": 500, "accessible": false },
-      { "name": "Broadview", "x": 720, "y": 500, "accessible": true },
-      { "name": "Chester", "x": 745, "y": 500, "accessible": true },
-      { "name": "Pape", "x": 770, "y": 500, "accessible": true },
-      { "name": "Donlands", "x": 795, "y": 500, "accessible": false },
-      { "name": "Greenwood", "x": 820, "y": 500, "accessible": false },
-      { "name": "Coxwell", "x": 845, "y": 500, "accessible": true },
-      { "name": "Woodbine", "x": 870, "y": 500, "accessible": true },
-      { "name": "Main Street", "x": 895, "y": 500, "accessible": true },
-      { "name": "Victoria Park", "x": 920, "y": 500, "accessible": true },
-      { "name": "Warden", "x": 945, "y": 500, "accessible": false },
-      { "name": "Kennedy", "x": 970, "y": 500, "accessible": true }
-    ]
-  },
-  {
-    "line": "4",
-    "stations": [
-      { "name": "Sheppard-Yonge", "x": 640, "y": 200, "interchange": true, "accessible": true },
-      { "name": "Bayview", "x": 690, "y": 200, "accessible": true },
-      { "name": "Bessarion", "x": 740, "y": 200, "accessible": true },
-      { "name": "Leslie", "x": 790, "y": 200, "accessible": true },
-      { "name": "Don Mills", "x": 840, "y": 200, "accessible": true }
-    ]
-  }
-];
+            { "line": "1", "stations": [ { "name": "Vaughan Metropolitan Centre", "x": 220, "y": 50, "accessible": true }, { "name": "Highway 407", "x": 240, "y": 80, "accessible": true }, { "name": "Pioneer Village", "x": 260, "y": 110, "accessible": true }, { "name": "York University", "x": 280, "y": 140, "accessible": true }, { "name": "Finch West", "x": 300, "y": 170, "accessible": true }, { "name": "Downsview Park", "x": 320, "y": 200, "accessible": true }, { "name": "Sheppard West", "x": 340, "y": 230, "accessible": true }, { "name": "Wilson", "x": 360, "y": 260, "accessible": true }, { "name": "Yorkdale", "x": 360, "y": 290, "accessible": true }, { "name": "Lawrence West", "x": 360, "y": 320, "accessible": true }, { "name": "Glencairn", "x": 360, "y": 350, "accessible": false }, { "name": "Eglinton West", "x": 360, "y": 380, "accessible": true }, { "name": "St Clair West", "x": 360, "y": 410, "accessible": true }, { "name": "Dupont", "x": 360, "y": 440, "accessible": true }, { "name": "Spadina", "x": 360, "y": 500, "interchange": true, "accessible": true }, { "name": "St George", "x": 400, "y": 500, "interchange": true, "accessible": true }, { "name": "Museum", "x": 400, "y": 550, "accessible": false }, { "name": "Queen's Park", "x": 400, "y": 580, "accessible": true }, { "name": "St Patrick", "x": 400, "y": 610, "accessible": true }, { "name": "Osgoode", "x": 400, "y": 640, "accessible": true }, { "name": "St Andrew", "x": 400, "y": 670, "accessible": true }, { "name": "Union", "x": 520, "y": 700, "accessible": true }, { "name": "King", "x": 640, "y": 670, "accessible": false }, { "name": "Queen", "x": 640, "y": 640, "accessible": true }, { "name": "Dundas", "x": 640, "y": 610, "accessible": true }, { "name": "College", "x": 640, "y": 580, "accessible": false }, { "name": "Wellesley", "x": 640, "y": 550, "accessible": true }, { "name": "Bloor-Yonge", "x": 640, "y": 500, "interchange": true, "accessible": true }, { "name": "Rosedale", "x": 640, "y": 460, "accessible": false }, { "name": "Summerhill", "x": 640, "y": 430, "accessible": false }, { "name": "St Clair", "x": 640, "y": 400, "accessible": true }, { "name": "Davisville", "x": 640, "y": 370, "accessible": true }, { "name": "Eglinton", "x": 640, "y": 340, "accessible": true }, { "name": "Lawrence", "x": 640, "y": 310, "accessible": true }, { "name": "York Mills", "x": 640, "y": 280, "accessible": true }, { "name": "Sheppard-Yonge", "x": 640, "y": 200, "interchange": true, "accessible": true }, { "name": "North York Centre", "x": 640, "y": 150, "accessible": true }, { "name": "Finch", "x": 640, "y": 100, "accessible": true } ] },
+            { "line": "2", "stations": [ { "name": "Kipling", "x": 30, "y": 500, "accessible": true }, { "name": "Islington", "x": 53, "y": 500, "accessible": false }, { "name": "Royal York", "x": 76, "y": 500, "accessible": true }, { "name": "Old Mill", "x": 99, "y": 500, "accessible": false }, { "name": "Jane", "x": 122, "y": 500, "accessible": true }, { "name": "Runnymede", "x": 145, "y": 500, "accessible": true }, { "name": "High Park", "x": 168, "y": 500, "accessible": false }, { "name": "Keele", "x": 191, "y": 500, "accessible": true }, { "name": "Dundas West", "x": 214, "y": 500, "accessible": true }, { "name": "Lansdowne", "x": 237, "y": 500, "accessible": false }, { "name": "Dufferin", "x": 260, "y": 500, "accessible": true }, { "name": "Ossington", "x": 283, "y": 500, "accessible": true }, { "name": "Christie", "x": 306, "y": 500, "accessible": false }, { "name": "Bathurst", "x": 329, "y": 500, "accessible": true }, { "name": "Spadina", "x": 360, "y": 500, "interchange": true, "accessible": true }, { "name": "St George", "x": 400, "y": 500, "interchange": true, "accessible": true }, { "name": "Bay", "x": 520, "y": 500, "accessible": true }, { "name": "Bloor-Yonge", "x": 640, "y": 500, "interchange": true, "accessible": true }, { "name": "Sherbourne", "x": 670, "y": 500, "accessible": true }, { "name": "Castle Frank", "x": 695, "y": 500, "accessible": false }, { "name": "Broadview", "x": 720, "y": 500, "accessible": true }, { "name": "Chester", "x": 745, "y": 500, "accessible": true }, { "name": "Pape", "x": 770, "y": 500, "accessible": true }, { "name": "Donlands", "x": 795, "y": 500, "accessible": false }, { "name": "Greenwood", "x": 820, "y": 500, "accessible": false }, { "name": "Coxwell", "x": 845, "y": 500, "accessible": true }, { "name": "Woodbine", "x": 870, "y": 500, "accessible": true }, { "name": "Main Street", "x": 895, "y": 500, "accessible": true }, { "name": "Victoria Park", "x": 920, "y": 500, "accessible": true }, { "name": "Warden", "x": 945, "y": 500, "accessible": false }, { "name": "Kennedy", "x": 970, "y": 500, "accessible": true } ] },
+            { "line": "4", "stations": [ { "name": "Sheppard-Yonge", "x": 640, "y": 200, "interchange": true, "accessible": true }, { "name": "Bayview", "x": 690, "y": 200, "accessible": true }, { "name": "Bessarion", "x": 740, "y": 200, "accessible": true }, { "name": "Leslie", "x": 790, "y": 200, "accessible": true }, { "name": "Don Mills", "x": 840, "y": 200, "accessible": true } ] }
+        ];
 
-        // --- MAP FUNCTIONS ---
         function initMap() {
             try { if (typeof lucide !== 'undefined') lucide.createIcons(); } catch (e) { }
             renderTracks();
             renderStations();
             renderClock();
-            setLine('1'); // Initialize UI with Line 1
+            setLine('1'); 
             setupDragAndZoom();
-            fetchAlerts(); 
-            pollingInterval = setInterval(fetchAlerts, 60000); 
+            // Note: Admin panel in this simple setup manages local state manually.
+            // fetchAlerts is removed so it doesn't overwrite your manual inputs.
         }
 
+        // --- MAP RENDER FUNCTIONS ---
         function renderTracks() {
             tracksLayer.innerHTML = '';
             rawMapData.forEach(lineData => {
                 const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 const d = getPathFromStations(lineData.stations, lineData.line);
-                path.setAttribute("d", d);
-                path.setAttribute("class", `track line-${lineData.line}`);
+                path.setAttribute("d", d); path.setAttribute("class", `track line-${lineData.line}`);
                 tracksLayer.appendChild(path);
             });
         }
@@ -386,10 +287,7 @@
                     if (s.name === 'Union') continue; 
                     if (s.name === 'King') {
                         const prevPrev = stations[i-2];
-                        if (prevPrev && prevPrev.name === 'St Andrew') {
-                            d += `C 400 710, 640 710, ${s.x} ${s.y} `;
-                            continue;
-                        }
+                        if (prevPrev && prevPrev.name === 'St Andrew') { d += `C 400 710, 640 710, ${s.x} ${s.y} `; continue; }
                     }
                 }
                 d += `L ${s.x} ${s.y} `;
@@ -397,112 +295,49 @@
             return d;
         }
         
-        function getLineColor(lineId) {
-            if (lineId === '1') return "#FFC425";
-            if (lineId === '2') return "#009639";
-            if (lineId === '4') return "#A319FF";
-            return "#ffffff";
-        }
-
-        function getLineTextColor(lineId) {
-            if (lineId === '1') return "black";
-            return "white";
-        }
+        function getLineColor(lineId) { if (lineId === '1') return "#FFC425"; if (lineId === '2') return "#009639"; if (lineId === '4') return "#A319FF"; return "#ffffff"; }
+        function getLineTextColor(lineId) { return (lineId === '1') ? "black" : "white"; }
 
         function renderStations() {
              stationsLayer.innerHTML = '';
-             
-             // Pre-calculate terminal stations
              const allStations = [];
              rawMapData.forEach(l => {
                  const len = l.stations.length;
-                 l.stations.forEach((s, i) => {
-                     const isTerminal = (i === 0 || i === len - 1);
-                     allStations.push({ ...s, line: l.line, isTerminal: isTerminal });
-                 });
+                 l.stations.forEach((s, i) => { allStations.push({ ...s, line: l.line, isTerminal: (i===0||i===len-1) }); });
              });
 
              allStations.forEach(s => {
                  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
                  g.setAttribute("transform", `translate(${s.x}, ${s.y})`);
                  
-                 // 1. Draw Marker
                  if (s.isTerminal) {
                     const bubble = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                    bubble.setAttribute("r", 14);
-                    bubble.setAttribute("fill", getLineColor(s.line));
-                    bubble.setAttribute("stroke", "white");
-                    bubble.setAttribute("stroke-width", "3");
-                    bubble.setAttribute("class", "terminal-bubble");
-                    
+                    bubble.setAttribute("r", 14); bubble.setAttribute("fill", getLineColor(s.line)); bubble.setAttribute("stroke", "white"); bubble.setAttribute("stroke-width", "3"); bubble.setAttribute("class", "terminal-bubble");
                     const num = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    num.textContent = s.line;
-                    num.setAttribute("class", "terminal-text");
-                    num.setAttribute("fill", getLineTextColor(s.line));
-                    
-                    g.appendChild(bubble);
-                    g.appendChild(num);
+                    num.textContent = s.line; num.setAttribute("class", "terminal-text"); num.setAttribute("fill", getLineTextColor(s.line));
+                    g.appendChild(bubble); g.appendChild(num);
                  } else if (s.interchange) {
-                     const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                     gIcon.setAttribute("class", "station-marker");
-                     
-                     const sticker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                     sticker.setAttribute("r", 13); sticker.setAttribute("fill", "white");
-                     gIcon.appendChild(sticker);
-                     
-                     const blackRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                     blackRing.setAttribute("r", 11); blackRing.setAttribute("fill", "black");
-                     gIcon.appendChild(blackRing);
-                     
-                     const whiteGap = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                     whiteGap.setAttribute("r", 7.5); whiteGap.setAttribute("fill", "white");
-                     gIcon.appendChild(whiteGap);
-                     
-                     const blueBtn = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                     blueBtn.setAttribute("r", 6); blueBtn.setAttribute("fill", "#528CCB");
-                     gIcon.appendChild(blueBtn);
-                     
-                     const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                     iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z");
-                     iconPath.setAttribute("fill", "white");
-                     iconPath.setAttribute("transform", "translate(-4.8, -4.8) scale(0.6)");
-                     gIcon.appendChild(iconPath);
+                     const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g"); gIcon.setAttribute("class", "station-marker");
+                     const sticker = document.createElementNS("http://www.w3.org/2000/svg", "circle"); sticker.setAttribute("r", 13); sticker.setAttribute("fill", "white"); gIcon.appendChild(sticker);
+                     const blackRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); blackRing.setAttribute("r", 11); blackRing.setAttribute("fill", "black"); gIcon.appendChild(blackRing);
+                     const whiteGap = document.createElementNS("http://www.w3.org/2000/svg", "circle"); whiteGap.setAttribute("r", 7.5); whiteGap.setAttribute("fill", "white"); gIcon.appendChild(whiteGap);
+                     const blueBtn = document.createElementNS("http://www.w3.org/2000/svg", "circle"); blueBtn.setAttribute("r", 6); blueBtn.setAttribute("fill", "#528CCB"); gIcon.appendChild(blueBtn);
+                     const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path"); iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z"); iconPath.setAttribute("fill", "white"); iconPath.setAttribute("transform", "translate(-4.8, -4.8) scale(0.6)"); gIcon.appendChild(iconPath);
                      g.appendChild(gIcon);
                  } else if (s.accessible) {
-                     const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                     gIcon.setAttribute("class", "station-marker");
-                     
-                     const outerRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                     outerRing.setAttribute("r", "4.5"); outerRing.setAttribute("fill", "black");
-                     gIcon.appendChild(outerRing);
-                     
-                     const midRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                     midRing.setAttribute("r", "3.8"); midRing.setAttribute("fill", "white");
-                     gIcon.appendChild(midRing);
-                     
-                     const innerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                     innerCircle.setAttribute("r", "3"); innerCircle.setAttribute("fill", "#528CCB");
-                     gIcon.appendChild(innerCircle);
-                     
-                     const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                     iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z");
-                     iconPath.setAttribute("fill", "white");
-                     iconPath.setAttribute("transform", "translate(-2, -2) scale(0.25)");
-                     gIcon.appendChild(iconPath);
+                     const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g"); gIcon.setAttribute("class", "station-marker");
+                     const outerRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); outerRing.setAttribute("r", "4.5"); outerRing.setAttribute("fill", "black"); gIcon.appendChild(outerRing);
+                     const midRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); midRing.setAttribute("r", "3.8"); midRing.setAttribute("fill", "white"); gIcon.appendChild(midRing);
+                     const innerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle"); innerCircle.setAttribute("r", "3"); innerCircle.setAttribute("fill", "#528CCB"); gIcon.appendChild(innerCircle);
+                     const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path"); iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z"); iconPath.setAttribute("fill", "white"); iconPath.setAttribute("transform", "translate(-2, -2) scale(0.25)"); gIcon.appendChild(iconPath);
                      g.appendChild(gIcon);
                  } else {
-                     const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                     dot.setAttribute("r", 4); dot.setAttribute("class", "station-marker regular-station");
-                     dot.setAttribute("fill", "white"); dot.setAttribute("stroke", "black"); dot.setAttribute("stroke-width", "1");
+                     const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle"); dot.setAttribute("r", 4); dot.setAttribute("class", "station-marker regular-station"); dot.setAttribute("fill", "white"); dot.setAttribute("stroke", "black"); dot.setAttribute("stroke-width", "1");
                      g.appendChild(dot);
                  }
                  
-                 // 2. Draw Label
                  if (!(s.line === '4' && s.name === "Sheppard-Yonge")) {
-                     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                     text.textContent = s.name;
-                     text.setAttribute("class", "station-label");
-                     
+                     const text = document.createElementNS("http://www.w3.org/2000/svg", "text"); text.textContent = s.name; text.setAttribute("class", "station-label");
                      let tx = 12, ty = 4, rot = 0, anchor = "start"; 
                      if (s.line === '1' && (s.name === "Sheppard-Yonge" || s.name === "Wellesley" || s.name === "St Andrew")) { tx = -15; ty = 4; anchor = "end"; }
                      else if (s.line === '1' && s.name === "Union") { tx = 0; ty = 25; anchor = "middle"; }
@@ -511,12 +346,8 @@
                      else if (s.line === '1' && s.x >= 640 && s.y < 500) { tx = 12; ty = 4; anchor = "start"; }
                      
                      text.setAttribute("text-anchor", anchor);
-                     if (rot !== 0) text.setAttribute("transform", `rotate(${rot}) translate(${tx}, ${ty})`);
-                     else text.setAttribute("transform", `translate(${tx}, ${ty})`);
-                     
-                     const lg = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                     lg.appendChild(text);
-                     g.appendChild(lg);
+                     if (rot !== 0) text.setAttribute("transform", `rotate(${rot}) translate(${tx}, ${ty})`); else text.setAttribute("transform", `translate(${tx}, ${ty})`);
+                     const lg = document.createElementNS("http://www.w3.org/2000/svg", "g"); lg.appendChild(text); g.appendChild(lg);
                  }
                  stationsLayer.appendChild(g);
              });
@@ -568,82 +399,27 @@
             });
         }
 
-        // --- NEW: NETWORKING LOGIC ---
-        async function fetchAlerts() {
-            const statusText = document.getElementById('status-text');
-            const statusDot = document.getElementById('status-dot');
-            const listDiv = document.getElementById('alert-list');
-
-            try {
-                // RELATIVE URL FOR PRODUCTION
-                const res = await fetch('/api/alerts');
-                if (!res.ok) throw new Error("Server Error");
-                
-                const alerts = await res.json();
-                activeAlerts = alerts; // Update global state
-                
-                // Update UI Status
-                statusText.innerText = "Connected";
-                statusText.className = "text-xs font-bold text-green-400";
-                statusDot.className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
-
-                renderAllAlerts();
-                updateBanner();
-                renderAlertList();
-
-            } catch (err) {
-                // FALLBACK TO DEMO MODE
-                console.warn("Backend not detected. Switching to Demo/Manual Mode.");
-                if(pollingInterval) clearInterval(pollingInterval);
-                
-                statusText.innerText = "Manual Mode";
-                statusText.className = "text-xs font-bold text-yellow-500";
-                statusDot.className = "w-2 h-2 rounded-full bg-yellow-500";
-                
-                // ONLY load sample data if list is empty (first load)
-                if (activeAlerts.length === 0) {
-                    activeAlerts = [
-                        { id: 1, line: "1", start: "Davisville", end: "Lawrence", reason: "Signal Problems", direction: "Northbound", singleStation: false, shuttle: false },
-                        { id: 2, line: "2", start: "Jane", end: "Ossington", reason: "Track Maintenance", direction: "Eastbound", singleStation: false, shuttle: true }
-                    ];
-                    renderAllAlerts();
-                    updateBanner();
-                    renderAlertList();
-                }
-            }
-        }
-
-        // --- VISUALIZATION LOGIC (Reused/Adapted) ---
+        // --- MANUAL ALERT LOGIC ---
         function calculateFlow(line, startName, endName, direction) {
             if (direction === 'Both Ways') return 'both';
-            const lineObj = rawMapData.find(l => l.line === line);
-            if (!lineObj) return 'forward';
-            const idx1 = lineObj.stations.findIndex(s => s.name === startName);
-            const idx2 = lineObj.stations.findIndex(s => s.name === endName);
-            
-            // Fix U-Shape logic for Line 1 Northbound/Southbound
+            const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return 'forward';
+            const idx1 = lineObj.stations.findIndex(s => s.name === startName); const idx2 = lineObj.stations.findIndex(s => s.name === endName);
             if (direction && line === '1') {
-                const unionIdx = 21; // Approx index for Union
-                const midIdx = (idx1 + idx2) / 2;
-                if (midIdx < unionIdx) { // University Side
-                    if (direction === 'Northbound') return 'reverse';
-                    if (direction === 'Southbound') return 'forward';
-                } else { // Yonge Side
-                    if (direction === 'Northbound') return 'forward';
-                    if (direction === 'Southbound') return 'reverse';
+                const unionIdx = 21; const midIdx = (idx1 + idx2) / 2;
+                if (midIdx < unionIdx) { 
+                    if (direction === 'Northbound') return 'reverse'; if (direction === 'Southbound') return 'forward';
+                } else { 
+                    if (direction === 'Northbound') return 'forward'; if (direction === 'Southbound') return 'reverse';
                 }
             }
-            
-            if (idx1 < idx2) return 'forward';
-            return 'reverse';
+            if (idx1 < idx2) return 'forward'; return 'reverse';
         }
 
         function renderAllAlerts() {
             alertsLayer.innerHTML = ''; 
             activeAlerts.forEach(alert => {
-                if (alert.singleStation) {
-                    drawStationAlert(alert.line, alert.start);
-                } else {
+                if (alert.singleStation) drawStationAlert(alert.line, alert.start);
+                else {
                     const flow = calculateFlow(alert.line, alert.start, alert.end, alert.direction);
                     drawAlertPath(alert.line, alert.start, alert.end, flow, alert.shuttle);
                 }
@@ -651,163 +427,77 @@
         }
 
         function drawAlertPath(line, startName, endName, flow, isShuttle) {
-            const lineObj = rawMapData.find(l => l.line === line);
-            if (!lineObj) return;
-            const idx1 = lineObj.stations.findIndex(s => s.name === startName);
-            const idx2 = lineObj.stations.findIndex(s => s.name === endName);
+            const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
+            const idx1 = lineObj.stations.findIndex(s => s.name === startName); const idx2 = lineObj.stations.findIndex(s => s.name === endName);
             if (idx1 === -1 || idx2 === -1) return;
-
             const segment = lineObj.stations.slice(Math.min(idx1, idx2), Math.max(idx1, idx2) + 1);
             const d = getPathFromStations(segment, line);
-            
             if (isShuttle) {
                 const shuttlePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                shuttlePath.setAttribute("d", d);
-                shuttlePath.setAttribute("class", "shuttle-outline");
-                alertsLayer.appendChild(shuttlePath);
+                shuttlePath.setAttribute("d", d); shuttlePath.setAttribute("class", "shuttle-outline"); alertsLayer.appendChild(shuttlePath);
             }
-
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            path.setAttribute("d", d);
-            path.setAttribute("class", "alert-base"); 
-            if (flow === 'both') path.classList.add("pulse-solid");
-            else if (flow === 'reverse') path.classList.add("flow-reverse");
-            else path.classList.add("flow-forward");
-            
+            path.setAttribute("d", d); path.setAttribute("class", "alert-base"); 
+            if (flow === 'both') path.classList.add("pulse-solid"); else if (flow === 'reverse') path.classList.add("flow-reverse"); else path.classList.add("flow-forward");
             alertsLayer.appendChild(path);
         }
 
         function drawStationAlert(line, stationName) {
-            const lineObj = rawMapData.find(l => l.line === line);
-            if (!lineObj) return;
-            const s = lineObj.stations.find(st => st.name === stationName);
-            if (!s) return;
+            const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
+            const s = lineObj.stations.find(st => st.name === stationName); if (!s) return;
             const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            circle.setAttribute("cx", s.x);
-            circle.setAttribute("cy", s.y);
-            circle.setAttribute("r", 10);
-            circle.setAttribute("class", "station-alert-glow");
+            circle.setAttribute("cx", s.x); circle.setAttribute("cy", s.y); circle.setAttribute("r", 10); circle.setAttribute("class", "station-alert-glow");
             alertsLayer.appendChild(circle);
         }
 
         function renderAlertList() {
             const listContainer = document.getElementById('alert-list');
-            const wrapper = document.getElementById('alert-list-container');
             listContainer.innerHTML = '';
-            
-            // Fix: remove 'hidden' class to ensure container is visible when refreshed
-            wrapper.classList.remove('hidden');
-
-            if (activeAlerts.length === 0) {
-                listContainer.innerHTML = `<div class="text-center text-gray-600 text-xs">No active alerts.</div>`;
-                return;
-            }
+            if (activeAlerts.length === 0) { listContainer.innerHTML = `<div class="text-center text-gray-600 text-xs">No active alerts.</div>`; return; }
             activeAlerts.forEach(alert => {
                 const item = document.createElement('div');
                 item.className = "flex items-center justify-between p-2 rounded bg-black/40 border border-white/10 text-xs text-white";
                 let lineColor = "#fff";
-                if(alert.line === '1') lineColor = "#FFC425";
-                else if(alert.line === '2') lineColor = "#009639";
-                else if(alert.line === '4') lineColor = "#A319FF";
+                if(alert.line === '1') lineColor = "#FFC425"; else if(alert.line === '2') lineColor = "#009639"; else if(alert.line === '4') lineColor = "#A319FF";
                 item.style.borderLeft = `3px solid ${lineColor}`;
                 const text = alert.singleStation ? `${alert.reason} @ ${alert.start}` : `${alert.reason}: ${alert.start} → ${alert.end}`;
                 const shuttleIcon = alert.shuttle ? `<i data-lucide="bus" class="w-3 h-3 text-blue-400 inline ml-1"></i>` : '';
                 item.innerHTML = `<div class="flex-1 truncate mr-2"><div class="flex items-center gap-1 font-bold">${alert.direction} ${shuttleIcon}</div><span class="opacity-70">${text}</span></div>`;
-                
-                // Add Delete Button
-                const btn = document.createElement('button');
-                btn.className = "text-gray-400 hover:text-red-500 transition";
-                btn.innerHTML = `<i data-lucide="x" class="w-3 h-3"></i>`;
-                btn.onclick = () => deleteAlert(alert.id);
-                item.appendChild(btn);
-                
-                listContainer.appendChild(item);
+                const btn = document.createElement('button'); btn.className = "text-gray-400 hover:text-red-500 transition"; btn.innerHTML = `<i data-lucide="x" class="w-3 h-3"></i>`; btn.onclick = () => deleteAlert(alert.id);
+                item.appendChild(btn); listContainer.appendChild(item);
             });
             lucide.createIcons();
         }
         
-        function deleteAlert(id) {
-            activeAlerts = activeAlerts.filter(a => a.id !== id);
-            renderAllAlerts();
-            updateBanner();
-            renderAlertList();
-        }
+        function deleteAlert(id) { activeAlerts = activeAlerts.filter(a => a.id !== id); renderAllAlerts(); updateBanner(); renderAlertList(); }
 
         function updateBanner() {
             const banner = document.getElementById('active-alert');
             const countBadge = document.getElementById('alert-badge');
             const shuttleBadge = document.getElementById('alert-shuttle-badge');
-            const countLabel = document.getElementById('alert-count-label');
-
-            if (activeAlerts.length === 0) {
-                banner.classList.add('translate-y-32');
-                return;
-            }
+            if (activeAlerts.length === 0) { banner.classList.add('translate-y-32'); return; }
             banner.classList.remove('translate-y-32');
             const latest = activeAlerts[activeAlerts.length - 1];
             document.getElementById('alert-reason').innerText = latest.reason;
             if (latest.singleStation) document.getElementById('alert-bounds').innerText = `At: ${latest.start}`;
             else document.getElementById('alert-bounds').innerText = `${latest.start} <-> ${latest.end}`;
             document.getElementById('alert-direction').innerText = latest.direction;
-            
-            if (latest.shuttle) shuttleBadge.classList.remove('hidden');
-            else shuttleBadge.classList.add('hidden');
-
-            if (activeAlerts.length > 1) {
-                countBadge.innerText = `+${activeAlerts.length - 1}`;
-                countBadge.classList.remove('hidden');
-                // Optional: Show text count too
-                if(countLabel) { countLabel.innerText = `${activeAlerts.length} Active`; countLabel.classList.remove('hidden'); }
-            } else {
-                countBadge.classList.add('hidden');
-                if(countLabel) countLabel.classList.add('hidden');
-            }
+            if (latest.shuttle) shuttleBadge.classList.remove('hidden'); else shuttleBadge.classList.add('hidden');
+            if (activeAlerts.length > 1) { countBadge.innerText = `+${activeAlerts.length - 1}`; countBadge.classList.remove('hidden'); } else { countBadge.classList.add('hidden'); }
         }
 
-        function renderClock() {
-            setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', {hour12: false}); }, 1000);
-        }
+        function renderClock() { setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', {hour12: false}); }, 1000); }
 
         function setLine(id) {
             currentLine = id;
-            ['1','2','4'].forEach(l => {
-                const btn = document.getElementById(`toggle-${l}`);
-                if(btn) { // Safety check
-                    btn.style.opacity = l === id ? '1' : '0.5';
-                    btn.classList.toggle('ring-2', l === id);
-                }
-            });
-
-            const startSel = document.getElementById('start-select');
-            const endSel = document.getElementById('end-select');
-            startSel.innerHTML = '';
-            endSel.innerHTML = '';
-            
-            // --- NEW: Populate Cardinal Direction dynamically ---
-            const cardinalSel = document.getElementById('cardinal-select');
-            cardinalSel.innerHTML = '';
-            
-            let opts = [];
-            if (id === '1') {
-                opts = ['Both Ways', 'Northbound', 'Southbound'];
-            } else {
-                opts = ['Both Ways', 'Eastbound', 'Westbound'];
-            }
-            
-            opts.forEach(val => {
-                const opt = document.createElement('option');
-                opt.value = val;
-                opt.text = val;
-                cardinalSel.appendChild(opt);
-            });
-
+            ['1','2','4'].forEach(l => { const btn = document.getElementById(`toggle-${l}`); if(btn) { btn.style.opacity = l === id ? '1' : '0.5'; btn.classList.toggle('ring-2', l === id); } });
+            const startSel = document.getElementById('start-select'); const endSel = document.getElementById('end-select');
+            startSel.innerHTML = ''; endSel.innerHTML = '';
+            const cardinalSel = document.getElementById('cardinal-select'); cardinalSel.innerHTML = '';
+            let opts = (id === '1') ? ['Both Ways', 'Northbound', 'Southbound'] : ['Both Ways', 'Eastbound', 'Westbound'];
+            opts.forEach(val => { const opt = document.createElement('option'); opt.value = val; opt.text = val; cardinalSel.appendChild(opt); });
             const lineObj = rawMapData.find(l => l.line === id);
-            if (lineObj) {
-                lineObj.stations.forEach(s => {
-                    startSel.add(new Option(s.name, s.name)); 
-                    endSel.add(new Option(s.name, s.name));
-                });
-            }
+            if (lineObj) { lineObj.stations.forEach(s => { startSel.add(new Option(s.name, s.name)); endSel.add(new Option(s.name, s.name)); }); }
         }
 
         function publishAlert() {
@@ -816,38 +506,12 @@
             const reason = document.getElementById('reason-select').value;
             const direction = document.getElementById('cardinal-select').value;
             const shuttle = document.getElementById('shuttle-toggle').checked;
-            
-            // 1. Create Alert Object
-            const newAlert = {
-                id: Date.now(),
-                line: currentLine,
-                start: startName,
-                end: endName,
-                reason: reason,
-                direction: direction,
-                singleStation: (startName === endName),
-                shuttle: shuttle
-            };
-
-            // 2. Add to active alerts
+            const newAlert = { id: Date.now(), line: currentLine, start: startName, end: endName, reason: reason, direction: direction, singleStation: (startName === endName), shuttle: shuttle };
             activeAlerts.push(newAlert);
-
-            // 3. Render visuals
-            renderAllAlerts();
-
-            // 4. Update Banner
-            updateBanner();
-            
-            // 5. Update List
-            renderAlertList();
+            renderAllAlerts(); updateBanner(); renderAlertList();
         }
 
-        function clearAlerts() {
-            activeAlerts = [];
-            renderAllAlerts();
-            updateBanner();
-            renderAlertList();
-        }
+        function clearAlerts() { activeAlerts = []; renderAllAlerts(); updateBanner(); renderAlertList(); }
 
         window.onload = initMap;
     </script>

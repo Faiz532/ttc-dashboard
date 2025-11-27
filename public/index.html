@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TTC Live Status</title>
     <!-- 1. Include FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -33,26 +33,25 @@
             overflow: hidden;
             margin: 0;
             padding: 0;
-            user-select: none;
+            width: 100vw;
+            height: 100dvh; /* Dynamic Viewport Height for mobile browsers */
+            touch-action: none; /* Prevents browser bounce effects */
         }
 
         #viewport {
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             overflow: hidden;
             position: relative;
             background-image: radial-gradient(circle at center, #1a1d24 1px, transparent 1px);
             background-size: 40px 40px;
         }
 
-        svg { width: 100%; height: 100%; overflow: visible; touch-action: none; }
-        #map-root { cursor: grab; transform-origin: 0 0; }
-        #map-root:active { cursor: grabbing; }
+        svg { width: 100%; height: 100%; overflow: visible; }
+        #map-root { cursor: grab; transform-origin: 0 0; } #map-root:active { cursor: grabbing; }
 
         .track { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 12px; transition: stroke 0.3s; }
-        .track.line-1 { stroke: var(--l1-color); }
-        .track.line-2 { stroke: var(--l2-color); }
-        .track.line-4 { stroke: var(--l4-color); }
+        .track.line-1 { stroke: var(--l1-color); } .track.line-2 { stroke: var(--l2-color); } .track.line-4 { stroke: var(--l4-color); }
 
         .station-marker { cursor: pointer; transition: transform 0.2s; }
         .station-marker:hover { transform: scale(1.3); transform-box: fill-box; transform-origin: center; }
@@ -60,12 +59,10 @@
         .regular-station { fill: white; stroke: black; stroke-width: 1px; }
         .interchange-marker { stroke-width: 4px; fill: white; stroke: black; }
         .terminal-bubble { stroke: white; stroke-width: 3px; cursor: pointer; transition: transform 0.2s; }
-        .terminal-bubble:hover { transform: scale(1.1); }
         .terminal-text { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 800; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
         .station-label { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600; fill: #9ca3af; pointer-events: none; text-shadow: 0 2px 4px rgba(0,0,0,0.8); transition: fill 0.2s; }
         .station-label.active { fill: #ffffff; font-size: 12px; font-weight: 700; }
 
-        /* Alert Styles */
         .alert-base { fill: none; stroke: var(--alert-color); stroke-linecap: round; filter: drop-shadow(0 0 8px var(--alert-color)); }
         .shuttle-outline { fill: none; stroke: var(--shuttle-color); stroke-width: 22px; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
         .flow-forward { stroke-width: 14px; opacity: 0.9; stroke-dasharray: 20, 20; animation: dash-fwd 1s linear infinite; }
@@ -78,7 +75,7 @@
         @keyframes pulse-alert { 0% { opacity: 0.6; stroke-width: 12px; } 50% { opacity: 1; stroke-width: 16px; } 100% { opacity: 0.6; stroke-width: 12px; } }
         @keyframes station-pulse { 0% { opacity: 0.8; r: 10px; } 100% { opacity: 0; r: 30px; } }
 
-        .glass-card { background: rgba(24, 27, 33, 0.95); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 20px 40px rgba(0,0,0,0.4); backdrop-filter: blur(8px); }
+        .glass-card { background: rgba(24, 27, 33, 0.95); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(8px); }
     </style>
 </head>
 <body>
@@ -93,52 +90,65 @@
         </svg>
     </div>
 
-    <!-- Live Status Indicator -->
-    <div class="fixed top-6 right-6 z-50">
-        <div id="connection-status" class="glass-card px-4 py-2 rounded-full flex items-center gap-2">
+    <!-- Live Status Indicator (Responsive) -->
+    <div class="fixed top-4 right-4 z-50">
+        <div id="connection-status" class="glass-card px-3 py-2 rounded-full flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-yellow-500" id="status-dot"></div>
-            <span class="text-xs font-bold text-gray-400" id="status-text">Connecting...</span>
+            <span class="text-[10px] sm:text-xs font-bold text-gray-400 uppercase" id="status-text">Connecting</span>
         </div>
     </div>
 
-    <!-- Clean HUD -->
-    <div id="hud-wrapper" class="fixed top-6 left-6 z-50">
-        <div class="glass-card rounded-lg p-4 flex items-center gap-4 pointer-events-none">
-            <div class="flex items-center gap-3 pointer-events-auto">
-                <div class="w-10 h-10 rounded bg-gray-800 flex items-center justify-center text-gray-400">
-                    <i data-lucide="radio-tower" class="w-5 h-5 opacity-50"></i>
+    <!-- Clean HUD (Responsive) -->
+    <div id="hud-wrapper" class="fixed top-4 left-4 z-50">
+        <div class="glass-card rounded-lg p-3 sm:p-4 flex items-center gap-3 sm:gap-4 pointer-events-none">
+            <div class="flex items-center gap-2 sm:gap-3 pointer-events-auto">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded bg-gray-800 flex items-center justify-center text-gray-400">
+                    <i data-lucide="radio-tower" class="w-4 h-4 sm:w-5 sm:h-5 opacity-50"></i>
                 </div>
                 <div>
-                    <h1 class="text-sm font-bold text-gray-200 uppercase tracking-wider">TTC Live Ops</h1>
-                    <div class="flex items-center gap-2 mt-0.5">
-                        <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                        <span class="text-xs text-blue-500 font-mono">REAL-TIME DATA</span>
+                    <h1 class="text-xs sm:text-sm font-bold text-gray-200 uppercase tracking-wider">TTC Live</h1>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                        <span class="text-[10px] sm:text-xs text-blue-500 font-mono">MAP VIEW</span>
                     </div>
                 </div>
             </div>
-            <div class="h-8 w-px bg-white/10"></div>
+            <div class="h-6 sm:h-8 w-px bg-white/10"></div>
             <div class="flex flex-col items-start pointer-events-auto">
-                <div class="text-[10px] text-gray-400 font-bold uppercase">Current Time</div>
-                <div class="text-xl font-mono text-white leading-none" id="clock">00:00:00</div>
+                <div class="text-[8px] sm:text-[10px] text-gray-400 font-bold uppercase">Time</div>
+                <div class="text-lg sm:text-xl font-mono text-white leading-none" id="clock">00:00</div>
             </div>
         </div>
     </div>
 
-    <!-- Active Alert Banner -->
-    <div id="active-alert" class="fixed bottom-8 left-1/2 -translate-x-1/2 w-auto max-w-3xl z-40 translate-y-32 transition-transform duration-500 pointer-events-none">
-        <div class="glass-card rounded-full px-8 py-5 flex items-center gap-5 border-l-4 border-l-red-500 pointer-events-auto shadow-2xl">
-            <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center shrink-0 relative">
-                <i data-lucide="alert-octagon" class="w-6 h-6 text-red-500 animate-pulse"></i>
-                <div id="alert-badge" class="absolute -top-1 -right-1 bg-white text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full hidden">+1</div>
+    <!-- Zoom Controls (New for Mobile) -->
+    <div class="fixed bottom-32 right-4 z-40 flex flex-col gap-2">
+        <button onclick="zoomMap(1.2)" class="glass-card w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/10 active:scale-95 transition">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+        </button>
+        <button onclick="zoomMap(0.8)" class="glass-card w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/10 active:scale-95 transition">
+            <i data-lucide="minus" class="w-5 h-5"></i>
+        </button>
+        <button onclick="resetZoom()" class="glass-card w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 active:scale-95 transition">
+            <i data-lucide="maximize" class="w-4 h-4"></i>
+        </button>
+    </div>
+
+    <!-- Active Alert Banner (Responsive) -->
+    <div id="active-alert" class="fixed bottom-6 left-1/2 -translate-x-1/2 w-11/12 max-w-3xl z-40 translate-y-48 transition-transform duration-500 pointer-events-none">
+        <div class="glass-card rounded-2xl px-5 py-4 sm:px-8 sm:py-5 flex items-center gap-4 sm:gap-5 border-l-4 border-l-red-500 pointer-events-auto shadow-2xl">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-500/20 flex items-center justify-center shrink-0 relative">
+                <i data-lucide="alert-octagon" class="w-5 h-5 sm:w-6 sm:h-6 text-red-500 animate-pulse"></i>
+                <div id="alert-badge" class="absolute -top-1 -right-1 bg-white text-red-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full hidden">+1</div>
             </div>
-            <div>
-                <div class="flex items-center gap-3 mb-1">
-                    <span id="alert-reason" class="text-lg font-bold text-white">Loading...</span>
-                    <span id="alert-shuttle-badge" class="text-xs bg-blue-900/60 text-blue-200 px-2 py-0.5 rounded flex items-center gap-1 hidden">
-                        <i data-lucide="bus" class="w-3 h-3"></i> Shuttles Running
+            <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
+                    <span id="alert-reason" class="text-base sm:text-lg font-bold text-white truncate">Loading...</span>
+                    <span id="alert-shuttle-badge" class="text-[10px] sm:text-xs bg-blue-900/60 text-blue-200 px-2 py-0.5 rounded flex items-center gap-1 hidden">
+                        <i data-lucide="bus" class="w-3 h-3"></i> <span class="hidden sm:inline">Shuttles</span>
                     </span>
                 </div>
-                <p class="text-sm text-gray-300 font-medium">
+                <p class="text-xs sm:text-sm text-gray-300 font-medium truncate">
                     <span id="alert-direction" class="text-white font-bold"></span>
                     <span class="text-gray-500 mx-1">•</span>
                     <span id="alert-bounds" class="text-gray-300"></span>
@@ -151,30 +161,25 @@
         lucide.createIcons();
         let activeAlerts = [];
         let pollingInterval = null;
-        let zoomState = { x: 0, y: 0, scale: 1 }; 
-
+        let zoomState = { x: 0, y: 0, scale: 1 };
+        const mapRoot = document.getElementById('map-root');
+        const viewport = document.getElementById('viewport');
         const tracksLayer = document.getElementById('tracks-layer');
         const stationsLayer = document.getElementById('stations-layer');
         const alertsLayer = document.getElementById('alerts-layer');
-        const mapRoot = document.getElementById('map-root');
-        const viewport = document.getElementById('viewport');
 
-        const rawMapData = [
-            { "line": "1", "stations": [ { "name": "Vaughan Metropolitan Centre", "x": 220, "y": 50, "accessible": true }, { "name": "Highway 407", "x": 240, "y": 80, "accessible": true }, { "name": "Pioneer Village", "x": 260, "y": 110, "accessible": true }, { "name": "York University", "x": 280, "y": 140, "accessible": true }, { "name": "Finch West", "x": 300, "y": 170, "accessible": true }, { "name": "Downsview Park", "x": 320, "y": 200, "accessible": true }, { "name": "Sheppard West", "x": 340, "y": 230, "accessible": true }, { "name": "Wilson", "x": 360, "y": 260, "accessible": true }, { "name": "Yorkdale", "x": 360, "y": 290, "accessible": true }, { "name": "Lawrence West", "x": 360, "y": 320, "accessible": true }, { "name": "Glencairn", "x": 360, "y": 350, "accessible": false }, { "name": "Eglinton West", "x": 360, "y": 380, "accessible": true }, { "name": "St Clair West", "x": 360, "y": 410, "accessible": true }, { "name": "Dupont", "x": 360, "y": 440, "accessible": true }, { "name": "Spadina", "x": 360, "y": 500, "interchange": true, "accessible": true }, { "name": "St George", "x": 400, "y": 500, "interchange": true, "accessible": true }, { "name": "Museum", "x": 400, "y": 550, "accessible": false }, { "name": "Queen's Park", "x": 400, "y": 580, "accessible": true }, { "name": "St Patrick", "x": 400, "y": 610, "accessible": true }, { "name": "Osgoode", "x": 400, "y": 640, "accessible": true }, { "name": "St Andrew", "x": 400, "y": 670, "accessible": true }, { "name": "Union", "x": 520, "y": 700, "accessible": true }, { "name": "King", "x": 640, "y": 670, "accessible": false }, { "name": "Queen", "x": 640, "y": 640, "accessible": true }, { "name": "Dundas", "x": 640, "y": 610, "accessible": true }, { "name": "College", "x": 640, "y": 580, "accessible": false }, { "name": "Wellesley", "x": 640, "y": 550, "accessible": true }, { "name": "Bloor-Yonge", "x": 640, "y": 500, "interchange": true, "accessible": true }, { "name": "Rosedale", "x": 640, "y": 460, "accessible": false }, { "name": "Summerhill", "x": 640, "y": 430, "accessible": false }, { "name": "St Clair", "x": 640, "y": 400, "accessible": true }, { "name": "Davisville", "x": 640, "y": 370, "accessible": true }, { "name": "Eglinton", "x": 640, "y": 340, "accessible": true }, { "name": "Lawrence", "x": 640, "y": 310, "accessible": true }, { "name": "York Mills", "x": 640, "y": 280, "accessible": true }, { "name": "Sheppard-Yonge", "x": 640, "y": 200, "interchange": true, "accessible": true }, { "name": "North York Centre", "x": 640, "y": 150, "accessible": true }, { "name": "Finch", "x": 640, "y": 100, "accessible": true } ] },
-            { "line": "2", "stations": [ { "name": "Kipling", "x": 30, "y": 500, "accessible": true }, { "name": "Islington", "x": 53, "y": 500, "accessible": false }, { "name": "Royal York", "x": 76, "y": 500, "accessible": true }, { "name": "Old Mill", "x": 99, "y": 500, "accessible": false }, { "name": "Jane", "x": 122, "y": 500, "accessible": true }, { "name": "Runnymede", "x": 145, "y": 500, "accessible": true }, { "name": "High Park", "x": 168, "y": 500, "accessible": false }, { "name": "Keele", "x": 191, "y": 500, "accessible": true }, { "name": "Dundas West", "x": 214, "y": 500, "accessible": true }, { "name": "Lansdowne", "x": 237, "y": 500, "accessible": false }, { "name": "Dufferin", "x": 260, "y": 500, "accessible": true }, { "name": "Ossington", "x": 283, "y": 500, "accessible": true }, { "name": "Christie", "x": 306, "y": 500, "accessible": false }, { "name": "Bathurst", "x": 329, "y": 500, "accessible": true }, { "name": "Spadina", "x": 360, "y": 500, "interchange": true, "accessible": true }, { "name": "St George", "x": 400, "y": 500, "interchange": true, "accessible": true }, { "name": "Bay", "x": 520, "y": 500, "accessible": true }, { "name": "Bloor-Yonge", "x": 640, "y": 500, "interchange": true, "accessible": true }, { "name": "Sherbourne", "x": 670, "y": 500, "accessible": true }, { "name": "Castle Frank", "x": 695, "y": 500, "accessible": false }, { "name": "Broadview", "x": 720, "y": 500, "accessible": true }, { "name": "Chester", "x": 745, "y": 500, "accessible": true }, { "name": "Pape", "x": 770, "y": 500, "accessible": true }, { "name": "Donlands", "x": 795, "y": 500, "accessible": false }, { "name": "Greenwood", "x": 820, "y": 500, "accessible": false }, { "name": "Coxwell", "x": 845, "y": 500, "accessible": true }, { "name": "Woodbine", "x": 870, "y": 500, "accessible": true }, { "name": "Main Street", "x": 895, "y": 500, "accessible": true }, { "name": "Victoria Park", "x": 920, "y": 500, "accessible": true }, { "name": "Warden", "x": 945, "y": 500, "accessible": false }, { "name": "Kennedy", "x": 970, "y": 500, "accessible": true } ] },
-            { "line": "4", "stations": [ { "name": "Sheppard-Yonge", "x": 640, "y": 200, "interchange": true, "accessible": true }, { "name": "Bayview", "x": 690, "y": 200, "accessible": true }, { "name": "Bessarion", "x": 740, "y": 200, "accessible": true }, { "name": "Leslie", "x": 790, "y": 200, "accessible": true }, { "name": "Don Mills", "x": 840, "y": 200, "accessible": true } ] }
-        ];
+        // [INSERT RAW_MAP_DATA FROM PREVIOUS FILE HERE] 
+        // For brevity in chat, I am assuming you will copy the 'rawMapData' array from the previous 'admin.html' logic.
+        // It is identical.
+        const rawMapData=[{line:"1",stations:[{name:"Vaughan Metropolitan Centre",x:220,y:50,accessible:!0},{name:"Highway 407",x:240,y:80,accessible:!0},{name:"Pioneer Village",x:260,y:110,accessible:!0},{name:"York University",x:280,y:140,accessible:!0},{name:"Finch West",x:300,y:170,accessible:!0},{name:"Downsview Park",x:320,y:200,accessible:!0},{name:"Sheppard West",x:340,y:230,accessible:!0},{name:"Wilson",x:360,y:260,accessible:!0},{name:"Yorkdale",x:360,y:290,accessible:!0},{name:"Lawrence West",x:360,y:320,accessible:!0},{name:"Glencairn",x:360,y:350,accessible:!1},{name:"Eglinton West",x:360,y:380,accessible:!0},{name:"St Clair West",x:360,y:410,accessible:!0},{name:"Dupont",x:360,y:440,accessible:!0},{name:"Spadina",x:360,y:500,interchange:!0,accessible:!0},{name:"St George",x:400,y:500,interchange:!0,accessible:!0},{name:"Museum",x:400,y:550,accessible:!1},{name:"Queen's Park",x:400,y:580,accessible:!0},{name:"St Patrick",x:400,y:610,accessible:!0},{name:"Osgoode",x:400,y:640,accessible:!0},{name:"St Andrew",x:400,y:670,accessible:!0},{name:"Union",x:520,y:700,accessible:!0},{name:"King",x:640,y:670,accessible:!1},{name:"Queen",x:640,y:640,accessible:!0},{name:"Dundas",x:640,y:610,accessible:!0},{name:"College",x:640,y:580,accessible:!1},{name:"Wellesley",x:640,y:550,accessible:!0},{name:"Bloor-Yonge",x:640,y:500,interchange:!0,accessible:!0},{name:"Rosedale",x:640,y:460,accessible:!1},{name:"Summerhill",x:640,y:430,accessible:!1},{name:"St Clair",x:640,y:400,accessible:!0},{name:"Davisville",x:640,y:370,accessible:!0},{name:"Eglinton",x:640,y:340,accessible:!0},{name:"Lawrence",x:640,y:310,accessible:!0},{name:"York Mills",x:640,y:280,accessible:!0},{name:"Sheppard-Yonge",x:640,y:200,interchange:!0,accessible:!0},{name:"North York Centre",x:640,y:150,accessible:!0},{name:"Finch",x:640,y:100,accessible:!0}]},{line:"2",stations:[{name:"Kipling",x:30,y:500,accessible:!0},{name:"Islington",x:53,y:500,accessible:!1},{name:"Royal York",x:76,y:500,accessible:!0},{name:"Old Mill",x:99,y:500,accessible:!1},{name:"Jane",x:122,y:500,accessible:!0},{name:"Runnymede",x:145,y:500,accessible:!0},{name:"High Park",x:168,y:500,accessible:!1},{name:"Keele",x:191,y:500,accessible:!0},{name:"Dundas West",x:214,y:500,accessible:!0},{name:"Lansdowne",x:237,y:500,accessible:!1},{name:"Dufferin",x:260,y:500,accessible:!0},{name:"Ossington",x:283,y:500,accessible:!0},{name:"Christie",x:306,y:500,accessible:!1},{name:"Bathurst",x:329,y:500,accessible:!0},{name:"Spadina",x:360,y:500,interchange:!0,accessible:!0},{name:"St George",x:400,y:500,interchange:!0,accessible:!0},{name:"Bay",x:520,y:500,accessible:!0},{name:"Bloor-Yonge",x:640,y:500,interchange:!0,accessible:!0},{name:"Sherbourne",x:670,y:500,accessible:!0},{name:"Castle Frank",x:695,y:500,accessible:!1},{name:"Broadview",x:720,y:500,accessible:!0},{name:"Chester",x:745,y:500,accessible:!0},{name:"Pape",x:770,y:500,accessible:!0},{name:"Donlands",x:795,y:500,accessible:!1},{name:"Greenwood",x:820,y:500,accessible:!1},{name:"Coxwell",x:845,y:500,accessible:!0},{name:"Woodbine",x:870,y:500,accessible:!0},{name:"Main Street",x:895,y:500,accessible:!0},{name:"Victoria Park",x:920,y:500,accessible:!0},{name:"Warden",x:945,y:500,accessible:!1},{name:"Kennedy",x:970,y:500,accessible:!0}]},{line:"4",stations:[{name:"Sheppard-Yonge",x:640,y:200,interchange:!0,accessible:!0},{name:"Bayview",x:690,y:200,accessible:!0},{name:"Bessarion",x:740,y:200,accessible:!0},{name:"Leslie",x:790,y:200,accessible:!0},{name:"Don Mills",x:840,y:200,accessible:!0}]}];
 
         function initMap() {
             try { if (typeof lucide !== 'undefined') lucide.createIcons(); } catch (e) { }
-            renderTracks();
-            renderStations();
-            renderClock();
-            setupDragAndZoom();
-            fetchAlerts(); 
-            pollingInterval = setInterval(fetchAlerts, 60000); 
+            renderTracks(); renderStations(); renderClock(); setupDragAndZoom();
+            fetchAlerts(); pollingInterval = setInterval(fetchAlerts, 60000);
         }
 
+        // --- RENDER FUNCTIONS (Same as before) ---
         function renderTracks() {
             tracksLayer.innerHTML = '';
             rawMapData.forEach(lineData => {
@@ -260,63 +265,61 @@
              });
         }
 
+        // --- NEW: Zoom & Drag Logic ---
         function setupDragAndZoom() {
              if (typeof gsap === 'undefined' || typeof Draggable === 'undefined') return;
              gsap.set(mapRoot, { x: 0, y: 0, scale: 1 });
-             Draggable.create(mapRoot, {
-                type: "x,y",
-                inertia: true,
-                onDragEnd: function() {
-                    zoomState.x = this.x;
-                    zoomState.y = this.y;
-                }
-            })[0];
-
-            viewport.addEventListener('wheel', (e) => {
+             Draggable.create(mapRoot, { type: "x,y", inertia: true })[0];
+             
+             // Mouse wheel zoom
+             viewport.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-                const oldScale = gsap.getProperty(mapRoot, "scale");
-                const newScale = Math.min(Math.max(0.4, oldScale * zoomFactor), 8);
-                
-                const rect = viewport.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
-
-                const currentX = gsap.getProperty(mapRoot, "x");
-                const currentY = gsap.getProperty(mapRoot, "y");
-
-                const newX = mouseX - (mouseX - currentX) * (newScale / oldScale);
-                const newY = mouseY - (mouseY - currentY) * (newScale / oldScale);
-
-                gsap.to(mapRoot, {
-                    x: newX,
-                    y: newY,
-                    scale: newScale,
-                    duration: 0.3,
-                    ease: "power2.out"
-                });
+                zoomMapRelative(zoomFactor, e.clientX, e.clientY);
             });
+        }
+
+        function zoomMap(factor) {
+            const currentScale = gsap.getProperty(mapRoot, "scale");
+            const newScale = Math.min(Math.max(0.4, currentScale * factor), 8);
+            gsap.to(mapRoot, { scale: newScale, duration: 0.3, ease: "power2.out" });
+        }
+
+        function zoomMapRelative(factor, clientX, clientY) {
+            const oldScale = gsap.getProperty(mapRoot, "scale");
+            const newScale = Math.min(Math.max(0.4, oldScale * factor), 8);
+            const rect = viewport.getBoundingClientRect();
+            const mouseX = clientX - rect.left;
+            const mouseY = clientY - rect.top;
+            const currentX = gsap.getProperty(mapRoot, "x");
+            const currentY = gsap.getProperty(mapRoot, "y");
+            const newX = mouseX - (mouseX - currentX) * (newScale / oldScale);
+            const newY = mouseY - (mouseY - currentY) * (newScale / oldScale);
+            gsap.to(mapRoot, { x: newX, y: newY, scale: newScale, duration: 0.3, ease: "power2.out" });
+        }
+
+        function resetZoom() {
+            gsap.to(mapRoot, { x: 0, y: 0, scale: 1, duration: 0.5, ease: "power2.inOut" });
         }
 
         async function fetchAlerts() {
             const statusText = document.getElementById('status-text');
             const statusDot = document.getElementById('status-dot');
             try {
-                // RELATIVE URL FOR PRODUCTION
                 const res = await fetch('/api/alerts');
                 if (!res.ok) throw new Error("Server Error");
                 const alerts = await res.json();
                 activeAlerts = alerts; 
-                statusText.innerText = "Connected"; statusText.className = "text-xs font-bold text-green-400"; statusDot.className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
+                statusText.innerText = "Connected"; statusText.className = "text-[10px] sm:text-xs font-bold text-green-400 uppercase"; statusDot.className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
                 renderAllAlerts(); updateBanner();
             } catch (err) {
-                // Fallback demo only if fetch fails entirely
                 console.warn("Backend unavailable.");
                 if(pollingInterval) clearInterval(pollingInterval);
-                statusText.innerText = "Demo Mode"; statusText.className = "text-xs font-bold text-yellow-500"; statusDot.className = "w-2 h-2 rounded-full bg-yellow-500";
+                statusText.innerText = "Demo Mode"; statusText.className = "text-[10px] sm:text-xs font-bold text-yellow-500 uppercase"; statusDot.className = "w-2 h-2 rounded-full bg-yellow-500";
             }
         }
 
+        // --- ALERT RENDER LOGIC ---
         function calculateFlow(line, startName, endName, direction) {
             if (direction === 'Both Ways') return 'both';
             const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return 'forward';
@@ -336,10 +339,7 @@
             alertsLayer.innerHTML = ''; 
             activeAlerts.forEach(alert => {
                 if (alert.singleStation) drawStationAlert(alert.line, alert.start);
-                else {
-                    const flow = calculateFlow(alert.line, alert.start, alert.end, alert.direction);
-                    drawAlertPath(alert.line, alert.start, alert.end, flow, alert.shuttle);
-                }
+                else { const flow = calculateFlow(alert.line, alert.start, alert.end, alert.direction); drawAlertPath(alert.line, alert.start, alert.end, flow, alert.shuttle); }
             });
         }
 
@@ -351,8 +351,7 @@
             const d = getPathFromStations(segment, line);
             if (isShuttle) {
                 const shuttlePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                shuttlePath.setAttribute("d", d); shuttlePath.setAttribute("class", "shuttle-outline");
-                alertsLayer.appendChild(shuttlePath);
+                shuttlePath.setAttribute("d", d); shuttlePath.setAttribute("class", "shuttle-outline"); alertsLayer.appendChild(shuttlePath);
             }
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             path.setAttribute("d", d); path.setAttribute("class", "alert-base"); 
@@ -372,8 +371,8 @@
             const banner = document.getElementById('active-alert');
             const countBadge = document.getElementById('alert-badge');
             const shuttleBadge = document.getElementById('alert-shuttle-badge');
-            if (activeAlerts.length === 0) { banner.classList.add('translate-y-32'); return; }
-            banner.classList.remove('translate-y-32');
+            if (activeAlerts.length === 0) { banner.classList.add('translate-y-48'); return; }
+            banner.classList.remove('translate-y-48');
             const latest = activeAlerts[activeAlerts.length - 1];
             document.getElementById('alert-reason').innerText = latest.reason;
             if (latest.singleStation) document.getElementById('alert-bounds').innerText = `At: ${latest.start}`;
