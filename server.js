@@ -8,31 +8,52 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-// Serve the static HTML files from the 'public' folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// TTC Public Feed URL
 const TTC_FEED_URL = 'https://retro.umoiq.com/service/publicXMLFeed?command=agencyServiceAlerts&a=ttc';
 
 let cachedAlerts = [];
 let lastFetchTime = 0;
 const CACHE_DURATION = 60 * 1000; 
 
+// Master list of valid stations to validate against
+const VALID_STATIONS = [
+    "Vaughan Metropolitan Centre", "Highway 407", "Pioneer Village", "York University", "Finch West", "Downsview Park", "Sheppard West", "Wilson", "Yorkdale", "Lawrence West", "Glencairn", "Eglinton West", "St Clair West", "Dupont", "Spadina", "St George", "Museum", "Queen's Park", "St Patrick", "Osgoode", "St Andrew", "Union", "King", "Queen", "Dundas", "College", "Wellesley", "Bloor-Yonge", "Rosedale", "Summerhill", "St Clair", "Davisville", "Eglinton", "Lawrence", "York Mills", "Sheppard-Yonge", "North York Centre", "Finch",
+    "Kipling", "Islington", "Royal York", "Old Mill", "Jane", "Runnymede", "High Park", "Keele", "Dundas West", "Lansdowne", "Dufferin", "Ossington", "Christie", "Bathurst", "Bay", "Sherbourne", "Castle Frank", "Broadview", "Chester", "Pape", "Donlands", "Greenwood", "Coxwell", "Woodbine", "Main Street", "Victoria Park", "Warden", "Kennedy",
+    "Bayview", "Bessarion", "Leslie", "Don Mills"
+];
+
+// Map common variations/typos to official names
 const STATION_MAP = {
-    "St George": "St George", "St. George": "St George",
-    "Bloor-Yonge": "Bloor-Yonge", "Bloor Yonge": "Bloor-Yonge",
-    "Sheppard-Yonge": "Sheppard-Yonge", "Sheppard Yonge": "Sheppard-Yonge",
+    "St. George": "St George", "St George": "St George",
+    "Bloor Yonge": "Bloor-Yonge", "Bloor-Yonge": "Bloor-Yonge",
+    "Sheppard Yonge": "Sheppard-Yonge", "Sheppard-Yonge": "Sheppard-Yonge",
     "North York Ctr": "North York Centre", "North York Centre": "North York Centre",
-    "St Clair": "St Clair", "St. Clair": "St Clair",
-    "St Clair West": "St Clair West", "St. Clair West": "St Clair West",
-    "Vaughan Metro": "Vaughan Metropolitan Centre", "VMC": "Vaughan Metropolitan Centre",
-    "Kipling": "Kipling", "Kennedy": "Kennedy", "Finch": "Finch",
-    "Union": "Union", "Vaughan": "Vaughan Metropolitan Centre"
+    "St. Clair": "St Clair", "St Clair": "St Clair",
+    "St. Clair West": "St Clair West", "St Clair West": "St Clair West",
+    "Vaughan": "Vaughan Metropolitan Centre", "Vaughan Metro": "Vaughan Metropolitan Centre", "VMC": "Vaughan Metropolitan Centre",
+    "Bathurst St": "Bathurst",
+    "Keele St": "Keele",
+    "Broadview Stn": "Broadview"
 };
 
-function cleanStationName(name) {
-    let clean = name.replace(/ Station/i, '').trim();
-    return STATION_MAP[clean] || clean;
+function normalizeStation(name) {
+    // 1. Remove common suffix/prefix garbage
+    let clean = name.replace(/ Station/gi, '').replace(/ stn/gi, '').trim();
+    
+    // 2. Check explicit map
+    if (STATION_MAP[clean]) return STATION_MAP[clean];
+    if (STATION_MAP[clean.replace(/\./g, '')]) return STATION_MAP[clean.replace(/\./g, '')]; // Handle St. vs St
+
+    // 3. Check direct match in valid list
+    const directMatch = VALID_STATIONS.find(s => s.toLowerCase() === clean.toLowerCase());
+    if (directMatch) return directMatch;
+
+    // 4. Fuzzy check (e.g. "Spadina Ave" -> "Spadina")
+    const partialMatch = VALID_STATIONS.find(s => clean.toLowerCase().includes(s.toLowerCase()));
+    if (partialMatch) return partialMatch;
+
+    return null; // Could not identify station
 }
 
 async function fetchTTCAlerts() {
@@ -49,39 +70,49 @@ async function fetchTTCAlerts() {
 
         rawAlerts.forEach(alert => {
             const text = alert.descriptionText?.[0] || "";
+            
+            // Filter: Only process alerts mentioning Lines 1, 2, or 4
             let lineId = null;
             if (text.includes("Line 1") || text.includes("Yonge-University")) lineId = "1";
             else if (text.includes("Line 2") || text.includes("Bloor-Danforth")) lineId = "2";
             else if (text.includes("Line 4") || text.includes("Sheppard")) lineId = "4";
 
             if (lineId) {
-                const rangeRegex = /between ([\w\s\.-]+) and ([\w\s\.-]+)(?:stations)?/i;
+                // IMPROVED REGEX: Stops capturing at "stations", "due", "for", or end of string
+                // Case 1: "between X and Y"
+                const rangeRegex = /between\s+(.*?)\s+and\s+(.*?)(?:\s+stations|\s+due|\s+for|\.|:|$)/i;
                 const match = text.match(rangeRegex);
+
                 let start = null, end = null, singleStation = false;
 
                 if (match) {
-                    start = cleanStationName(match[1]);
-                    end = cleanStationName(match[2]);
+                    start = normalizeStation(match[1]);
+                    end = normalizeStation(match[2]);
                 } else {
-                    const atRegex = /at ([\w\s\.-]+)(?:Station)/i;
+                    // Case 2: "at X Station"
+                    const atRegex = /at\s+(.*?)(?:\s+station|\s+due|\.|:|$)/i;
                     const atMatch = text.match(atRegex);
                     if (atMatch) {
-                        start = cleanStationName(atMatch[1]);
+                        start = normalizeStation(atMatch[1]);
                         end = start;
                         singleStation = true;
                     }
                 }
 
+                // DETERMINE REASON
                 let reason = "Service Alert";
-                if (text.toLowerCase().includes("signal")) reason = "Signal Problems";
-                else if (text.toLowerCase().includes("security")) reason = "Security Incident";
-                else if (text.toLowerCase().includes("maintenance")) reason = "Track Maintenance";
-                else if (text.toLowerCase().includes("injury") || text.toLowerCase().includes("medical")) reason = "Medical Emergency";
-                else if (text.toLowerCase().includes("suspension") || text.toLowerCase().includes("no service")) reason = "Service Suspension";
+                const lowerText = text.toLowerCase();
+                if (lowerText.includes("signal")) reason = "Signal Problems";
+                else if (lowerText.includes("security")) reason = "Security Incident";
+                else if (lowerText.includes("maintenance") || lowerText.includes("track work")) reason = "Track Maintenance";
+                else if (lowerText.includes("injury") || lowerText.includes("medical")) reason = "Medical Emergency";
+                else if (lowerText.includes("suspension") || lowerText.includes("no service") || lowerText.includes("no subway service")) reason = "Service Suspension";
+                else if (lowerText.includes("bypass") || lowerText.includes("not stopping")) reason = "Station Bypass";
 
-                const isShuttle = text.toLowerCase().includes("shuttle");
+                const isShuttle = lowerText.includes("shuttle");
 
                 if (start && end) {
+                    console.log(`✅ Parsed Alert: [Line ${lineId}] ${start} <-> ${end} (${reason})`);
                     processedAlerts.push({
                         id: Date.now() + Math.random(),
                         line: lineId,
@@ -96,6 +127,9 @@ async function fetchTTCAlerts() {
                         shuttle: isShuttle,
                         originalText: text
                     });
+                } else {
+                    // Log failed parses to help debug why an alert isn't showing
+                    console.log(`⚠️ Skipped Alert (Stations not found): "${text.substring(0, 50)}..."`);
                 }
             }
         });
@@ -103,6 +137,7 @@ async function fetchTTCAlerts() {
         cachedAlerts = processedAlerts;
         lastFetchTime = Date.now();
         return processedAlerts;
+
     } catch (error) {
         console.error("Error fetching data:", error.message);
         return [];
@@ -114,7 +149,6 @@ app.get('/api/alerts', async (req, res) => {
     res.json(alerts);
 });
 
-// Fallback: Send the HTML file
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
