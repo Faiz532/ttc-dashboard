@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<body copyright="All data copyright agencies listed below and Umo IQ 2025.">
+<agency tag="jhu-apl" title="APL" regionTitle="Maryland"/>
+<agency tag="ccrta" title="Cape Cod Regional Transit Authority" shortTitle="CCRTA" regionTitle="Massachusetts"/>
+<agency tag="west-hollywood" title="City of West Hollywood" regionTitle="California-Southern"/>
+<agency tag="da" title="Downtown Connection" regionTitle="New York"/>
+<agency tag="dumbarton-gtfs" title="Dumbarton Express" shortTitle="Dumbarton Exp" regionTitle="California-Northern"/>
+<agency tag="escalon" title="Escalon eTrans" shortTitle="eTrans" regionTitle="California-Northern"/>
+<agency tag="glendale" title="Glendale Beeline" regionTitle="California-Southern"/>
+<agency tag="indianapolis-air" title="Indianapolis International Airport" regionTitle="Indiana"/>
+<agency tag="omnitrans" title="Omnitrans" regionTitle="California-Southern"/>
+<agency tag="pvpta" title="Palos Verdes Transit" regionTitle="California-Southern"/>
+<agency tag="portland-sc" title="Portland Streetcar" regionTitle="Oregon"/>
+<agency tag="roosevelt" title="Roosevelt Island" regionTitle="New York"/>
+<agency tag="stl" title="Societe de transport de Laval" shortTitle="Laval" regionTitle="Quebec"/>
+<agency tag="sct" title="Sonoma County Transit" regionTitle="California-Northern"/>
+<agency tag="ttc" title="Toronto Transit Commission" shortTitle="Toronto TTC" regionTitle="Ontario"/>
+<agency tag="unitrans" title="Unitrans ASUCD/City of Davis" shortTitle="Unitrans" regionTitle="California-Northern"/>
+<agency tag="ucb" title="University of California Berkeley" shortTitle="UC Berkeley" regionTitle="California-Northern"/>
+<agency tag="wku" title="Western Kentucky University" regionTitle="Kentucky"/>
+</body>
