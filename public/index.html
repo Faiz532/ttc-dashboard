@@ -22,6 +22,7 @@
             --l2-color: #009639;
             --l4-color: #A319FF;
             --alert-color: #ef4444;
+            --delay-color: #f59e0b;
             --shuttle-color: #3b82f6;
             --text-main: #ffffff;
             --text-muted: #9ca3af;
@@ -367,6 +368,11 @@
             filter: drop-shadow(0 0 8px var(--alert-color));
         }
 
+        .alert-base.delay {
+            stroke: var(--delay-color);
+            filter: drop-shadow(0 0 8px var(--delay-color));
+        }
+
         .shuttle-outline {
             fill: none;
             stroke: var(--shuttle-color);
@@ -563,6 +569,56 @@
             font-size: 18px;
         }
 
+        /* Legend */
+        #map-legend {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background-color: rgba(24, 27, 33, 1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            backdrop-filter: blur(4px);
+            z-index: 10000 !important;
+            /* Ensure it's above everything */
+            font-size: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            display: block;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: white;
+            /* Make text white for better visibility */
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-icon {
+            width: 16px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .legend-icon.no-service {
+            background-color: var(--alert-color);
+        }
+
+        .legend-icon.delay {
+            background-color: var(--delay-color);
+        }
+
+        .legend-icon.shuttle {
+            background-color: var(--shuttle-color);
+            height: 2px;
+            border: 1px dashed var(--shuttle-color);
+        }
+
         /* Overlay for mobile sidebar */
         #sidebar-overlay {
             display: none;
@@ -643,7 +699,6 @@
             </div>
 
             <div id="content-area" style="position: relative; flex: 1; overflow: hidden;">
-                <!-- Map View -->
                 <div id="viewport">
                     <svg id="ttc-svg" viewBox="0 0 1000 800" preserveAspectRatio="xMidYMid meet">
                         <g id="map-root">
@@ -652,6 +707,23 @@
                             <g id="stations-layer"></g>
                         </g>
                     </svg>
+                </div>
+
+                <!-- Legend -->
+                <div id="map-legend">
+                    <div style="font-weight: 700; color: white; margin-bottom: 8px;">Legend</div>
+                    <div class="legend-item">
+                        <div class="legend-icon no-service"></div>
+                        <span>No Service / Suspension</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon delay"></div>
+                        <span>Major Delays / Slow</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon shuttle"></div>
+                        <span>Shuttle Buses</span>
+                    </div>
                 </div>
 
                 <!-- Alerts Panel -->
@@ -732,6 +804,7 @@
 
         function initMap() {
             try { if (typeof lucide !== 'undefined') lucide.createIcons(); } catch (e) { }
+            console.log("Checking for legend:", document.getElementById('map-legend'));
             renderTracks();
             renderStations();
             setupDragAndZoom();
@@ -905,8 +978,12 @@
             // Only render active alerts on the map
             const mapActiveAlerts = activeAlerts.filter(alert => alert.status === 'active');
             mapActiveAlerts.forEach(alert => {
-                if (alert.singleStation) drawStationAlert(alert.line, alert.start);
-                else { const flow = calculateFlow(alert.line, alert.start, alert.end, alert.direction); drawAlertPath(alert.line, alert.start, alert.end, flow, alert.shuttle); }
+                const isDelay = alert.effect === 'SIGNIFICANT_DELAYS' || alert.effect === 'REDUCED_SPEED';
+                if (alert.singleStation) drawStationAlert(alert.line, alert.start, isDelay);
+                else {
+                    const flow = calculateFlow(alert.line, alert.start, alert.end, alert.direction);
+                    drawAlertPath(alert.line, alert.start, alert.end, flow, alert.shuttle, isDelay);
+                }
             });
         }
 
@@ -926,7 +1003,12 @@
 
             listContainer.innerHTML = sortedAlerts.map(alert => {
                 const isCleared = alert.status === 'cleared';
-                const borderColor = isCleared ? 'var(--l2-color)' : 'var(--alert-color)';
+                const isDelay = alert.effect === 'SIGNIFICANT_DELAYS' || alert.effect === 'REDUCED_SPEED';
+
+                let borderColor = 'var(--alert-color)';
+                if (isCleared) borderColor = 'var(--l2-color)';
+                else if (isDelay) borderColor = 'var(--delay-color)';
+
                 const bgOpacity = isCleared ? '0.5' : '1';
 
                 return `
@@ -963,7 +1045,7 @@
 
 
 
-        function drawAlertPath(line, startName, endName, flow, isShuttle) {
+        function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay) {
             const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
             const idx1 = lineObj.stations.findIndex(s => s.name === startName); const idx2 = lineObj.stations.findIndex(s => s.name === endName);
             if (idx1 === -1 || idx2 === -1) return;
@@ -975,15 +1057,19 @@
             }
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             path.setAttribute("d", d); path.setAttribute("class", "alert-base");
+            if (isDelay) path.classList.add("delay");
+
             if (flow === 'both') path.classList.add("pulse-solid"); else if (flow === 'reverse') path.classList.add("flow-reverse"); else path.classList.add("flow-forward");
             alertsLayer.appendChild(path);
         }
 
-        function drawStationAlert(line, stationName) {
+        function drawStationAlert(line, stationName, isDelay) {
             const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
             const s = lineObj.stations.find(st => st.name === stationName); if (!s) return;
             const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             circle.setAttribute("cx", s.x); circle.setAttribute("cy", s.y); circle.setAttribute("r", 10); circle.setAttribute("class", "station-alert-glow");
+            if (isDelay) circle.style.stroke = "var(--delay-color)";
+            if (isDelay) circle.style.fill = "var(--delay-color)";
             alertsLayer.appendChild(circle);
         }
 

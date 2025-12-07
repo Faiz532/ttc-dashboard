@@ -17,6 +17,7 @@ const BLUESKY_API_URL = 'https://public.api.bsky.app/xrpc/app.bsky.feed.getAutho
 
 // TTC Website for planned subway closures
 const TTC_SUBWAY_URL = 'https://www.ttc.ca/service-advisories/subway-service';
+const TTC_LIVE_ALERTS_API = 'https://alerts.ttc.ca/api/alerts/live-alerts';
 
 let cachedAlerts = [];
 let lastFetchTime = 0;
@@ -42,6 +43,54 @@ const STATION_MAP = {
     "Keele St": "Keele",
     "Broadview Stn": "Broadview"
 };
+
+// Ordered Station Lists for Range Calculations
+const LINE_1_STATIONS = [
+    "Vaughan Metropolitan Centre", "Highway 407", "Pioneer Village", "York University", "Finch West", "Downsview Park",
+    "Sheppard West", "Wilson", "Yorkdale", "Lawrence West", "Glencairn", "Eglinton West", "St Clair West", "Dupont",
+    "Spadina", "St George", "Museum", "Queen's Park", "St Patrick", "Osgoode", "St Andrew", "Union",
+    "King", "Queen", "Dundas", "College", "Wellesley", "Bloor-Yonge", "Rosedale", "Summerhill",
+    "St Clair", "Davisville", "Eglinton", "Lawrence", "York Mills", "Sheppard-Yonge", "North York Centre", "Finch"
+];
+
+const LINE_2_STATIONS = [
+    "Kipling", "Islington", "Royal York", "Old Mill", "Jane", "Runnymede", "High Park", "Keele", "Dundas West",
+    "Lansdowne", "Dufferin", "Ossington", "Christie", "Bathurst", "Spadina", "St George", "Bay", "Bloor-Yonge",
+    "Sherbourne", "Castle Frank", "Broadview", "Chester", "Pape", "Donlands", "Greenwood", "Coxwell",
+    "Woodbine", "Main Street", "Victoria Park", "Warden", "Kennedy"
+];
+
+const LINE_4_STATIONS = [
+    "Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills"
+];
+
+const STATIONS_BY_LINE = {
+    "1": LINE_1_STATIONS,
+    "2": LINE_2_STATIONS,
+    "4": LINE_4_STATIONS
+};
+
+// Helper to check if range A is fully contained within range B
+function isSubsetRange(lineId, startA, endA, startB, endB) {
+    const stations = STATIONS_BY_LINE[lineId];
+    if (!stations) return false;
+
+    const idxStartA = stations.indexOf(startA);
+    const idxEndA = stations.indexOf(endA);
+    const idxStartB = stations.indexOf(startB);
+    const idxEndB = stations.indexOf(endB);
+
+    if (idxStartA === -1 || idxEndA === -1 || idxStartB === -1 || idxEndB === -1) return false;
+
+    // Normalize min/max for direction independence
+    const minA = Math.min(idxStartA, idxEndA);
+    const maxA = Math.max(idxStartA, idxEndA);
+    const minB = Math.min(idxStartB, idxEndB);
+    const maxB = Math.max(idxStartB, idxEndB);
+
+    // Check if A is inside B
+    return minA >= minB && maxA <= maxB;
+}
 
 function normalizeStation(name) {
     if (!name) return null;
@@ -194,22 +243,107 @@ async function fetchTTCWebsiteAlerts() {
     }
 }
 
+async function fetchTTCLiveAlerts() {
+    try {
+        console.log("🌐 Fetching TTC Live Alerts API...");
+        const response = await axios.get(TTC_LIVE_ALERTS_API);
+        const data = response.data;
+        const alerts = [];
+
+        if (!data.routes || !Array.isArray(data.routes)) return [];
+
+        data.routes.forEach(route => {
+            // Filter for Subway lines (1, 2, 4)
+            if (route.routeType !== 'Subway') return;
+
+            const lineId = route.route; // "1", "2", "4"
+            if (!['1', '2', '4'].includes(lineId)) return;
+
+            const start = normalizeStation(route.stopStart);
+            const end = normalizeStation(route.stopEnd);
+
+            // Extract reason from title or description
+            // Example title: "There is no subway service between Osgoode and College stations due to planned track work. Shuttle buses are running."
+            let reason = "Service Alert";
+            const title = route.title || "";
+
+            if (title.toLowerCase().includes("due to")) {
+                const parts = title.split(/due to/i);
+                if (parts.length > 1) {
+                    // Take the part after "due to", split by "." to get the first sentence
+                    let reasonText = parts[1].split('.')[0].trim();
+                    // Capitalize first letter
+                    reason = reasonText.charAt(0).toUpperCase() + reasonText.slice(1);
+                }
+            } else if (route.effect === 'NO_SERVICE') {
+                reason = "Service Suspension";
+            } else if (route.effect === 'SIGNIFICANT_DELAYS') {
+                reason = "Major Delays";
+            } else if (route.effect === 'REDUCED_SPEED') {
+                reason = "Reduced Speed Zone";
+            }
+
+            // Determine status
+            const status = (route.activePeriodGroup && route.activePeriodGroup.includes("Current")) ? "active" : "cleared";
+
+            // Determine direction from text if possible
+            let direction = "Both Ways";
+            const lowerTitle = title.toLowerCase();
+            if (lowerTitle.includes("southbound")) direction = "Southbound";
+            else if (lowerTitle.includes("northbound")) direction = "Northbound";
+            else if (lowerTitle.includes("eastbound")) direction = "Eastbound";
+            else if (lowerTitle.includes("westbound")) direction = "Westbound";
+
+            if (start && end && status === 'active') {
+                console.log(`✅ Parsed Live API Alert: [Line ${lineId}] ${start} <-> ${end} (${reason}) [${direction}]`);
+                alerts.push({
+                    id: Date.now() + Math.random(),
+                    line: lineId,
+                    start: start,
+                    end: end,
+                    reason: reason,
+                    effect: route.effect, // Pass through effect for filtering (NO_SERVICE, SIGNIFICANT_DELAYS, etc)
+                    status: status,
+                    direction: direction,
+                    singleStation: (start === end),
+                    shuttle: (route.shuttleType === 'Running'),
+                    originalText: title
+                });
+            }
+        });
+
+        return alerts;
+    } catch (error) {
+        console.error("Error fetching TTC Live Alerts API:", error.message);
+        return [];
+    }
+}
+
 async function fetchTTCAlerts() {
     if (Date.now() - lastFetchTime < CACHE_DURATION) return cachedAlerts;
 
     console.log("🔄 Fetching live data from all sources...");
 
-    const [blueSkyAlerts, webAlerts] = await Promise.all([
-        fetchBlueSkyAlerts(),
-        fetchTTCWebsiteAlerts()
+    // RELY ONLY ON LIVE API to prevent stale/overlapping alerts from scraper/bluesky
+    const [liveApiAlerts] = await Promise.all([
+        // fetchBlueSkyAlerts(),
+        // fetchTTCWebsiteAlerts(),
+        fetchTTCLiveAlerts()
     ]);
 
     // Combine and deduplicate based on start/end/line
-    const allAlerts = [...webAlerts, ...blueSkyAlerts];
+    // Prioritize Live API alerts (official & detailed) > Web Alerts > BlueSky
+    const allAlerts = [...liveApiAlerts];
+
+    // 1. Separate Active and Cleared alerts
+    const activeAlerts = allAlerts.filter(a => a.status === 'active');
+    const clearedAlerts = allAlerts.filter(a => a.status !== 'active');
+
     const uniqueAlerts = [];
     const seen = new Set();
 
-    allAlerts.forEach(alert => {
+    // 2. Add all Active alerts first (deduplicated by key)
+    activeAlerts.forEach(alert => {
         const key = `${alert.line}-${alert.start}-${alert.end}`;
         if (!seen.has(key)) {
             seen.add(key);
@@ -217,9 +351,55 @@ async function fetchTTCAlerts() {
         }
     });
 
-    cachedAlerts = uniqueAlerts;
+    // 3. Add Cleared alerts ONLY if they don't overlap with any Active alert on the same line
+    clearedAlerts.forEach(alert => {
+        const key = `${alert.line}-${alert.start}-${alert.end}`;
+        if (seen.has(key)) return; // Exact match already exists (as active)
+
+        // Check for overlap with any active alert on the same line
+        const hasOverlap = uniqueAlerts.some(active => {
+            if (active.line !== alert.line) return false;
+            if (active.status !== 'active') return false;
+
+            // Simple overlap check: if one station is same, or if they cover same segment
+            // Since we don't have station order indices easily available here without map data,
+            // we'll do a basic check: if start or end matches either start or end of active alert
+            return (active.start === alert.start || active.start === alert.end ||
+                active.end === alert.start || active.end === alert.end);
+        });
+
+        if (!hasOverlap) {
+            seen.add(key);
+            uniqueAlerts.push(alert);
+        }
+    });
+
+    // 4. Filter out "Subset" alerts (e.g. Delays inside No Service)
+    // We iterate through the unique list and remove items that are redundant
+    const finalAlerts = uniqueAlerts.filter(inner => {
+        // Only filter out active alerts that are NOT "Service Suspension" (keep the big ones)
+        // If it's already a suspension, we keep it (unless it's a duplicate, which is already handled)
+        if (inner.effect === "NO_SERVICE") return true;
+
+        // Check if this alert is contained within another "Service Suspension" alert
+        const isRedundant = uniqueAlerts.some(outer => {
+            if (inner === outer) return false; // Don't compare with self
+            if (outer.line !== inner.line) return false;
+            if (outer.effect !== "NO_SERVICE") return false; // Only closures shadow other alerts
+
+            return isSubsetRange(inner.line, inner.start, inner.end, outer.start, outer.end);
+        });
+
+        if (isRedundant) {
+            console.log(`Start: ${inner.start}, End: ${inner.end}, Reason: ${inner.reason}`);
+            console.log(`🗑️ Filtering redundant alert: [Line ${inner.line}] ${inner.start}-${inner.end} (${inner.reason}) inside closure`);
+        }
+        return !isRedundant;
+    });
+
+    cachedAlerts = finalAlerts;
     lastFetchTime = Date.now();
-    return uniqueAlerts;
+    return finalAlerts;
 }
 
 app.get('/api/alerts', async (req, res) => {
