@@ -599,25 +599,7 @@
             margin-bottom: 0;
         }
 
-        .legend-icon {
-            width: 16px;
-            height: 4px;
-            border-radius: 2px;
-        }
 
-        .legend-icon.no-service {
-            background-color: var(--alert-color);
-        }
-
-        .legend-icon.delay {
-            background-color: var(--delay-color);
-        }
-
-        .legend-icon.shuttle {
-            background-color: var(--shuttle-color);
-            height: 2px;
-            border: 1px dashed var(--shuttle-color);
-        }
 
         /* Overlay for mobile sidebar */
         #sidebar-overlay {
@@ -713,15 +695,24 @@
                 <div id="map-legend">
                     <div style="font-weight: 700; color: white; margin-bottom: 8px;">Legend</div>
                     <div class="legend-item">
-                        <div class="legend-icon no-service"></div>
+                        <svg width="24" height="8" style="overflow: visible;">
+                            <path d="M 0 4 L 24 4" class="alert-base pulse-solid" style="stroke-width: 4; opacity: 1;">
+                            </path>
+                        </svg>
                         <span>No Service / Suspension</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-icon delay"></div>
+                        <svg width="24" height="8" style="overflow: visible;">
+                            <path d="M 0 4 L 24 4" class="alert-base delay pulse-solid"
+                                style="stroke-width: 4; opacity: 1;"></path>
+                        </svg>
                         <span>Major Delays / Slow</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-icon shuttle"></div>
+                        <svg width="24" height="8" style="overflow: visible;">
+                            <path d="M 0 4 L 24 4" class="shuttle-outline" style="stroke-width: 3; opacity: 0.9;">
+                            </path>
+                        </svg>
                         <span>Shuttle Buses</span>
                     </div>
                 </div>
