@@ -373,6 +373,11 @@
             filter: drop-shadow(0 0 8px var(--delay-color));
         }
 
+        .alert-base.shuttle {
+            stroke: var(--shuttle-color);
+            filter: drop-shadow(0 0 8px var(--shuttle-color));
+        }
+
         .shuttle-outline {
             fill: none;
             stroke: var(--shuttle-color);
@@ -590,11 +595,20 @@
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
+            /* Reduced spacing */
             padding: 4px 0;
             color: rgba(255, 255, 255, 0.9);
             white-space: nowrap;
+            line-height: 1.2;
         }
+
+        .legend-item svg {
+            display: block;
+            /* Removes baseline alignment quirks */
+        }
+
+
 
         .legend-item:last-child {
             padding-bottom: 0;
@@ -703,18 +717,18 @@
                         <span>No Service / Suspension</span>
                     </div>
                     <div class="legend-item">
-                        <svg width="32" height="8" style="overflow: visible;">
+                        <svg width="32" height="8" style="overflow: visible; position: relative; top: 1px;">
                             <path d="M 0 4 L 32 4" class="alert-base delay pulse-solid"
                                 style="stroke-width: 6; opacity: 1; stroke-linecap: round;"></path>
                         </svg>
-                        <span>Major Delays / Slow</span>
+                        <span style="position: relative; top: -1px;">Major Delays / Slow</span>
                     </div>
                     <div class="legend-item">
                         <svg width="32" height="8" style="overflow: visible;">
                             <path d="M 0 4 L 32 4" class="shuttle-outline"
-                                style="stroke-width: 4; opacity: 0.9; stroke-linecap: round;"></path>
+                                style="stroke-width: 3; opacity: 0.9; stroke-linecap: round;"></path>
                         </svg>
-                        <span>Shuttle Buses</span>
+                        <span style="position: relative; top: -4px;">Shuttle Buses</span>
                     </div>
                 </div>
 
