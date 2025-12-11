@@ -20,6 +20,7 @@ const TTC_SUBWAY_URL = 'https://www.ttc.ca/service-advisories/subway-service';
 const TTC_LIVE_ALERTS_API = 'https://alerts.ttc.ca/api/alerts/live-alerts';
 
 let cachedAlerts = [];
+let cachedUpcomingAlerts = [];
 let lastFetchTime = 0;
 const CACHE_DURATION = 60 * 1000;
 
@@ -249,8 +250,9 @@ async function fetchTTCLiveAlerts() {
         const response = await axios.get(TTC_LIVE_ALERTS_API);
         const data = response.data;
         const alerts = [];
+        const upcomingAlerts = [];
 
-        if (!data.routes || !Array.isArray(data.routes)) return [];
+        if (!data.routes || !Array.isArray(data.routes)) return { current: [], upcoming: [] };
 
         data.routes.forEach(route => {
             // Filter for Subway lines (1, 2, 4)
@@ -259,32 +261,119 @@ async function fetchTTCLiveAlerts() {
             const lineId = route.route; // "1", "2", "4"
             if (!['1', '2', '4'].includes(lineId)) return;
 
-            const start = normalizeStation(route.stopStart);
-            const end = normalizeStation(route.stopEnd);
+            const title = route.title || route.alertTitle || '';
+            const reason = route.effect === 'NO_SERVICE' ? 'Service Suspension' :
+                route.effect === 'SIGNIFICANT_DELAYS' ? 'Major Delays' :
+                    route.effect === 'REDUCED_SPEED' ? 'Reduced Speed' :
+                        route.effect === 'REDUCED_SERVICE' ? 'Reduced Service' : 'Service Alert';
 
-            // Extract reason from title or description
-            // Example title: "There is no subway service between Osgoode and College stations due to planned track work. Shuttle buses are running."
-            let reason = "Service Alert";
-            const title = route.title || "";
+            // Parse stations from title
+            const rangeRegex = /between\s+(.*?)\s+and\s+(.*?)(?:\s+stations|\s+due|\s+for|,|\.|\:|$)/i;
+            const match = title.match(rangeRegex);
+            let start = null, end = null;
 
-            if (title.toLowerCase().includes("due to")) {
-                const parts = title.split(/due to/i);
-                if (parts.length > 1) {
-                    // Take the part after "due to", split by "." to get the first sentence
-                    let reasonText = parts[1].split('.')[0].trim();
-                    // Capitalize first letter
-                    reason = reasonText.charAt(0).toUpperCase() + reasonText.slice(1);
+            if (match) {
+                start = normalizeStation(match[1]);
+                end = normalizeStation(match[2]);
+            } else {
+                const atRegex = /at\s+(.*?)(?:\s+station|\s+due|\.|\:|$)/i;
+                const atMatch = title.match(atRegex);
+                if (atMatch) {
+                    start = normalizeStation(atMatch[1]);
+                    end = start;
                 }
-            } else if (route.effect === 'NO_SERVICE') {
-                reason = "Service Suspension";
-            } else if (route.effect === 'SIGNIFICANT_DELAYS') {
-                reason = "Major Delays";
-            } else if (route.effect === 'REDUCED_SPEED') {
-                reason = "Reduced Speed Zone";
             }
 
-            // Determine status
-            const status = (route.activePeriodGroup && route.activePeriodGroup.includes("Current")) ? "active" : "cleared";
+            // Parse the scheduled start time from title if present (e.g., "starting at 11" or "starting at 11 p.m.")
+            let scheduledStartTime = null;
+            const startingAtMatch = title.match(/starting\s+at\s+(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i);
+            if (startingAtMatch) {
+                let hour = parseInt(startingAtMatch[1], 10);
+                const minute = startingAtMatch[2] ? parseInt(startingAtMatch[2], 10) : 0;
+                const ampm = startingAtMatch[3] ? startingAtMatch[3].toLowerCase().replace(/\./g, '') : null;
+
+                // Adjust for PM if specified, or assume PM if hour <= 6 (evening shutdowns are common)
+                if (ampm === 'pm' && hour < 12) {
+                    hour += 12;
+                } else if (ampm === 'am' && hour === 12) {
+                    hour = 0;
+                } else if (!ampm && hour >= 1 && hour <= 6) {
+                    // No AM/PM specified and hour is 1-6, likely means PM (e.g., "starting at 11" means 11 PM)
+                    // Actually for "11" it's likely 11 PM not AM
+                    if (hour <= 11 && hour >= 6) {
+                        // Keep as is (could be either)
+                    } else {
+                        hour += 12;
+                    }
+                } else if (!ampm && hour >= 7 && hour <= 11) {
+                    // 7-11 without AM/PM likely means PM for service work
+                    hour += 12;
+                }
+
+                // Create a date for today with that time
+                const now = new Date();
+                scheduledStartTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0);
+
+                // If that time has already passed today, assume it's for tomorrow
+                // Actually, for TTC alerts, they usually publish the same day, so keep it today
+                // unless it's clear it should be a different day
+            }
+
+            // Determine status based on precise timestamps
+            let isTimeActive = false;
+            let isFuture = false;
+            let activeStartTime = null;
+            let activeEndTime = null;
+            const now = Date.now();
+
+            // Handle activePeriod - can be object or array
+            let periods = [];
+            if (route.activePeriod) {
+                if (Array.isArray(route.activePeriod)) {
+                    periods = route.activePeriod;
+                } else if (typeof route.activePeriod === 'object') {
+                    periods = [route.activePeriod];
+                }
+            }
+
+            if (periods.length > 0) {
+                // Check if currently active
+                isTimeActive = periods.some(period => {
+                    // Parse ISO strings to timestamps
+                    const periodStart = period.start ? new Date(period.start).getTime() : 0;
+                    // "0001-01-01" is a placeholder for "no end" in the API
+                    const periodEnd = (period.end && !period.end.startsWith("0001"))
+                        ? new Date(period.end).getTime()
+                        : 8640000000000000;
+                    return now >= periodStart && now <= periodEnd;
+                });
+
+                // Get the first period's times for reference
+                if (periods[0]) {
+                    activeStartTime = periods[0].start ? new Date(periods[0].start).getTime() : null;
+                    activeEndTime = (periods[0].end && !periods[0].end.startsWith("0001"))
+                        ? new Date(periods[0].end).getTime()
+                        : null;
+                }
+            }
+
+            // Check if scheduled start time from title is in the future
+            if (scheduledStartTime && scheduledStartTime.getTime() > now) {
+                isFuture = true;
+                activeStartTime = scheduledStartTime.getTime();
+                console.log(`📅 Detected future start time from title: ${scheduledStartTime.toLocaleString()}`);
+            } else if (!isTimeActive && activeStartTime && activeStartTime > now) {
+                // Fallback: if activePeriod.start is in the future
+                isFuture = true;
+            }
+
+            // Fallback to legacy group check if timestamps are completely missing
+            if (periods.length === 0) {
+                isTimeActive = (route.activePeriodGroup && route.activePeriodGroup.includes("Current"));
+                isFuture = (route.activePeriodGroup && (route.activePeriodGroup.includes("Planned") || route.activePeriodGroup.includes("Future")));
+            }
+
+            const status = isTimeActive && !isFuture ? "active" : "cleared";
 
             // Determine direction from text if possible
             let direction = "Both Ways";
@@ -294,42 +383,51 @@ async function fetchTTCLiveAlerts() {
             else if (lowerTitle.includes("eastbound")) direction = "Eastbound";
             else if (lowerTitle.includes("westbound")) direction = "Westbound";
 
-            if (start && end && status === 'active') {
-                console.log(`✅ Parsed Live API Alert: [Line ${lineId}] ${start} <-> ${end} (${reason}) [${direction}]`);
-                alerts.push({
+            if (start && end) {
+                const alertData = {
                     id: Date.now() + Math.random(),
                     line: lineId,
                     start: start,
                     end: end,
                     reason: reason,
-                    effect: route.effect, // Pass through effect for filtering (NO_SERVICE, SIGNIFICANT_DELAYS, etc)
+                    effect: route.effect,
                     status: status,
                     direction: direction,
                     singleStation: (start === end),
                     shuttle: (route.shuttleType === 'Running'),
-                    originalText: title
-                });
+                    originalText: title,
+                    activeStartTime: activeStartTime,
+                    activeEndTime: activeEndTime
+                };
+
+                if (isFuture && activeStartTime) {
+                    console.log(`📅 Upcoming Alert: [Line ${lineId}] ${start} <-> ${end} (${reason}) starts at ${new Date(activeStartTime).toLocaleString()}`);
+                    upcomingAlerts.push(alertData);
+                } else if (status === 'active') {
+                    console.log(`✅ Parsed Live API Alert: [Line ${lineId}] ${start} <-> ${end} (${reason}) [${direction}]`);
+                    alerts.push(alertData);
+                }
             }
         });
 
-        return alerts;
+        return { current: alerts, upcoming: upcomingAlerts };
     } catch (error) {
         console.error("Error fetching TTC Live Alerts API:", error.message);
-        return [];
+        return { current: [], upcoming: [] };
     }
 }
 
 async function fetchTTCAlerts() {
-    if (Date.now() - lastFetchTime < CACHE_DURATION) return cachedAlerts;
+    if (Date.now() - lastFetchTime < CACHE_DURATION) {
+        return { current: cachedAlerts, upcoming: cachedUpcomingAlerts };
+    }
 
     console.log("🔄 Fetching live data from all sources...");
 
     // RELY ONLY ON LIVE API to prevent stale/overlapping alerts from scraper/bluesky
-    const [liveApiAlerts] = await Promise.all([
-        // fetchBlueSkyAlerts(),
-        // fetchTTCWebsiteAlerts(),
-        fetchTTCLiveAlerts()
-    ]);
+    const liveApiResult = await fetchTTCLiveAlerts();
+    const liveApiAlerts = liveApiResult.current || [];
+    const upcomingAlerts = liveApiResult.upcoming || [];
 
     // Combine and deduplicate based on start/end/line
     // Prioritize Live API alerts (official & detailed) > Web Alerts > BlueSky
@@ -398,13 +496,19 @@ async function fetchTTCAlerts() {
     });
 
     cachedAlerts = finalAlerts;
+    cachedUpcomingAlerts = upcomingAlerts;
     lastFetchTime = Date.now();
-    return finalAlerts;
+    return { current: finalAlerts, upcoming: upcomingAlerts };
 }
 
 app.get('/api/alerts', async (req, res) => {
-    const alerts = await fetchTTCAlerts();
-    res.json(alerts);
+    const result = await fetchTTCAlerts();
+    res.json(result.current);
+});
+
+app.get('/api/upcoming-alerts', async (req, res) => {
+    const result = await fetchTTCAlerts();
+    res.json(result.upcoming);
 });
 
 app.get('*', (req, res) => {

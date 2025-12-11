@@ -46,6 +46,10 @@
             height: 100vh;
             /* Fallback */
             height: 100dvh;
+            position: fixed;
+            /* Prevents mobile viewport bounce/scroll */
+            touch-action: none;
+            /* Disables default touch gestures globally */
         }
 
         #app-container {
@@ -160,6 +164,42 @@
 
         #sidebar-footer a:hover {
             color: white;
+        }
+
+        /* Notification Badge */
+        .nav-badge {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            padding: 0 5px;
+            animation: badge-pulse 2s ease-in-out infinite;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        }
+
+        .nav-badge.hidden {
+            display: none;
+        }
+
+        @keyframes badge-pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+            }
+
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 4px 16px rgba(239, 68, 68, 0.6);
+            }
         }
 
         .social-icons {
@@ -661,9 +701,10 @@
                     <i class="fas fa-exclamation-triangle"></i>
                     <span>Alerts</span>
                 </div>
-                <div class="nav-item expandable" data-tab="schedules">
-                    <i class="fas fa-calendar"></i>
-                    <span>Schedules</span>
+                <div class="nav-item" data-tab="upcoming">
+                    <i class="fas fa-clock"></i>
+                    <span>Upcoming</span>
+                    <span id="upcoming-badge" class="nav-badge hidden">0</span>
                 </div>
                 <div class="nav-item expandable" data-tab="settings">
                     <i class="fas fa-cog"></i>
@@ -738,10 +779,16 @@
                     <div id="alerts-list"></div>
                 </div>
 
-                <!-- Schedules Placeholder -->
-                <div id="schedules-panel" class="placeholder-panel">
-                    <i class="fas fa-calendar"></i>
-                    <p>Schedules Coming Soon</p>
+                <!-- Upcoming Outages Panel -->
+                <div id="upcoming-panel" class="placeholder-panel">
+                    <div style="width: 100%; max-width: 800px; padding: 20px; overflow-y: auto; max-height: 100%;">
+                        <h2
+                            style="font-size: 24px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                            <i class="fas fa-clock" style="color: var(--delay-color);"></i>
+                            Upcoming Service Changes
+                        </h2>
+                        <div id="upcoming-list"></div>
+                    </div>
                 </div>
 
                 <!-- Settings Placeholder -->
@@ -756,6 +803,7 @@
     <script>
         lucide.createIcons();
         let activeAlerts = [];
+        let upcomingAlerts = [];
         let pollingInterval = null;
         let currentTab = 'lines';
         const mapRoot = document.getElementById('map-root');
@@ -763,6 +811,7 @@
         const tracksLayer = document.getElementById('tracks-layer');
         const stationsLayer = document.getElementById('stations-layer');
         const alertsLayer = document.getElementById('alerts-layer');
+        let mapDraggable = null;
 
         // Navigation
         const sidebar = document.getElementById('sidebar');
@@ -802,7 +851,7 @@
             // Show/hide panels
             document.getElementById('viewport').style.display = (tab === 'lines') ? 'block' : 'none';
             document.getElementById('alerts-panel').classList.toggle('active', tab === 'alerts');
-            document.getElementById('schedules-panel').classList.toggle('active', tab === 'schedules');
+            document.getElementById('upcoming-panel').classList.toggle('active', tab === 'upcoming');
             document.getElementById('settings-panel').classList.toggle('active', tab === 'settings');
         }
 
@@ -816,7 +865,11 @@
             setupDragAndZoom();
             setupPinchZoom();
             fetchAlerts();
-            pollingInterval = setInterval(fetchAlerts, 60000);
+            fetchUpcomingAlerts();
+            pollingInterval = setInterval(() => {
+                fetchAlerts();
+                fetchUpcomingAlerts();
+            }, 60000);
         }
 
         function renderTracks() {
@@ -907,11 +960,18 @@
         function setupDragAndZoom() {
             if (typeof gsap === 'undefined' || typeof Draggable === 'undefined') return;
             gsap.set(mapRoot, { x: 0, y: 0, scale: 1 });
-            Draggable.create(mapRoot, {
+            mapDraggable = Draggable.create(mapRoot, {
                 type: "x,y",
                 inertia: true,
-                trigger: viewport
+                trigger: viewport,
+                edgeResistance: 0.65,
+                onDragStart: () => updateMapBounds(), // Ensure bounds are fresh
             })[0];
+
+            // Initial bounds setup
+            updateMapBounds();
+
+            window.addEventListener('resize', updateMapBounds);
 
             // Mouse wheel zoom
             viewport.addEventListener('wheel', (e) => {
@@ -938,7 +998,11 @@
                     const currentDistance = getDistance(e.touches[0], e.touches[1]);
                     const scale = (currentDistance / initialDistance) * initialScale;
                     const clampedScale = Math.min(Math.max(0.4, scale), 8);
+
+                    // Simple scale set. Ideally we should zoom towards the center of the pinch, 
+                    // but for now let's just ensure bounds are respected.
                     gsap.set(mapRoot, { scale: clampedScale });
+                    updateMapBounds();
                 }
             }, { passive: false });
 
@@ -952,14 +1016,107 @@
         function zoomMapRelative(factor, clientX, clientY) {
             const oldScale = gsap.getProperty(mapRoot, "scale");
             const newScale = Math.min(Math.max(0.4, oldScale * factor), 8);
+
             const rect = viewport.getBoundingClientRect();
             const mouseX = clientX - rect.left;
             const mouseY = clientY - rect.top;
+
             const currentX = gsap.getProperty(mapRoot, "x");
             const currentY = gsap.getProperty(mapRoot, "y");
-            const newX = mouseX - (mouseX - currentX) * (newScale / oldScale);
-            const newY = mouseY - (mouseY - currentY) * (newScale / oldScale);
-            gsap.to(mapRoot, { x: newX, y: newY, scale: newScale, duration: 0.3, ease: "power2.out" });
+
+            // Calculate target position to keep mouse point stable
+            let newX = mouseX - (mouseX - currentX) * (newScale / oldScale);
+            let newY = mouseY - (mouseY - currentY) * (newScale / oldScale);
+
+            // Get valid bounds for the NEW scale
+            const bounds = getMapBounds(newScale);
+
+            // Clamp target position to valid bounds
+            newX = Math.min(Math.max(newX, bounds.minX), bounds.maxX);
+            newY = Math.min(Math.max(newY, bounds.minY), bounds.maxY);
+
+            gsap.to(mapRoot, {
+                x: newX,
+                y: newY,
+                scale: newScale,
+                duration: 0.3,
+                ease: "power2.out",
+                onUpdate: () => updateMapBounds(), // Keep draggable bounds in sync during animation
+                onComplete: () => updateMapBounds()
+            });
+        }
+
+        function getMapBounds(scale) {
+            const mapWidth = 1000 * scale;
+            const mapHeight = 800 * scale;
+
+            // Calculate the current visual scale of the SVG relative to the viewport
+            // The SVG uses preserveAspectRatio="xMidYMid meet"
+            const svgScale = Math.min(viewport.clientWidth / 1000, viewport.clientHeight / 800);
+
+            // Convert viewport dimensions to SVG user units
+            const scaledViewportWidth = viewport.clientWidth / svgScale;
+            const scaledViewportHeight = viewport.clientHeight / svgScale;
+
+            let minX, maxX, minY, maxY;
+
+            const WIGGLE_ROOM = 100; // Pixels of wiggle room
+
+            // Horizontal Bounds (in SVG User Units)
+            if (mapWidth < scaledViewportWidth) {
+                // Center map if smaller than viewport but allow wiggle
+                const centerX = (scaledViewportWidth - mapWidth) / 2;
+                minX = centerX - WIGGLE_ROOM;
+                maxX = centerX + WIGGLE_ROOM;
+            } else {
+                minX = scaledViewportWidth - mapWidth - WIGGLE_ROOM;
+                maxX = WIGGLE_ROOM;
+            }
+
+            // Vertical Bounds (in SVG User Units)
+            if (mapHeight < scaledViewportHeight) {
+                // Center map vertically but allow wiggle
+                const centerY = (scaledViewportHeight - mapHeight) / 2;
+                minY = centerY - WIGGLE_ROOM;
+                maxY = centerY + WIGGLE_ROOM;
+            } else {
+                minY = scaledViewportHeight - mapHeight - WIGGLE_ROOM;
+                maxY = WIGGLE_ROOM;
+            }
+
+            return { minX, maxX, minY, maxY };
+        }
+
+        function updateMapBounds(specificScale) {
+            if (!mapDraggable) return;
+
+            const currentScale = gsap.getProperty(mapRoot, "scale");
+            const scale = specificScale || currentScale;
+
+            const bounds = getMapBounds(scale);
+
+            mapDraggable.applyBounds(bounds);
+
+            // If we are not currently animating (e.g. pinch zoom or window resize), 
+            // and the specificScale matches current (or wasn't provided), 
+            // enforce bounds on the element position immediately.
+            // This prevents "stuck out of bounds" state which causes rubber banding on next drag.
+            if (!gsap.isTweening(mapRoot) && (!specificScale || Math.abs(specificScale - currentScale) < 0.001)) {
+                const currX = gsap.getProperty(mapRoot, "x");
+                const currY = gsap.getProperty(mapRoot, "y");
+
+                let fixX = currX;
+                let fixY = currY;
+
+                if (fixX < bounds.minX) fixX = bounds.minX;
+                if (fixX > bounds.maxX) fixX = bounds.maxX;
+                if (fixY < bounds.minY) fixY = bounds.minY;
+                if (fixY > bounds.maxY) fixY = bounds.maxY;
+
+                if (fixX !== currX || fixY !== currY) {
+                    gsap.set(mapRoot, { x: fixX, y: fixY });
+                }
+            }
         }
 
         async function fetchAlerts() {
@@ -973,6 +1130,110 @@
             } catch (err) {
                 console.warn("Backend unavailable.");
                 if (pollingInterval) clearInterval(pollingInterval);
+            }
+        }
+
+        async function fetchUpcomingAlerts() {
+            try {
+                const res = await fetch('/api/upcoming-alerts');
+                if (!res.ok) throw new Error("Server Error");
+                const alerts = await res.json();
+                upcomingAlerts = alerts;
+                updateUpcomingBadge();
+                renderUpcomingList();
+            } catch (err) {
+                console.warn("Could not fetch upcoming alerts.");
+            }
+        }
+
+        function updateUpcomingBadge() {
+            const badge = document.getElementById('upcoming-badge');
+            if (upcomingAlerts.length > 0) {
+                badge.textContent = upcomingAlerts.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function renderUpcomingList() {
+            const listContainer = document.getElementById('upcoming-list');
+            if (upcomingAlerts.length === 0) {
+                listContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                        <i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 16px; color: var(--l2-color);"></i>
+                        <p style="font-size: 16px;">No upcoming service changes scheduled.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort by start time (soonest first)
+            const sortedAlerts = [...upcomingAlerts].sort((a, b) => {
+                return (a.activeStartTime || 0) - (b.activeStartTime || 0);
+            });
+
+            listContainer.innerHTML = sortedAlerts.map(alert => {
+                const startTime = alert.activeStartTime ? new Date(alert.activeStartTime) : null;
+                const endTime = alert.activeEndTime ? new Date(alert.activeEndTime) : null;
+
+                const formatDate = (date) => {
+                    if (!date) return '';
+                    const options = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+                    return date.toLocaleDateString('en-US', options);
+                };
+
+                const timeUntil = startTime ? getTimeUntil(startTime) : '';
+
+                return `
+                <div class="alert-card" style="border-left-color: var(--delay-color);">
+                    <div class="alert-card-header">
+                        <div class="alert-line-badge line-${alert.line}">${alert.line}</div>
+                        <div class="alert-title">${alert.reason}</div>
+                        <span style="background: rgba(245, 158, 11, 0.2); color: var(--delay-color); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: auto;">
+                            ${timeUntil}
+                        </span>
+                    </div>
+                    <div class="alert-meta">
+                        ${alert.direction} • ${alert.singleStation ? `At: ${alert.start}` : `${alert.start} ↔ ${alert.end}`}
+                    </div>
+                    ${startTime ? `
+                    <div style="margin-top: 8px; padding: 8px 12px; background: rgba(255,255,255,0.03); border-radius: 6px; font-size: 13px;">
+                        <div style="display: flex; align-items: center; gap: 8px; color: var(--text-muted);">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span><strong>Starts:</strong> ${formatDate(startTime)}</span>
+                        </div>
+                        ${endTime ? `
+                        <div style="display: flex; align-items: center; gap: 8px; color: var(--text-muted); margin-top: 4px;">
+                            <i class="fas fa-calendar-check"></i>
+                            <span><strong>Ends:</strong> ${formatDate(endTime)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                    <div class="alert-description" style="margin-top: 8px;">${alert.originalText || ''}</div>
+                    ${alert.shuttle ? '<div class="shuttle-badge"><i class="fas fa-bus"></i> Shuttle buses will run</div>' : ''}
+                </div>
+            `;
+            }).join('');
+        }
+
+        function getTimeUntil(date) {
+            const now = new Date();
+            const diff = date - now;
+
+            if (diff < 0) return 'Starting soon';
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const days = Math.floor(hours / 24);
+
+            if (days > 0) {
+                return `In ${days} day${days > 1 ? 's' : ''}`;
+            } else if (hours > 0) {
+                return `In ${hours} hour${hours > 1 ? 's' : ''}`;
+            } else {
+                const minutes = Math.floor(diff / (1000 * 60));
+                return `In ${minutes} min${minutes > 1 ? 's' : ''}`;
             }
         }
 
