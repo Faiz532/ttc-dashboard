@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TTC Subway</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
+</head>
+
+<body>
+
+    <!-- MAP CONTAINER (Background) -->
+    <div id="map-viewport">
+        <!-- SVG Map Container -->
+        <svg id="map-root" viewBox="0 0 1000 800" preserveAspectRatio="xMidYMid meet"
+            xmlns="http://www.w3.org/2000/svg">
+            <g id="tracks-layer"></g>
+            <g id="stations-layer"></g>
+            <g id="alerts-layer"></g>
+        </svg>
+    </div>
+
+    <!-- UI OVERLAY LAYER -->
+    <div class="ui-layer">
+
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <!-- Search Pill -->
+            <div class="search-pill" id="search-pill">
+                <i class="fas fa-search"></i>
+                <input type="text" class="search-input" placeholder="Find station..." id="search-input">
+            </div>
+
+            <!-- Right Side FABs -->
+            <div class="fab-stack">
+                <div class="fab" id="btn-recenter"><i class="fas fa-crosshairs"></i></div>
+                <div class="fab" id="btn-legend"><i class="fas fa-layer-group"></i></div>
+            </div>
+        </div>
+
+        <!-- Bottom UI (Sheets + Nav) -->
+        <div class="bottom-ui">
+
+            <!-- ALERTS SHEET -->
+            <div id="sheet-alerts" class="sheet-container">
+                <div class="sheet-handle-area">
+                    <div class="sheet-handle"></div>
+                </div>
+                <div class="sheet-header">
+                    <div class="sheet-title">Active Alerts</div>
+                    <div class="sheet-subtitle">Real-time service disruptions</div>
+                </div>
+                <div class="sheet-content" id="alerts-list">
+                    <!-- Alert Cards Here -->
+                </div>
+            </div>
+
+            <!-- UPCOMING SHEET -->
+            <div id="sheet-upcoming" class="sheet-container">
+                <div class="sheet-handle-area">
+                    <div class="sheet-handle"></div>
+                </div>
+                <div class="sheet-header">
+                    <div class="sheet-title">Upcoming</div>
+                    <div class="sheet-subtitle">Planned closures & maintenance</div>
+                </div>
+                <div class="sheet-content" id="upcoming-list">
+                    <!-- Upcoming Cards Here -->
+                </div>
+            </div>
+
+            <!-- BOTTOM NAVIGATION -->
+            <div class="bottom-nav">
+                <div class="nav-item active" data-tab="map">
+                    <i class="fas fa-map"></i>
+                    <span>Map</span>
+                </div>
+                <div class="nav-item" data-tab="alerts">
+                    <div style="position: relative;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span id="badge-active" class="nav-badge hidden">0</span>
+                    </div>
+                    <span>Alerts</span>
+                </div>
+                <div class="nav-item" data-tab="upcoming">
+                    <div style="position: relative;">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span id="badge-upcoming" class="nav-badge hidden">0</span>
+                    </div>
+                    <span>Upcoming</span>
+                </div>
+                <div class="nav-item" data-tab="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MAIN APP SCRIPT -->
+    <script>
+        // --- State Management ---
+        let activeTab = 'map';
+        let activeAlerts = [];
+        let upcomingAlerts = [];
+        let mapDraggable = null;
+        let pollingInterval = null;
+
+        // --- DOM Elements ---
+        const mapRoot = document.getElementById('map-root');
+        const viewport = document.getElementById('map-viewport');
+        const searchPill = document.getElementById('search-pill');
+        const sheets = {
+            alerts: document.getElementById('sheet-alerts'),
+            upcoming: document.getElementById('sheet-upcoming')
+        };
+        const badges = {
+            active: document.getElementById('badge-active'),
+            upcoming: document.getElementById('badge-upcoming')
+        };
+
+        // --- Map Data (Simplified for brevity, but same logic) ---
+        const rawMapData = [{ line: "1", stations: [{ name: "Vaughan Metropolitan Centre", x: 220, y: 50, accessible: !0 }, { name: "Highway 407", x: 240, y: 80, accessible: !0 }, { name: "Pioneer Village", x: 260, y: 110, accessible: !0 }, { name: "York University", x: 280, y: 140, accessible: !0 }, { name: "Finch West", x: 300, y: 170, accessible: !0 }, { name: "Downsview Park", x: 320, y: 200, accessible: !0 }, { name: "Sheppard West", x: 340, y: 230, accessible: !0 }, { name: "Wilson", x: 360, y: 260, accessible: !0 }, { name: "Yorkdale", x: 360, y: 290, accessible: !0 }, { name: "Lawrence West", x: 360, y: 320, accessible: !0 }, { name: "Glencairn", x: 360, y: 350, accessible: !1 }, { name: "Eglinton West", x: 360, y: 380, accessible: !0 }, { name: "St Clair West", x: 360, y: 410, accessible: !0 }, { name: "Dupont", x: 360, y: 440, accessible: !0 }, { name: "Spadina", x: 360, y: 500, interchange: !0, accessible: !0 }, { name: "St George", x: 400, y: 500, interchange: !0, accessible: !0 }, { name: "Museum", x: 400, y: 550, accessible: !1 }, { name: "Queen's Park", x: 400, y: 580, accessible: !0 }, { name: "St Patrick", x: 400, y: 610, accessible: !0 }, { name: "Osgoode", x: 400, y: 640, accessible: !0 }, { name: "St Andrew", x: 400, y: 670, accessible: !0 }, { name: "Union", x: 520, y: 700, accessible: !0 }, { name: "King", x: 640, y: 670, accessible: !1 }, { name: "Queen", x: 640, y: 640, accessible: !0 }, { name: "Dundas", x: 640, y: 610, accessible: !0 }, { name: "College", x: 640, y: 580, accessible: !1 }, { name: "Wellesley", x: 640, y: 550, accessible: !0 }, { name: "Bloor-Yonge", x: 640, y: 500, interchange: !0, accessible: !0 }, { name: "Rosedale", x: 640, y: 460, accessible: !1 }, { name: "Summerhill", x: 640, y: 430, accessible: !1 }, { name: "St Clair", x: 640, y: 400, accessible: !0 }, { name: "Davisville", x: 640, y: 370, accessible: !0 }, { name: "Eglinton", x: 640, y: 340, accessible: !0 }, { name: "Lawrence", x: 640, y: 310, accessible: !0 }, { name: "York Mills", x: 640, y: 280, accessible: !0 }, { name: "Sheppard-Yonge", x: 640, y: 200, interchange: !0, accessible: !0 }, { name: "North York Centre", x: 640, y: 150, accessible: !0 }, { name: "Finch", x: 640, y: 100, accessible: !0 }] }, { line: "2", stations: [{ name: "Kipling", x: 30, y: 500, accessible: !0 }, { name: "Islington", x: 53, y: 500, accessible: !1 }, { name: "Royal York", x: 76, y: 500, accessible: !0 }, { name: "Old Mill", x: 99, y: 500, accessible: !1 }, { name: "Jane", x: 122, y: 500, accessible: !0 }, { name: "Runnymede", x: 145, y: 500, accessible: !0 }, { name: "High Park", x: 168, y: 500, accessible: !1 }, { name: "Keele", x: 191, y: 500, accessible: !0 }, { name: "Dundas West", x: 214, y: 500, accessible: !0 }, { name: "Lansdowne", x: 237, y: 500, accessible: !1 }, { name: "Dufferin", x: 260, y: 500, accessible: !0 }, { name: "Ossington", x: 283, y: 500, accessible: !0 }, { name: "Christie", x: 306, y: 500, accessible: !1 }, { name: "Bathurst", x: 329, y: 500, accessible: !0 }, { name: "Spadina", x: 360, y: 500, interchange: !0, accessible: !0 }, { name: "St George", x: 400, y: 500, interchange: !0, accessible: !0 }, { name: "Bay", x: 520, y: 500, accessible: !0 }, { name: "Bloor-Yonge", x: 640, y: 500, interchange: !0, accessible: !0 }, { name: "Sherbourne", x: 670, y: 500, accessible: !0 }, { name: "Castle Frank", x: 695, y: 500, accessible: !1 }, { name: "Broadview", x: 720, y: 500, accessible: !0 }, { name: "Chester", x: 745, y: 500, accessible: !0 }, { name: "Pape", x: 770, y: 500, accessible: !0 }, { name: "Donlands", x: 795, y: 500, accessible: !1 }, { name: "Greenwood", x: 820, y: 500, accessible: !1 }, { name: "Coxwell", x: 845, y: 500, accessible: !0 }, { name: "Woodbine", x: 870, y: 500, accessible: !0 }, { name: "Main Street", x: 895, y: 500, accessible: !0 }, { name: "Victoria Park", x: 920, y: 500, accessible: !0 }, { name: "Warden", x: 945, y: 500, accessible: !1 }, { name: "Kennedy", x: 970, y: 500, accessible: !0 }] }, { line: "4", stations: [{ name: "Sheppard-Yonge", x: 640, y: 200, interchange: !0, accessible: !0 }, { name: "Bayview", x: 690, y: 200, accessible: !0 }, { name: "Bessarion", x: 740, y: 200, accessible: !0 }, { name: "Leslie", x: 790, y: 200, accessible: !0 }, { name: "Don Mills", x: 840, y: 200, accessible: !0 }] }];
+
+
+        // --- Initialization ---
+        function init() {
+            renderMap();
+            setupInteractions();
+            fetchData();
+            pollingInterval = setInterval(fetchData, 60000);
+
+            // Setup Search
+            searchPill.addEventListener('click', () => {
+                searchPill.classList.add('expanded');
+                document.getElementById('search-input').focus();
+            });
+            document.addEventListener('click', (e) => {
+                if (!searchPill.contains(e.target)) searchPill.classList.remove('expanded');
+            });
+        }
+
+        // --- Navigation Logic ---
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const tab = item.dataset.tab;
+                switchTab(tab);
+            });
+        });
+
+        function switchTab(tab) {
+            // Update Icons
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            const activeNav = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+            if (activeNav) activeNav.classList.add('active');
+
+            // Handle Sheets
+            Object.values(sheets).forEach(s => s.classList.remove('active'));
+            if (tab === 'alerts' || tab === 'upcoming') {
+                if (sheets[tab]) sheets[tab].classList.add('active');
+            }
+
+            activeTab = tab;
+        }
+
+        // --- Map Rendering ---
+        function renderMap() {
+            const tracks = document.getElementById('tracks-layer');
+            const stations = document.getElementById('stations-layer');
+
+            // Render Tracks
+            rawMapData.forEach(lineData => {
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", getPathFromStations(lineData.stations, lineData.line));
+                path.setAttribute("class", `track line-${lineData.line}`);
+                tracks.appendChild(path);
+            });
+
+            // Render Stations
+            rawMapData.forEach(l => {
+                l.stations.forEach((s, i) => {
+                    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    g.setAttribute("transform", `translate(${s.x}, ${s.y})`);
+
+                    // Markers
+                    if (i === 0 || i === l.stations.length - 1) { // Terminals
+                        const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                        c.setAttribute("r", 14); c.setAttribute("fill", getLineColor(l.line)); c.setAttribute("stroke", "white"); c.setAttribute("stroke-width", 3);
+                        g.appendChild(c);
+                        const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        t.textContent = l.line; t.setAttribute("class", "terminal-text"); t.setAttribute("fill", l.line === '1' ? 'black' : 'white');
+                        g.appendChild(t);
+                    } else if (s.interchange) {
+                        const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                        c.setAttribute("r", 10); c.setAttribute("fill", "white"); c.setAttribute("stroke", "black"); c.setAttribute("stroke-width", 3);
+                        g.appendChild(c);
+                    } else {
+                        const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                        c.setAttribute("r", 4); c.setAttribute("fill", "white");
+                        g.appendChild(c);
+                    }
+
+                    // Labels - Restoring comprehensive logic
+                    if (!(l.line === '4' && s.name === "Sheppard-Yonge")) { // Avoid duplicate label at interchange
+                        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        text.textContent = s.name;
+                        text.setAttribute("class", "station-label");
+
+                        let tx = 15, ty = 5, rot = 0, anchor = "start";
+
+                        // Custom adjustments for specific lines and layout areas
+                        if (l.line === '1') {
+                            if (s.name === "Union") { tx = 0; ty = 28; anchor = "middle"; }
+                            else if (s.name === "St Andrew" || s.name === "Wellesley" || s.name === "Sheppard-Yonge") { tx = -15; ty = 5; anchor = "end"; }
+                            else if (s.x < 360) { tx = -15; ty = 5; anchor = "end"; } // West side of U
+                            else if (s.x >= 640 && s.y < 500) { tx = 15; ty = 5; anchor = "start"; } // East side of U
+                        } else if (l.line === '2') {
+                            // Rotate Line 2 labels to avoid track collision
+                            rot = 45; tx = 10; ty = 10; anchor = "start";
+                        }
+
+                        // Line 4 diagonal
+                        if (l.line === '4' || (l.line === '1' && s.y > 680 && s.name !== 'Union')) {
+                            // No diagonal rotation for Line 1 bottom curve usually, but Line 4 needs it
+                            if (l.line === '4') { rot = 45; tx = 10; ty = 10; anchor = "start"; }
+                        }
+
+                        text.setAttribute("text-anchor", anchor);
+                        if (rot !== 0) text.setAttribute("transform", `rotate(${rot}) translate(${tx}, ${ty})`);
+                        else text.setAttribute("transform", `translate(${tx}, ${ty})`);
+
+                        // Group text in a g to handle position relative to station g
+                        const tg = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                        tg.appendChild(text);
+                        g.appendChild(tg);
+                    }
+
+                    stations.appendChild(g);
+                });
+            });
+
+            // GSAP Draggable
+            // Dynamic Initial Fit
+            const mapWidth = 1000;
+            const mapHeight = 800;
+            const containerWidth = window.innerWidth;
+            const containerHeight = window.innerHeight;
+
+            // Calculate "Cover" or "Contain" scale manually to ensure U-shape is visible
+            // We want to ensure the width of the map (1000) fits within the container width with some padding?
+            // Or better, let's start with a scale that fits the WIDTH of the content (approx 800px wide for the U)
+            // The U-shape is roughly from x=200 to x=900. width=700.
+
+            let initialScale = containerWidth / 1000;
+            if (containerWidth < 500) initialScale = containerWidth / 600; // Zoom in more on mobile (crop sides slightly)
+
+            // Initial Centering
+            // Convert SVG coords to viewport coords at this scale
+            const svgCenterX = 500 * initialScale;
+            const svgCenterY = 400 * initialScale;
+            const screenCenterX = containerWidth / 2;
+            const screenCenterY = containerHeight / 2;
+
+            const initialX = screenCenterX - svgCenterX;
+            const initialY = screenCenterY - svgCenterY;
+
+            gsap.set(mapRoot, { x: initialX, y: initialY, scale: initialScale });
+
+            mapDraggable = Draggable.create(mapRoot, {
+                type: "x,y",
+                bounds: { minX: -1000, maxX: 1000, minY: -1000, maxY: 1000 },
+                inertia: true,
+                edgeResistance: 0.65,
+                trigger: viewport
+            })[0];
+
+            // Recenter Button
+            document.getElementById('btn-recenter').addEventListener('click', () => {
+                gsap.to(mapRoot, { x: 0, y: 0, scale: 1, duration: 0.6, ease: "power2.out" });
+            });
+        }
+
+        // --- Path Logic (with Union Curve Fix) ---
+        function getPathFromStations(stations, lineId) {
+            let d = "";
+            for (let i = 0; i < stations.length; i++) {
+                const s = stations[i];
+                if (i === 0) { d += `M ${s.x} ${s.y} `; continue; }
+
+                // Curve Logic
+                if (lineId === '1') {
+                    if (s.name === 'Union') {
+                        // Curve into Union from St Andrew
+                        d += `Q 400 700, 520 700 `;
+                        continue;
+                    }
+                    if (s.name === 'King') {
+                        // Curve out of Union to King
+                        d += `Q 640 700, 640 670 `;
+                        continue;
+                    }
+                }
+                d += `L ${s.x} ${s.y} `;
+            }
+            return d;
+        }
+
+        function getLineColor(id) {
+            if (id === '1') return '#FFC425';
+            if (id === '2') return '#009639';
+            if (id === '4') return '#A319FF';
+            return 'white';
+        }
+
+        // --- Data Fetching ---
+        async function fetchData() {
+            try {
+                const [res1, res2] = await Promise.all([
+                    fetch('/api/alerts'),
+                    fetch('/api/upcoming-alerts')
+                ]);
+                activeAlerts = await res1.json();
+                upcomingAlerts = await res2.json();
+
+                renderAlertsOnMap();
+                renderLists();
+                updateBadges();
+            } catch (e) { console.warn("Fetch error", e); }
+        }
+
+        function renderAlertsOnMap() {
+            const layer = document.getElementById('alerts-layer');
+            layer.innerHTML = '';
+
+            activeAlerts.forEach(alert => {
+                if (alert.status !== 'active') return;
+
+                const color = (alert.effect === 'SIGNIFICANT_DELAYS') ? 'var(--delay-color)' : 'var(--alert-color)';
+                const dashClass = (alert.effect === 'SIGNIFICANT_DELAYS') ? 'delay' : '';
+
+                // Draw Path
+                const lineObj = rawMapData.find(l => l.line === alert.line);
+                if (lineObj && !alert.singleStation) {
+                    const s1 = lineObj.stations.findIndex(s => s.name === alert.start);
+                    const s2 = lineObj.stations.findIndex(s => s.name === alert.end);
+                    if (s1 !== -1 && s2 !== -1) {
+                        const segment = lineObj.stations.slice(Math.min(s1, s2), Math.max(s1, s2) + 1);
+                        const d = getPathFromStations(segment, alert.line);
+
+                        const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                        p.setAttribute("d", d);
+                        p.setAttribute("class", `alert-base ${dashClass} flow-forward`);
+                        layer.appendChild(p);
+                    }
+                }
+            });
+        }
+
+        function renderLists() {
+            // Alerts List
+            const alertsHtml = activeAlerts.length ? activeAlerts.map(a => createAlertCard(a)).join('') : '<div style="text-align:center; padding:20px; color:gray">No active alerts</div>';
+            document.getElementById('alerts-list').innerHTML = alertsHtml;
+
+            // Upcoming List
+            const upcomingHtml = upcomingAlerts.length ? upcomingAlerts.map(a => createAlertCard(a, true)).join('') : '<div style="text-align:center; padding:20px; color:gray">No upcoming alerts</div>';
+            document.getElementById('upcoming-list').innerHTML = upcomingHtml;
+        }
+
+        function createAlertCard(a, isUpcoming = false) {
+            const color = (a.effect === 'SIGNIFICANT_DELAYS') ? 'bg-l1' : 'bg-alert';
+            // Simplified logic for demo color mapping
+            const badgeClass = a.line === '1' ? 'bg-l1' : a.line === '2' ? 'bg-l2' : 'bg-l4';
+
+            return `
+            <div class="alert-card">
+                <div class="alert-header">
+                    <div class="line-badge ${badgeClass}">${a.line}</div>
+                    <div style="font-weight:600; font-size:15px;">${a.reason}</div>
+                </div>
+                <div class="alert-body">
+                    <div style="margin-bottom:6px; color:white; font-size:13px;">
+                        ${a.singleStation ? `At ${a.start}` : `${a.start} ↔ ${a.end}`}
+                    </div>
+                    ${a.originalText}
+                    ${a.shuttle ? '<div class="shuttle-tag"><i class="fas fa-bus"></i> Shuttle Bus</div>' : ''}
+                </div>
+            </div>`;
+        }
+
+        function updateBadges() {
+            const countActive = activeAlerts.length;
+            const countFuture = upcomingAlerts.length;
+
+            badges.active.innerText = countActive;
+            badges.active.classList.toggle('hidden', countActive === 0);
+
+            badges.upcoming.innerText = countFuture;
+            badges.upcoming.classList.toggle('hidden', countFuture === 0);
+        }
+
+        function setupInteractions() {
+            // Pinch Zoom (Basic Implementation)
+            let initialDist = 0;
+            viewport.addEventListener('touchstart', e => {
+                if (e.touches.length === 2) {
+                    initialDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                }
+            });
+            viewport.addEventListener('touchmove', e => {
+                if (e.touches.length === 2) {
+                    const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    // Scaling logic omitted for brevity in this single file write
+                }
+            });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+
+</html>

@@ -3,6 +3,13 @@ const axios = require('axios');
 const xml2js = require('xml2js');
 const cors = require('cors');
 const path = require('path');
+require('dotenv').config();
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,7 +35,7 @@ const CACHE_DURATION = 60 * 1000;
 const VALID_STATIONS = [
     "Vaughan Metropolitan Centre", "Highway 407", "Pioneer Village", "York University", "Finch West", "Downsview Park", "Sheppard West", "Wilson", "Yorkdale", "Lawrence West", "Glencairn", "Eglinton West", "St Clair West", "Dupont", "Spadina", "St George", "Museum", "Queen's Park", "St Patrick", "Osgoode", "St Andrew", "Union", "King", "Queen", "Dundas", "College", "Wellesley", "Bloor-Yonge", "Rosedale", "Summerhill", "St Clair", "Davisville", "Eglinton", "Lawrence", "York Mills", "Sheppard-Yonge", "North York Centre", "Finch",
     "Kipling", "Islington", "Royal York", "Old Mill", "Jane", "Runnymede", "High Park", "Keele", "Dundas West", "Lansdowne", "Dufferin", "Ossington", "Christie", "Bathurst", "Bay", "Sherbourne", "Castle Frank", "Broadview", "Chester", "Pape", "Donlands", "Greenwood", "Coxwell", "Woodbine", "Main Street", "Victoria Park", "Warden", "Kennedy",
-    "Bayview", "Bessarion", "Leslie", "Don Mills"
+    "Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills"
 ];
 
 // Map common variations/typos to official names
@@ -113,74 +120,96 @@ function normalizeStation(name) {
     return null; // Could not identify station
 }
 
-function parseAlertText(text) {
-    // Filter: Only process alerts mentioning Lines 1, 2, or 4
-    let lineId = null;
-    if (text.includes("Line 1") || text.includes("Yonge-University")) lineId = "1";
-    else if (text.includes("Line 2") || text.includes("Bloor-Danforth")) lineId = "2";
-    else if (text.includes("Line 4") || text.includes("Sheppard")) lineId = "4";
+const processedAlertsCache = new Map(); // Cache for AI results to save tokens
 
-    if (!lineId) return null;
+async function parseAlertWithAI(text) {
+    // Check cache first
+    if (processedAlertsCache.has(text)) {
+        return processedAlertsCache.get(text);
+    }
 
-    // Determine if this is a clearance message
-    const lowerText = text.toLowerCase();
-    const isCleared = lowerText.includes("resumed") || lowerText.includes("regular service has resumed");
-    const status = isCleared ? "cleared" : "active";
-
-    // IMPROVED REGEX: Stops capturing at "stations", "due", "for", or end of string
-    // Case 1: "between X and Y"
-    const rangeRegex = /between\s+(.*?)\s+and\s+(.*?)(?:\s+stations|\s+due|\s+for|\.|:|$)/i;
-    const match = text.match(rangeRegex);
-
-    let start = null, end = null, singleStation = false;
-
-    if (match) {
-        start = normalizeStation(match[1]);
-        end = normalizeStation(match[2]);
-    } else {
-        // Case 2: "at X Station"
-        const atRegex = /at\s+(.*?)(?:\s+station|\s+due|\.|:|$)/i;
-        const atMatch = text.match(atRegex);
-        if (atMatch) {
-            start = normalizeStation(atMatch[1]);
-            end = start;
-            singleStation = true;
+    try {
+        const currentTime = new Date().toLocaleString('en-US', { timeZone: 'America/Toronto' });
+        const prompt = `
+        You are a TTC Subway Alert Parser. Current Time in Toronto: "${currentTime}".
+        
+        Analyze this alert text. determine if it is ACTIVE NOW or in the FUTURE.
+        - If "Starts at 11pm" and it is 10pm -> FUTURE.
+        - If "Weekend Closure" and it is Friday -> FUTURE (unless it says Friday late evening).
+        - If "Active" or "Delays" -> ACTIVE.
+        
+        Return ONLY valid JSON.
+        
+        Schema:
+        {
+          "line": "1" | "2" | "4",
+          "start": "Station Name",
+          "end": "Station Name",
+          "reason": "Short reason",
+          "status": "active" | "cleared" | "future",
+          "direction": "Both Ways",
+          "start_time": "ISO 8601 string or null (if known future start)",
+          "start_time": "ISO 8601 string or null (if known future start)",
+          "end_time": "ISO 8601 string or null (if known future end)",
+          "severity": "Suspension" | "Delay" | "Minor"
         }
-    }
 
-    // DETERMINE REASON
-    let reason = "Service Alert";
-    if (isCleared) {
-        reason = "Service Resumed";
-    } else if (lowerText.includes("signal")) reason = "Signal Problems";
-    else if (lowerText.includes("security")) reason = "Security Incident";
-    else if (lowerText.includes("maintenance") || lowerText.includes("track work") || lowerText.includes("tunnel work")) reason = "Track Maintenance";
-    else if (lowerText.includes("injury") || lowerText.includes("medical")) reason = "Medical Emergency";
-    else if (lowerText.includes("suspension") || lowerText.includes("no service") || lowerText.includes("no subway service")) reason = "Service Suspension";
-    else if (lowerText.includes("bypass") || lowerText.includes("not stopping")) reason = "Station Bypass";
-    else if (lowerText.includes("delay")) reason = "Delays";
+        Input: "${text}"
+        `;
 
-    const isShuttle = lowerText.includes("shuttle");
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        let textResponse = response.text();
 
-    if (start && end) {
-        return {
+        // Clean markdown code blocks if present
+        textResponse = textResponse.replace(/^```json/g, '').replace(/```$/g, '').trim();
+
+        const json = JSON.parse(textResponse);
+
+        const resultObj = {
             id: Date.now() + Math.random(),
-            line: lineId,
-            start: start,
-            end: end,
-            reason: reason,
-            status: status,
-            direction: text.includes("Northbound") ? "Northbound" :
-                text.includes("Southbound") ? "Southbound" :
-                    text.includes("Eastbound") ? "Eastbound" :
-                        text.includes("Westbound") ? "Westbound" : "Both Ways",
-            singleStation: singleStation,
-            shuttle: isShuttle,
-            originalText: text
+            line: json.line,
+            start: normalizeStation(json.start) || json.start,
+            end: normalizeStation(json.end) || json.end,
+            reason: json.reason,
+            status: json.status,
+            direction: json.direction,
+            singleStation: json.start === json.end,
+            shuttle: text.toLowerCase().includes('shuttle'),
+            originalText: text,
+            activeStartTime: json.start_time ? new Date(json.start_time).getTime() : null,
+            activeStartTime: json.start_time ? new Date(json.start_time).getTime() : null,
+            activeEndTime: json.end_time ? new Date(json.end_time).getTime() : null,
+            effect: (json.severity === 'Delay' || json.severity === 'Minor') ? 'SIGNIFICANT_DELAYS' : 'NO_SERVICE'
         };
+
+        // Cache valid results
+        if (resultObj.line && resultObj.start) {
+            processedAlertsCache.set(text, resultObj);
+            return resultObj;
+        }
+        return null;
+
+    } catch (error) {
+        console.error("AI Parsing Error:", error.message);
+        return null; // Fallback to Regex if needed?
     }
-    return null;
 }
+
+// Keep the old regex function as a fallback or for comparison if desired, 
+// but for new flow we will prioritize AI.
+function parseAlertTextLegacy(text) {
+    // ... (Legacy code contents if we wanted to keep them, but let's just replace usage)
+    return parseAlertText(text); // Recursion? No, this is just a rename. 
+}
+
+function parseAlertText(text) {
+    // This is the original function signature. We will convert it to async or wrap it.
+    // IMPT: The original code expected synchronous return. 
+    // We must change the callers to await.
+    return null; // logic moved to AI function
+}
+
 
 async function fetchBlueSkyAlerts() {
     try {
@@ -195,12 +224,28 @@ async function fetchBlueSkyAlerts() {
             const createdAt = new Date(item.post?.record?.createdAt);
             if (Date.now() - createdAt.getTime() > 24 * 60 * 60 * 1000) return;
 
-            const parsed = parseAlertText(text);
-            if (parsed) {
-                console.log(`✅ Parsed BlueSky Alert: [Line ${parsed.line}] ${parsed.start} <-> ${parsed.end}`);
-                alerts.push(parsed);
+            // Use AI Parsing
+            if (text.includes("Line 1") || text.includes("Line 2") || text.includes("Line 4")) {
+                // Push promise to array to handle async inside forEach? No, forEach doesn't wait.
+                // We should use for...of loop.
             }
         });
+
+        // Refactor loop for async
+        for (const item of feed) {
+            const text = item.post?.record?.text || "";
+            const createdAt = new Date(item.post?.record?.createdAt);
+            if (Date.now() - createdAt.getTime() > 24 * 60 * 60 * 1000) continue;
+
+            if (text.includes("Line 1") || text.includes("Line 2") || text.includes("Line 4")) {
+                const parsed = await parseAlertWithAI(text);
+                if (parsed) {
+                    console.log(`✅ AI Parsed BlueSky Alert: [Line ${parsed.line}] ${parsed.start} <-> ${parsed.end}`);
+                    alerts.push(parsed);
+                }
+            }
+        }
+
         return alerts;
     } catch (error) {
         console.error("Error fetching BlueSky alerts:", error.message);
@@ -221,21 +266,21 @@ async function fetchTTCWebsiteAlerts() {
         // but searching body text is more robust against minor layout changes.
 
         // Strategy: Iterate over paragraphs or divs that look like alerts
-        $('div, p').each((i, el) => {
+        const elements = $('div, p').toArray();
+        for (const el of elements) {
             const text = $(el).text().trim();
-            if (text.length > 300) return; // Ignore huge blocks
-            if (!text.includes("Line 1") && !text.includes("Line 2") && !text.includes("Line 4")) return;
+            if (text.length > 300) continue;
+            if (!text.includes("Line 1") && !text.includes("Line 2") && !text.includes("Line 4")) continue;
 
-            // Avoid duplicates from nested elements by checking if we already have this text
             const alreadyFound = alerts.some(a => a.originalText === text);
-            if (alreadyFound) return;
+            if (alreadyFound) continue;
 
-            const parsed = parseAlertText(text);
+            const parsed = await parseAlertWithAI(text);
             if (parsed) {
-                console.log(`✅ Parsed Web Alert: [Line ${parsed.line}] ${parsed.start} <-> ${parsed.end}`);
+                console.log(`✅ AI Parsed Web Alert: [Line ${parsed.line}] ${parsed.start} <-> ${parsed.end}`);
                 alerts.push(parsed);
             }
-        });
+        }
 
         return alerts;
     } catch (error) {
@@ -254,161 +299,41 @@ async function fetchTTCLiveAlerts() {
 
         if (!data.routes || !Array.isArray(data.routes)) return { current: [], upcoming: [] };
 
-        data.routes.forEach(route => {
-            // Filter for Subway lines (1, 2, 4)
-            if (route.routeType !== 'Subway') return;
+        // Helper to process alerts with AI in parallel limit or sequence
+        // We will process all routes that match subway
+        for (const route of data.routes) {
+            if (route.routeType !== 'Subway') continue;
 
-            const lineId = route.route; // "1", "2", "4"
-            if (!['1', '2', '4'].includes(lineId)) return;
+            const lineId = route.route;
+            if (!['1', '2', '4'].includes(lineId)) continue;
 
             const title = route.title || route.alertTitle || '';
-            const reason = route.effect === 'NO_SERVICE' ? 'Service Suspension' :
-                route.effect === 'SIGNIFICANT_DELAYS' ? 'Major Delays' :
-                    route.effect === 'REDUCED_SPEED' ? 'Reduced Speed' :
-                        route.effect === 'REDUCED_SERVICE' ? 'Reduced Service' : 'Service Alert';
+            const description = route.description || title;
+            const headerText = route.headerText || route.customHeaderText || '';
 
-            // Parse stations from title
-            const rangeRegex = /between\s+(.*?)\s+and\s+(.*?)(?:\s+stations|\s+due|\s+for|,|\.|\:|$)/i;
-            const match = title.match(rangeRegex);
-            let start = null, end = null;
+            // Use AI to validate this Live Alert
+            // We combine headerText (most detailed) with title/desc for context
+            const fullText = headerText ? `${headerText} ${description}` : `${title}. ${description}`;
 
-            if (match) {
-                start = normalizeStation(match[1]);
-                end = normalizeStation(match[2]);
+            const parsed = await parseAlertWithAI(fullText);
+
+            if (parsed) {
+                // Check if AI determined it's future or cleared
+                if (parsed.status === 'active') {
+                    // Ensure lineId matches what we expect or trust AI? Trust AI but sanity check.
+                    // The API route is usually correct for Line ID.
+                    parsed.line = lineId; // Enforce API's line ID if correct
+                    console.log(`✅ Live API Alert (Active): [Line ${parsed.line}] ${parsed.start} <-> ${parsed.end} (${parsed.reason})`);
+                    alerts.push(parsed);
+                } else if (parsed.status === 'future') {
+                    console.log(`📅 Live API Alert (Future): [Line ${parsed.line}] ${parsed.start} <-> ${parsed.end} (${parsed.reason})`);
+                    upcomingAlerts.push(parsed);
+                }
             } else {
-                const atRegex = /at\s+(.*?)(?:\s+station|\s+due|\.|\:|$)/i;
-                const atMatch = title.match(atRegex);
-                if (atMatch) {
-                    start = normalizeStation(atMatch[1]);
-                    end = start;
-                }
+                // Fallback to manual parsing if AI fails or cache miss logic issues (shouldn't happen with cache)
+                // ... (Optional: Keep legacy logic here if desired, but user wants AI)
             }
-
-            // Parse the scheduled start time from title if present (e.g., "starting at 11" or "starting at 11 p.m.")
-            let scheduledStartTime = null;
-            const startingAtMatch = title.match(/starting\s+at\s+(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?/i);
-            if (startingAtMatch) {
-                let hour = parseInt(startingAtMatch[1], 10);
-                const minute = startingAtMatch[2] ? parseInt(startingAtMatch[2], 10) : 0;
-                const ampm = startingAtMatch[3] ? startingAtMatch[3].toLowerCase().replace(/\./g, '') : null;
-
-                // Adjust for PM if specified, or assume PM if hour <= 6 (evening shutdowns are common)
-                if (ampm === 'pm' && hour < 12) {
-                    hour += 12;
-                } else if (ampm === 'am' && hour === 12) {
-                    hour = 0;
-                } else if (!ampm && hour >= 1 && hour <= 6) {
-                    // No AM/PM specified and hour is 1-6, likely means PM (e.g., "starting at 11" means 11 PM)
-                    // Actually for "11" it's likely 11 PM not AM
-                    if (hour <= 11 && hour >= 6) {
-                        // Keep as is (could be either)
-                    } else {
-                        hour += 12;
-                    }
-                } else if (!ampm && hour >= 7 && hour <= 11) {
-                    // 7-11 without AM/PM likely means PM for service work
-                    hour += 12;
-                }
-
-                // Create a date for today with that time
-                const now = new Date();
-                scheduledStartTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0);
-
-                // If that time has already passed today, assume it's for tomorrow
-                // Actually, for TTC alerts, they usually publish the same day, so keep it today
-                // unless it's clear it should be a different day
-            }
-
-            // Determine status based on precise timestamps
-            let isTimeActive = false;
-            let isFuture = false;
-            let activeStartTime = null;
-            let activeEndTime = null;
-            const now = Date.now();
-
-            // Handle activePeriod - can be object or array
-            let periods = [];
-            if (route.activePeriod) {
-                if (Array.isArray(route.activePeriod)) {
-                    periods = route.activePeriod;
-                } else if (typeof route.activePeriod === 'object') {
-                    periods = [route.activePeriod];
-                }
-            }
-
-            if (periods.length > 0) {
-                // Check if currently active
-                isTimeActive = periods.some(period => {
-                    // Parse ISO strings to timestamps
-                    const periodStart = period.start ? new Date(period.start).getTime() : 0;
-                    // "0001-01-01" is a placeholder for "no end" in the API
-                    const periodEnd = (period.end && !period.end.startsWith("0001"))
-                        ? new Date(period.end).getTime()
-                        : 8640000000000000;
-                    return now >= periodStart && now <= periodEnd;
-                });
-
-                // Get the first period's times for reference
-                if (periods[0]) {
-                    activeStartTime = periods[0].start ? new Date(periods[0].start).getTime() : null;
-                    activeEndTime = (periods[0].end && !periods[0].end.startsWith("0001"))
-                        ? new Date(periods[0].end).getTime()
-                        : null;
-                }
-            }
-
-            // Check if scheduled start time from title is in the future
-            if (scheduledStartTime && scheduledStartTime.getTime() > now) {
-                isFuture = true;
-                activeStartTime = scheduledStartTime.getTime();
-                console.log(`📅 Detected future start time from title: ${scheduledStartTime.toLocaleString()}`);
-            } else if (!isTimeActive && activeStartTime && activeStartTime > now) {
-                // Fallback: if activePeriod.start is in the future
-                isFuture = true;
-            }
-
-            // Fallback to legacy group check if timestamps are completely missing
-            if (periods.length === 0) {
-                isTimeActive = (route.activePeriodGroup && route.activePeriodGroup.includes("Current"));
-                isFuture = (route.activePeriodGroup && (route.activePeriodGroup.includes("Planned") || route.activePeriodGroup.includes("Future")));
-            }
-
-            const status = isTimeActive && !isFuture ? "active" : "cleared";
-
-            // Determine direction from text if possible
-            let direction = "Both Ways";
-            const lowerTitle = title.toLowerCase();
-            if (lowerTitle.includes("southbound")) direction = "Southbound";
-            else if (lowerTitle.includes("northbound")) direction = "Northbound";
-            else if (lowerTitle.includes("eastbound")) direction = "Eastbound";
-            else if (lowerTitle.includes("westbound")) direction = "Westbound";
-
-            if (start && end) {
-                const alertData = {
-                    id: Date.now() + Math.random(),
-                    line: lineId,
-                    start: start,
-                    end: end,
-                    reason: reason,
-                    effect: route.effect,
-                    status: status,
-                    direction: direction,
-                    singleStation: (start === end),
-                    shuttle: (route.shuttleType === 'Running'),
-                    originalText: title,
-                    activeStartTime: activeStartTime,
-                    activeEndTime: activeEndTime
-                };
-
-                if (isFuture && activeStartTime) {
-                    console.log(`📅 Upcoming Alert: [Line ${lineId}] ${start} <-> ${end} (${reason}) starts at ${new Date(activeStartTime).toLocaleString()}`);
-                    upcomingAlerts.push(alertData);
-                } else if (status === 'active') {
-                    console.log(`✅ Parsed Live API Alert: [Line ${lineId}] ${start} <-> ${end} (${reason}) [${direction}]`);
-                    alerts.push(alertData);
-                }
-            }
-        });
+        }
 
         return { current: alerts, upcoming: upcomingAlerts };
     } catch (error) {

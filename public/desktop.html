@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>TTC Subway</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-color: #0f1115;
+            --sidebar-bg: #1a1d24;
+            --panel-bg: #181b21;
+            --l1-color: #FFC425;
+            --l2-color: #009639;
+            --l4-color: #A319FF;
+            --alert-color: #ef4444;
+            --delay-color: #f59e0b;
+            --shuttle-color: #3b82f6;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            /* Fallback */
+            height: 100dvh;
+            position: fixed;
+            /* Prevents mobile viewport bounce/scroll */
+            touch-action: none;
+            /* Disables default touch gestures globally */
+        }
+
+        #app-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Sidebar */
+        #sidebar {
+            width: 220px;
+            background-color: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+            position: relative;
+            z-index: 100;
+        }
+
+        /* Mobile sidebar - hidden by default */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+            }
+
+            #sidebar.open {
+                transform: translateX(0);
+            }
+        }
+
+        #sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #sidebar-logo {
+            font-size: 20px;
+            font-weight: 800;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #sidebar-nav {
+            flex: 1;
+            padding: 12px 0;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .nav-item.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left: 3px solid var(--l1-color);
+        }
+
+        .nav-item i {
+            width: 20px;
+            font-size: 16px;
+        }
+
+        .nav-item.expandable::after {
+            content: "›";
+            margin-left: auto;
+            font-size: 18px;
+            transition: transform 0.2s;
+        }
+
+        .nav-item.expandable.expanded::after {
+            transform: rotate(90deg);
+        }
+
+        #sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        #sidebar-footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-right: 12px;
+        }
+
+        #sidebar-footer a:hover {
+            color: white;
+        }
+
+        /* Notification Badge */
+        .nav-badge {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            padding: 0 5px;
+            animation: badge-pulse 2s ease-in-out infinite;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        }
+
+        .nav-badge.hidden {
+            display: none;
+        }
+
+        @keyframes badge-pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+            }
+
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 4px 16px rgba(239, 68, 68, 0.6);
+            }
+        }
+
+        .social-icons {
+            margin-top: 12px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .social-icons a {
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        /* Main Content */
+        #main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #header {
+            height: 60px;
+            background-color: var(--sidebar-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            gap: 12px;
+        }
+
+        #hamburger-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            margin-right: 8px;
+        }
+
+        @media (max-width: 768px) {
+            #hamburger-btn {
+                display: block;
+            }
+
+            #header {
+                padding: 0 12px;
+            }
+        }
+
+        #search-container {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 20px;
+        }
+
+        @media (max-width: 768px) {
+            #search-container {
+                margin: 0 8px;
+                max-width: none;
+            }
+        }
+
+        #search-input {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 16px 8px 40px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+
+        #search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        #search-container {
+            position: relative;
+        }
+
+        #search-container i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        #user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+        }
+
+        #viewport {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            background-image: radial-gradient(circle at center, #1a1d24 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            touch-action: none;
+        }
+
+        #map-root {
+            cursor: grab;
+            transform-origin: 0 0;
+        }
+
+        #map-root:active {
+            cursor: grabbing;
+        }
+
+        .track {
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 12px;
+            transition: stroke 0.3s;
+        }
+
+        .track.line-1 {
+            stroke: var(--l1-color);
+        }
+
+        .track.line-2 {
+            stroke: var(--l2-color);
+        }
+
+        .track.line-4 {
+            stroke: var(--l4-color);
+        }
+
+        .station-marker {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .station-marker:hover {
+            transform: scale(1.3);
+            transform-box: fill-box;
+            transform-origin: center;
+        }
+
+        .regular-station {
+            fill: white;
+            stroke: black;
+            stroke-width: 1px;
+        }
+
+        .interchange-marker {
+            stroke-width: 4px;
+            fill: white;
+            stroke: black;
+        }
+
+        .terminal-bubble {
+            stroke: white;
+            stroke-width: 3px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .terminal-text {
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 800;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+        }
+
+        .station-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            fill: #9ca3af;
+            pointer-events: none;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+            transition: fill 0.2s;
+        }
+
+        .station-label.active {
+            fill: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .alert-base {
+            fill: none;
+            stroke: var(--alert-color);
+            stroke-linecap: round;
+            filter: drop-shadow(0 0 8px var(--alert-color));
+        }
+
+        .alert-base.delay {
+            stroke: var(--delay-color);
+            filter: drop-shadow(0 0 8px var(--delay-color));
+        }
+
+        .alert-base.shuttle {
+            stroke: var(--shuttle-color);
+            filter: drop-shadow(0 0 8px var(--shuttle-color));
+        }
+
+        .shuttle-outline {
+            fill: none;
+            stroke: var(--shuttle-color);
+            stroke-width: 22px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.9;
+        }
+
+        .flow-forward {
+            stroke-width: 14px;
+            opacity: 0.9;
+            stroke-dasharray: 20, 20;
+            animation: dash-fwd 1s linear infinite;
+        }
+
+        .flow-reverse {
+            stroke-width: 14px;
+            opacity: 0.9;
+            stroke-dasharray: 20, 20;
+            animation: dash-rev 1s linear infinite;
+        }
+
+        .pulse-solid {
+            stroke-dasharray: none;
+            animation: pulse-alert 1.5s ease-in-out infinite;
+        }
+
+        .station-alert-glow {
+            fill: var(--alert-color);
+            stroke: var(--alert-color);
+            stroke-width: 1px;
+            pointer-events: none;
+            animation: station-pulse 1.5s ease-out infinite;
+        }
+
+        @keyframes dash-fwd {
+            to {
+                stroke-dashoffset: -40;
+            }
+        }
+
+        @keyframes dash-rev {
+            to {
+                stroke-dashoffset: 40;
+            }
+        }
+
+        @keyframes pulse-alert {
+            0% {
+                opacity: 0.6;
+                stroke-width: 12px;
+            }
+
+            50% {
+                opacity: 1;
+                stroke-width: 16px;
+            }
+
+            100% {
+                opacity: 0.6;
+                stroke-width: 12px;
+            }
+        }
+
+        @keyframes station-pulse {
+            0% {
+                opacity: 0.8;
+                r: 10px;
+            }
+
+            100% {
+                opacity: 0;
+                r: 30px;
+            }
+        }
+
+        /* Alerts Panel */
+        #alerts-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-color);
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+        }
+
+        #alerts-panel.active {
+            display: block;
+        }
+
+        .alert-card {
+            background-color: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--alert-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .alert-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .alert-line-badge {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .alert-line-badge.line-1 {
+            background-color: var(--l1-color);
+            color: black;
+        }
+
+        .alert-line-badge.line-2 {
+            background-color: var(--l2-color);
+            color: white;
+        }
+
+        .alert-line-badge.line-4 {
+            background-color: var(--l4-color);
+            color: white;
+        }
+
+        .alert-title {
+            font-weight: 700;
+            font-size: 16px;
+            flex: 1;
+        }
+
+        .alert-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .alert-description {
+            font-size: 14px;
+            color: #d1d5db;
+            line-height: 1.5;
+        }
+
+        .shuttle-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        /* Placeholder panels */
+        .placeholder-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-color);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .placeholder-panel.active {
+            display: flex;
+        }
+
+        .placeholder-panel i {
+            font-size: 48px;
+            color: var(--text-muted);
+        }
+
+        .placeholder-panel p {
+            color: var(--text-muted);
+            font-size: 18px;
+        }
+
+        /* Legend */
+        #map-legend {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background-color: rgba(24, 27, 33, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 20px;
+            backdrop-filter: blur(12px);
+            z-index: 10000 !important;
+            font-size: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            display: block;
+            width: max-content;
+            min-width: 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            /* Reduced spacing */
+            padding: 4px 0;
+            color: rgba(255, 255, 255, 0.9);
+            white-space: nowrap;
+            line-height: 1.2;
+        }
+
+        .legend-item svg {
+            display: block;
+            /* Removes baseline alignment quirks */
+        }
+
+
+
+        .legend-item:last-child {
+            padding-bottom: 0;
+        }
+
+
+
+        /* Overlay for mobile sidebar */
+        #sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
+
+        #sidebar-overlay.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            #sidebar {
+                width: 180px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app-container">
+        <!-- Overlay for mobile sidebar -->
+        <div id="sidebar-overlay"></div>
+
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div id="sidebar-header">
+                <i class="fas fa-subway" style="color: var(--l1-color); font-size: 24px;"></i>
+                <div id="sidebar-logo">TTC SUBWAY</div>
+            </div>
+
+            <div id="sidebar-nav">
+                <div class="nav-item active" data-tab="lines">
+                    <i class="fas fa-route"></i>
+                    <span>Lines</span>
+                </div>
+                <div class="nav-item" data-tab="alerts">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Alerts</span>
+                </div>
+                <div class="nav-item" data-tab="upcoming">
+                    <i class="fas fa-clock"></i>
+                    <span>Upcoming</span>
+                    <span id="upcoming-badge" class="nav-badge hidden">0</span>
+                </div>
+                <div class="nav-item expandable" data-tab="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
+            </div>
+
+            <div id="sidebar-footer">
+                <div><a href="#">About TTC</a><a href="#">Privacy Policy</a><a href="#">Contact</a></div>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-discord"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content">
+            <div id="header">
+                <button id="hamburger-btn" aria-label="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div id="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search...">
+                </div>
+                <div id="user-avatar"></div>
+            </div>
+
+            <div id="content-area" style="position: relative; flex: 1; overflow: hidden;">
+                <div id="viewport">
+                    <svg id="ttc-svg" viewBox="0 0 1000 800" preserveAspectRatio="xMidYMid meet">
+                        <g id="map-root">
+                            <g id="tracks-layer"></g>
+                            <g id="alerts-layer"></g>
+                            <g id="stations-layer"></g>
+                        </g>
+                    </svg>
+                </div>
+
+                <!-- Legend -->
+                <div id="map-legend">
+                    <div style="font-weight: 700; color: white; margin-bottom: 8px; font-size: 13px;">Legend</div>
+                    <div class="legend-item">
+                        <svg width="32" height="8" style="overflow: visible;">
+                            <path d="M 0 4 L 32 4" class="alert-base pulse-solid"
+                                style="stroke-width: 6; opacity: 1; stroke-linecap: round;"></path>
+                        </svg>
+                        <span>No Service / Suspension</span>
+                    </div>
+                    <div class="legend-item">
+                        <svg width="32" height="8" style="overflow: visible; position: relative; top: 1px;">
+                            <path d="M 0 4 L 32 4" class="alert-base delay pulse-solid"
+                                style="stroke-width: 6; opacity: 1; stroke-linecap: round;"></path>
+                        </svg>
+                        <span style="position: relative; top: -1px;">Major Delays / Slow</span>
+                    </div>
+                    <div class="legend-item">
+                        <svg width="32" height="8" style="overflow: visible;">
+                            <path d="M 0 4 L 32 4" class="shuttle-outline"
+                                style="stroke-width: 3; opacity: 0.9; stroke-linecap: round;"></path>
+                        </svg>
+                        <span style="position: relative; top: -4px;">Shuttle Buses</span>
+                    </div>
+                </div>
+
+                <!-- Alerts Panel -->
+                <div id="alerts-panel">
+                    <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px;">Active Service Alerts</h2>
+                    <div id="alerts-list"></div>
+                </div>
+
+                <!-- Upcoming Outages Panel -->
+                <div id="upcoming-panel" class="placeholder-panel">
+                    <div style="width: 100%; max-width: 800px; padding: 20px; overflow-y: auto; max-height: 100%;">
+                        <h2
+                            style="font-size: 24px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                            <i class="fas fa-clock" style="color: var(--delay-color);"></i>
+                            Upcoming Service Changes
+                        </h2>
+                        <div id="upcoming-list"></div>
+                    </div>
+                </div>
+
+                <!-- Settings Placeholder -->
+                <div id="settings-panel" class="placeholder-panel">
+                    <i class="fas fa-cog"></i>
+                    <p>Settings Coming Soon</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let activeAlerts = [];
+        let upcomingAlerts = [];
+        let pollingInterval = null;
+        let currentTab = 'lines';
+        const mapRoot = document.getElementById('map-root');
+        const viewport = document.getElementById('viewport');
+        const tracksLayer = document.getElementById('tracks-layer');
+        const stationsLayer = document.getElementById('stations-layer');
+        const alertsLayer = document.getElementById('alerts-layer');
+        let mapDraggable = null;
+
+        // Navigation
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+
+        // Toggle sidebar on mobile
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('active');
+        }
+
+        hamburgerBtn.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const tab = item.dataset.tab;
+                if (tab) {
+                    switchTab(tab);
+                    // Close sidebar on mobile after selecting a tab
+                    if (window.innerWidth <= 768) {
+                        toggleSidebar();
+                    }
+                }
+            });
+        });
+
+        function switchTab(tab) {
+            currentTab = tab;
+
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.tab === tab);
+            });
+
+            // Show/hide panels
+            document.getElementById('viewport').style.display = (tab === 'lines') ? 'block' : 'none';
+            document.getElementById('alerts-panel').classList.toggle('active', tab === 'alerts');
+            document.getElementById('upcoming-panel').classList.toggle('active', tab === 'upcoming');
+            document.getElementById('settings-panel').classList.toggle('active', tab === 'settings');
+        }
+
+        const rawMapData = [{ line: "1", stations: [{ name: "Vaughan Metropolitan Centre", x: 220, y: 50, accessible: !0 }, { name: "Highway 407", x: 240, y: 80, accessible: !0 }, { name: "Pioneer Village", x: 260, y: 110, accessible: !0 }, { name: "York University", x: 280, y: 140, accessible: !0 }, { name: "Finch West", x: 300, y: 170, accessible: !0 }, { name: "Downsview Park", x: 320, y: 200, accessible: !0 }, { name: "Sheppard West", x: 340, y: 230, accessible: !0 }, { name: "Wilson", x: 360, y: 260, accessible: !0 }, { name: "Yorkdale", x: 360, y: 290, accessible: !0 }, { name: "Lawrence West", x: 360, y: 320, accessible: !0 }, { name: "Glencairn", x: 360, y: 350, accessible: !1 }, { name: "Eglinton West", x: 360, y: 380, accessible: !0 }, { name: "St Clair West", x: 360, y: 410, accessible: !0 }, { name: "Dupont", x: 360, y: 440, accessible: !0 }, { name: "Spadina", x: 360, y: 500, interchange: !0, accessible: !0 }, { name: "St George", x: 400, y: 500, interchange: !0, accessible: !0 }, { name: "Museum", x: 400, y: 550, accessible: !1 }, { name: "Queen's Park", x: 400, y: 580, accessible: !0 }, { name: "St Patrick", x: 400, y: 610, accessible: !0 }, { name: "Osgoode", x: 400, y: 640, accessible: !0 }, { name: "St Andrew", x: 400, y: 670, accessible: !0 }, { name: "Union", x: 520, y: 700, accessible: !0 }, { name: "King", x: 640, y: 670, accessible: !1 }, { name: "Queen", x: 640, y: 640, accessible: !0 }, { name: "Dundas", x: 640, y: 610, accessible: !0 }, { name: "College", x: 640, y: 580, accessible: !1 }, { name: "Wellesley", x: 640, y: 550, accessible: !0 }, { name: "Bloor-Yonge", x: 640, y: 500, interchange: !0, accessible: !0 }, { name: "Rosedale", x: 640, y: 460, accessible: !1 }, { name: "Summerhill", x: 640, y: 430, accessible: !1 }, { name: "St Clair", x: 640, y: 400, accessible: !0 }, { name: "Davisville", x: 640, y: 370, accessible: !0 }, { name: "Eglinton", x: 640, y: 340, accessible: !0 }, { name: "Lawrence", x: 640, y: 310, accessible: !0 }, { name: "York Mills", x: 640, y: 280, accessible: !0 }, { name: "Sheppard-Yonge", x: 640, y: 200, interchange: !0, accessible: !0 }, { name: "North York Centre", x: 640, y: 150, accessible: !0 }, { name: "Finch", x: 640, y: 100, accessible: !0 }] }, { line: "2", stations: [{ name: "Kipling", x: 30, y: 500, accessible: !0 }, { name: "Islington", x: 53, y: 500, accessible: !1 }, { name: "Royal York", x: 76, y: 500, accessible: !0 }, { name: "Old Mill", x: 99, y: 500, accessible: !1 }, { name: "Jane", x: 122, y: 500, accessible: !0 }, { name: "Runnymede", x: 145, y: 500, accessible: !0 }, { name: "High Park", x: 168, y: 500, accessible: !1 }, { name: "Keele", x: 191, y: 500, accessible: !0 }, { name: "Dundas West", x: 214, y: 500, accessible: !0 }, { name: "Lansdowne", x: 237, y: 500, accessible: !1 }, { name: "Dufferin", x: 260, y: 500, accessible: !0 }, { name: "Ossington", x: 283, y: 500, accessible: !0 }, { name: "Christie", x: 306, y: 500, accessible: !1 }, { name: "Bathurst", x: 329, y: 500, accessible: !0 }, { name: "Spadina", x: 360, y: 500, interchange: !0, accessible: !0 }, { name: "St George", x: 400, y: 500, interchange: !0, accessible: !0 }, { name: "Bay", x: 520, y: 500, accessible: !0 }, { name: "Bloor-Yonge", x: 640, y: 500, interchange: !0, accessible: !0 }, { name: "Sherbourne", x: 670, y: 500, accessible: !0 }, { name: "Castle Frank", x: 695, y: 500, accessible: !1 }, { name: "Broadview", x: 720, y: 500, accessible: !0 }, { name: "Chester", x: 745, y: 500, accessible: !0 }, { name: "Pape", x: 770, y: 500, accessible: !0 }, { name: "Donlands", x: 795, y: 500, accessible: !1 }, { name: "Greenwood", x: 820, y: 500, accessible: !1 }, { name: "Coxwell", x: 845, y: 500, accessible: !0 }, { name: "Woodbine", x: 870, y: 500, accessible: !0 }, { name: "Main Street", x: 895, y: 500, accessible: !0 }, { name: "Victoria Park", x: 920, y: 500, accessible: !0 }, { name: "Warden", x: 945, y: 500, accessible: !1 }, { name: "Kennedy", x: 970, y: 500, accessible: !0 }] }, { line: "4", stations: [{ name: "Sheppard-Yonge", x: 640, y: 200, interchange: !0, accessible: !0 }, { name: "Bayview", x: 690, y: 200, accessible: !0 }, { name: "Bessarion", x: 740, y: 200, accessible: !0 }, { name: "Leslie", x: 790, y: 200, accessible: !0 }, { name: "Don Mills", x: 840, y: 200, accessible: !0 }] }];
+
+        function initMap() {
+            try { if (typeof lucide !== 'undefined') lucide.createIcons(); } catch (e) { }
+            console.log("Checking for legend:", document.getElementById('map-legend'));
+            renderTracks();
+            renderStations();
+            setupDragAndZoom();
+            setupPinchZoom();
+            fetchAlerts();
+            fetchUpcomingAlerts();
+            pollingInterval = setInterval(() => {
+                fetchAlerts();
+                fetchUpcomingAlerts();
+            }, 60000);
+        }
+
+        function renderTracks() {
+            tracksLayer.innerHTML = '';
+            rawMapData.forEach(lineData => {
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                const d = getPathFromStations(lineData.stations, lineData.line);
+                path.setAttribute("d", d); path.setAttribute("class", `track line-${lineData.line}`);
+                tracksLayer.appendChild(path);
+            });
+        }
+
+        function getPathFromStations(stations, lineId) {
+            let d = "";
+            for (let i = 0; i < stations.length; i++) {
+                const s = stations[i];
+                if (i === 0) { d += `M ${s.x} ${s.y} `; continue; }
+                if (lineId === '1') {
+                    if (s.name === 'Union') {
+                        const prev = stations[i - 1];
+                        if (prev && prev.name === 'St Andrew') { d += `Q 400 700, 520 700 `; continue; }
+                    }
+                    if (s.name === 'King') {
+                        const prev = stations[i - 1];
+                        if (prev && prev.name === 'Union') { d += `Q 640 700, 640 670 `; continue; }
+                    }
+                }
+                d += `L ${s.x} ${s.y} `;
+            }
+            return d;
+        }
+
+        function getLineColor(lineId) { if (lineId === '1') return "#FFC425"; if (lineId === '2') return "#009639"; if (lineId === '4') return "#A319FF"; return "#ffffff"; }
+        function getLineTextColor(lineId) { return (lineId === '1') ? "black" : "white"; }
+
+        function renderStations() {
+            stationsLayer.innerHTML = '';
+            const allStations = [];
+            rawMapData.forEach(l => {
+                const len = l.stations.length;
+                l.stations.forEach((s, i) => { allStations.push({ ...s, line: l.line, isTerminal: (i === 0 || i === len - 1) }); });
+            });
+
+            allStations.forEach(s => {
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                g.setAttribute("transform", `translate(${s.x}, ${s.y})`);
+
+                if (s.isTerminal) {
+                    const bubble = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    bubble.setAttribute("r", 14); bubble.setAttribute("fill", getLineColor(s.line)); bubble.setAttribute("stroke", "white"); bubble.setAttribute("stroke-width", "3"); bubble.setAttribute("class", "terminal-bubble");
+                    const num = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    num.textContent = s.line; num.setAttribute("class", "terminal-text"); num.setAttribute("fill", getLineTextColor(s.line));
+                    g.appendChild(bubble); g.appendChild(num);
+                } else if (s.interchange) {
+                    const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g"); gIcon.setAttribute("class", "station-marker");
+                    const sticker = document.createElementNS("http://www.w3.org/2000/svg", "circle"); sticker.setAttribute("r", 13); sticker.setAttribute("fill", "white"); gIcon.appendChild(sticker);
+                    const blackRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); blackRing.setAttribute("r", 11); blackRing.setAttribute("fill", "black"); gIcon.appendChild(blackRing);
+                    const whiteGap = document.createElementNS("http://www.w3.org/2000/svg", "circle"); whiteGap.setAttribute("r", 7.5); whiteGap.setAttribute("fill", "white"); gIcon.appendChild(whiteGap);
+                    const blueBtn = document.createElementNS("http://www.w3.org/2000/svg", "circle"); blueBtn.setAttribute("r", 6); blueBtn.setAttribute("fill", "#528CCB"); gIcon.appendChild(blueBtn);
+                    const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path"); iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z"); iconPath.setAttribute("fill", "white"); iconPath.setAttribute("transform", "translate(-4.8, -4.8) scale(0.6)"); gIcon.appendChild(iconPath);
+                    g.appendChild(gIcon);
+                } else if (s.accessible) {
+                    const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g"); gIcon.setAttribute("class", "station-marker");
+                    const outerRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); outerRing.setAttribute("r", "4.5"); outerRing.setAttribute("fill", "black"); gIcon.appendChild(outerRing);
+                    const midRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); midRing.setAttribute("r", "3.8"); midRing.setAttribute("fill", "white"); gIcon.appendChild(midRing);
+                    const innerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle"); innerCircle.setAttribute("r", "3"); innerCircle.setAttribute("fill", "#528CCB"); gIcon.appendChild(innerCircle);
+                    const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path"); iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z"); iconPath.setAttribute("fill", "white"); iconPath.setAttribute("transform", "translate(-2, -2) scale(0.25)"); gIcon.appendChild(iconPath);
+                    g.appendChild(gIcon);
+                } else {
+                    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle"); dot.setAttribute("r", 4); dot.setAttribute("class", "station-marker regular-station"); dot.setAttribute("fill", "white"); dot.setAttribute("stroke", "black"); dot.setAttribute("stroke-width", "1");
+                    g.appendChild(dot);
+                }
+
+                if (!(s.line === '4' && s.name === "Sheppard-Yonge")) {
+                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text"); text.textContent = s.name; text.setAttribute("class", "station-label");
+                    let tx = 12, ty = 4, rot = 0, anchor = "start";
+                    if (s.line === '1' && (s.name === "Sheppard-Yonge" || s.name === "Wellesley" || s.name === "St Andrew")) { tx = -15; ty = 4; anchor = "end"; }
+                    else if (s.line === '1' && s.name === "Union") { tx = 0; ty = 25; anchor = "middle"; }
+                    else if (s.line === '4' || s.y === 500) { rot = 45; tx = 10; ty = 10; anchor = "start"; }
+                    else if (s.line === '2') { rot = 45; tx = 10; ty = 10; anchor = "start"; } // PROACTIVE FIX: Add this for Line 2
+                    else if (s.line === '1' && s.x < 360) { tx = -12; ty = 4; anchor = "end"; }
+                    else if (s.line === '1' && s.x >= 640 && s.y < 500) { tx = 12; ty = 4; anchor = "start"; }
+
+                    text.setAttribute("text-anchor", anchor);
+                    if (rot !== 0) text.setAttribute("transform", `rotate(${rot}) translate(${tx}, ${ty})`); else text.setAttribute("transform", `translate(${tx}, ${ty})`);
+                    const lg = document.createElementNS("http://www.w3.org/2000/svg", "g"); lg.appendChild(text); g.appendChild(lg);
+                }
+                stationsLayer.appendChild(g);
+            });
+        }
+
+        function setupDragAndZoom() {
+            if (typeof gsap === 'undefined' || typeof Draggable === 'undefined') return;
+            gsap.set(mapRoot, { x: 0, y: 0, scale: 1 });
+            mapDraggable = Draggable.create(mapRoot, {
+                type: "x,y",
+                inertia: true,
+                trigger: viewport,
+                edgeResistance: 0.65,
+                onDragStart: () => updateMapBounds(), // Ensure bounds are fresh
+            })[0];
+
+            // Initial bounds setup
+            updateMapBounds();
+
+            window.addEventListener('resize', updateMapBounds);
+
+            // Mouse wheel zoom
+            viewport.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                zoomMapRelative(zoomFactor, e.clientX, e.clientY);
+            }, { passive: false });
+        }
+
+        function setupPinchZoom() {
+            let initialDistance = 0;
+            let initialScale = 1;
+
+            viewport.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    initialDistance = getDistance(e.touches[0], e.touches[1]);
+                    initialScale = gsap.getProperty(mapRoot, "scale");
+                }
+            });
+
+            viewport.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                    const scale = (currentDistance / initialDistance) * initialScale;
+                    const clampedScale = Math.min(Math.max(0.4, scale), 8);
+
+                    // Simple scale set. Ideally we should zoom towards the center of the pinch, 
+                    // but for now let's just ensure bounds are respected.
+                    gsap.set(mapRoot, { scale: clampedScale });
+                    updateMapBounds();
+                }
+            }, { passive: false });
+
+            function getDistance(touch1, touch2) {
+                const dx = touch1.clientX - touch2.clientX;
+                const dy = touch1.clientY - touch2.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+        }
+
+        function zoomMapRelative(factor, clientX, clientY) {
+            const oldScale = gsap.getProperty(mapRoot, "scale");
+            const newScale = Math.min(Math.max(0.4, oldScale * factor), 8);
+
+            const rect = viewport.getBoundingClientRect();
+            const mouseX = clientX - rect.left;
+            const mouseY = clientY - rect.top;
+
+            const currentX = gsap.getProperty(mapRoot, "x");
+            const currentY = gsap.getProperty(mapRoot, "y");
+
+            // Calculate target position to keep mouse point stable
+            let newX = mouseX - (mouseX - currentX) * (newScale / oldScale);
+            let newY = mouseY - (mouseY - currentY) * (newScale / oldScale);
+
+            // Get valid bounds for the NEW scale
+            const bounds = getMapBounds(newScale);
+
+            // Clamp target position to valid bounds
+            newX = Math.min(Math.max(newX, bounds.minX), bounds.maxX);
+            newY = Math.min(Math.max(newY, bounds.minY), bounds.maxY);
+
+            gsap.to(mapRoot, {
+                x: newX,
+                y: newY,
+                scale: newScale,
+                duration: 0.3,
+                ease: "power2.out",
+                onUpdate: () => updateMapBounds(), // Keep draggable bounds in sync during animation
+                onComplete: () => updateMapBounds()
+            });
+        }
+
+        function getMapBounds(scale) {
+            const mapWidth = 1000 * scale;
+            const mapHeight = 800 * scale;
+
+            // Calculate the current visual scale of the SVG relative to the viewport
+            // The SVG uses preserveAspectRatio="xMidYMid meet"
+            const svgScale = Math.min(viewport.clientWidth / 1000, viewport.clientHeight / 800);
+
+            // Convert viewport dimensions to SVG user units
+            const scaledViewportWidth = viewport.clientWidth / svgScale;
+            const scaledViewportHeight = viewport.clientHeight / svgScale;
+
+            let minX, maxX, minY, maxY;
+
+            const WIGGLE_ROOM = 100; // Pixels of wiggle room
+
+            // Horizontal Bounds (in SVG User Units)
+            if (mapWidth < scaledViewportWidth) {
+                // Center map if smaller than viewport but allow wiggle
+                const centerX = (scaledViewportWidth - mapWidth) / 2;
+                minX = centerX - WIGGLE_ROOM;
+                maxX = centerX + WIGGLE_ROOM;
+            } else {
+                minX = scaledViewportWidth - mapWidth - WIGGLE_ROOM;
+                maxX = WIGGLE_ROOM;
+            }
+
+            // Vertical Bounds (in SVG User Units)
+            if (mapHeight < scaledViewportHeight) {
+                // Center map vertically but allow wiggle
+                const centerY = (scaledViewportHeight - mapHeight) / 2;
+                minY = centerY - WIGGLE_ROOM;
+                maxY = centerY + WIGGLE_ROOM;
+            } else {
+                minY = scaledViewportHeight - mapHeight - WIGGLE_ROOM;
+                maxY = WIGGLE_ROOM;
+            }
+
+            return { minX, maxX, minY, maxY };
+        }
+
+        function updateMapBounds(specificScale) {
+            if (!mapDraggable) return;
+
+            const currentScale = gsap.getProperty(mapRoot, "scale");
+            const scale = specificScale || currentScale;
+
+            const bounds = getMapBounds(scale);
+
+            mapDraggable.applyBounds(bounds);
+
+            // If we are not currently animating (e.g. pinch zoom or window resize), 
+            // and the specificScale matches current (or wasn't provided), 
+            // enforce bounds on the element position immediately.
+            // This prevents "stuck out of bounds" state which causes rubber banding on next drag.
+            if (!gsap.isTweening(mapRoot) && (!specificScale || Math.abs(specificScale - currentScale) < 0.001)) {
+                const currX = gsap.getProperty(mapRoot, "x");
+                const currY = gsap.getProperty(mapRoot, "y");
+
+                let fixX = currX;
+                let fixY = currY;
+
+                if (fixX < bounds.minX) fixX = bounds.minX;
+                if (fixX > bounds.maxX) fixX = bounds.maxX;
+                if (fixY < bounds.minY) fixY = bounds.minY;
+                if (fixY > bounds.maxY) fixY = bounds.maxY;
+
+                if (fixX !== currX || fixY !== currY) {
+                    gsap.set(mapRoot, { x: fixX, y: fixY });
+                }
+            }
+        }
+
+        async function fetchAlerts() {
+            try {
+                const res = await fetch('/api/alerts');
+                if (!res.ok) throw new Error("Server Error");
+                const alerts = await res.json();
+                activeAlerts = alerts;
+                renderAllAlerts();
+                renderAlertsList();
+            } catch (err) {
+                console.warn("Backend unavailable.");
+                if (pollingInterval) clearInterval(pollingInterval);
+            }
+        }
+
+        async function fetchUpcomingAlerts() {
+            try {
+                const res = await fetch('/api/upcoming-alerts');
+                if (!res.ok) throw new Error("Server Error");
+                const alerts = await res.json();
+                upcomingAlerts = alerts;
+                updateUpcomingBadge();
+                renderUpcomingList();
+            } catch (err) {
+                console.warn("Could not fetch upcoming alerts.");
+            }
+        }
+
+        function updateUpcomingBadge() {
+            const badge = document.getElementById('upcoming-badge');
+            if (upcomingAlerts.length > 0) {
+                badge.textContent = upcomingAlerts.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function renderUpcomingList() {
+            const listContainer = document.getElementById('upcoming-list');
+            if (upcomingAlerts.length === 0) {
+                listContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                        <i class="fas fa-check-circle" style="font-size: 48px; margin-bottom: 16px; color: var(--l2-color);"></i>
+                        <p style="font-size: 16px;">No upcoming service changes scheduled.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort by start time (soonest first)
+            const sortedAlerts = [...upcomingAlerts].sort((a, b) => {
+                return (a.activeStartTime || 0) - (b.activeStartTime || 0);
+            });
+
+            listContainer.innerHTML = sortedAlerts.map(alert => {
+                const startTime = alert.activeStartTime ? new Date(alert.activeStartTime) : null;
+                const endTime = alert.activeEndTime ? new Date(alert.activeEndTime) : null;
+
+                const formatDate = (date) => {
+                    if (!date) return '';
+                    const options = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+                    return date.toLocaleDateString('en-US', options);
+                };
+
+                const timeUntil = startTime ? getTimeUntil(startTime) : '';
+
+                return `
+                <div class="alert-card" style="border-left-color: var(--delay-color);">
+                    <div class="alert-card-header">
+                        <div class="alert-line-badge line-${alert.line}">${alert.line}</div>
+                        <div class="alert-title">${alert.reason}</div>
+                        <span style="background: rgba(245, 158, 11, 0.2); color: var(--delay-color); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: auto;">
+                            ${timeUntil}
+                        </span>
+                    </div>
+                    <div class="alert-meta">
+                        ${alert.direction} • ${alert.singleStation ? `At: ${alert.start}` : `${alert.start} ↔ ${alert.end}`}
+                    </div>
+                    ${startTime ? `
+                    <div style="margin-top: 8px; padding: 8px 12px; background: rgba(255,255,255,0.03); border-radius: 6px; font-size: 13px;">
+                        <div style="display: flex; align-items: center; gap: 8px; color: var(--text-muted);">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span><strong>Starts:</strong> ${formatDate(startTime)}</span>
+                        </div>
+                        ${endTime ? `
+                        <div style="display: flex; align-items: center; gap: 8px; color: var(--text-muted); margin-top: 4px;">
+                            <i class="fas fa-calendar-check"></i>
+                            <span><strong>Ends:</strong> ${formatDate(endTime)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                    <div class="alert-description" style="margin-top: 8px;">${alert.originalText || ''}</div>
+                    ${alert.shuttle ? '<div class="shuttle-badge"><i class="fas fa-bus"></i> Shuttle buses will run</div>' : ''}
+                </div>
+            `;
+            }).join('');
+        }
+
+        function getTimeUntil(date) {
+            const now = new Date();
+            const diff = date - now;
+
+            if (diff < 0) return 'Starting soon';
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const days = Math.floor(hours / 24);
+
+            if (days > 0) {
+                return `In ${days} day${days > 1 ? 's' : ''}`;
+            } else if (hours > 0) {
+                return `In ${hours} hour${hours > 1 ? 's' : ''}`;
+            } else {
+                const minutes = Math.floor(diff / (1000 * 60));
+                return `In ${minutes} min${minutes > 1 ? 's' : ''}`;
+            }
+        }
+
+        function renderAllAlerts() {
+            // Properly clear SVG children
+            while (alertsLayer.firstChild) {
+                alertsLayer.removeChild(alertsLayer.firstChild);
+            }
+            // Only render active alerts on the map
+            const mapActiveAlerts = activeAlerts.filter(alert => alert.status === 'active');
+            mapActiveAlerts.forEach(alert => {
+                const isDelay = alert.effect === 'SIGNIFICANT_DELAYS' || alert.effect === 'REDUCED_SPEED';
+                if (alert.singleStation) drawStationAlert(alert.line, alert.start, isDelay);
+                else {
+                    const flow = calculateFlow(alert.line, alert.start, alert.end, alert.direction);
+                    drawAlertPath(alert.line, alert.start, alert.end, flow, alert.shuttle, isDelay);
+                }
+            });
+        }
+
+        function renderAlertsList() {
+            const listContainer = document.getElementById('alerts-list');
+            if (activeAlerts.length === 0) {
+                listContainer.innerHTML = '<p style="color: var(--text-muted);">No active alerts at this time.</p>';
+                return;
+            }
+
+            // Sort: active alerts first, then cleared
+            const sortedAlerts = [...activeAlerts].sort((a, b) => {
+                if (a.status === 'active' && b.status !== 'active') return -1;
+                if (a.status !== 'active' && b.status === 'active') return 1;
+                return 0;
+            });
+
+            listContainer.innerHTML = sortedAlerts.map(alert => {
+                const isCleared = alert.status === 'cleared';
+                const isDelay = alert.effect === 'SIGNIFICANT_DELAYS' || alert.effect === 'REDUCED_SPEED';
+
+                let borderColor = 'var(--alert-color)';
+                if (isCleared) borderColor = 'var(--l2-color)';
+                else if (isDelay) borderColor = 'var(--delay-color)';
+
+                const bgOpacity = isCleared ? '0.5' : '1';
+
+                return `
+                <div class="alert-card" style="border-left-color: ${borderColor}; opacity: ${bgOpacity};">
+                    <div class="alert-card-header">
+                        <div class="alert-line-badge line-${alert.line}">${alert.line}</div>
+                        <div class="alert-title">${alert.reason}</div>
+                        ${isCleared ? '<span style="color: var(--l2-color); font-size: 12px; margin-left: auto;">✓ Cleared</span>' : ''}
+                    </div>
+                    <div class="alert-meta">
+                        ${alert.direction} • ${alert.singleStation ? `At: ${alert.start}` : `${alert.start} ↔ ${alert.end}`}
+                    </div>
+                    <div class="alert-description">${alert.originalText || ''}</div>
+                    ${alert.shuttle ? '<div class="shuttle-badge"><i class="fas fa-bus"></i> Shuttle buses running</div>' : ''}
+                </div>
+            `;
+            }).join('');
+        }
+
+        function calculateFlow(line, startName, endName, direction) {
+            if (direction === 'Both Ways') return 'both';
+            const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return 'forward';
+            const idx1 = lineObj.stations.findIndex(s => s.name === startName); const idx2 = lineObj.stations.findIndex(s => s.name === endName);
+            if (direction && line === '1') {
+                const unionIdx = 21; const midIdx = (idx1 + idx2) / 2;
+                if (midIdx < unionIdx) {
+                    if (direction === 'Northbound') return 'reverse'; if (direction === 'Southbound') return 'forward';
+                } else {
+                    if (direction === 'Northbound') return 'forward'; if (direction === 'Southbound') return 'reverse';
+                }
+            }
+            if (idx1 < idx2) return 'forward'; return 'reverse';
+        }
+
+
+
+        function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay) {
+            const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
+            const idx1 = lineObj.stations.findIndex(s => s.name === startName); const idx2 = lineObj.stations.findIndex(s => s.name === endName);
+            if (idx1 === -1 || idx2 === -1) return;
+            const segment = lineObj.stations.slice(Math.min(idx1, idx2), Math.max(idx1, idx2) + 1);
+            const d = getPathFromStations(segment, line);
+            if (isShuttle) {
+                const shuttlePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                shuttlePath.setAttribute("d", d); shuttlePath.setAttribute("class", "shuttle-outline"); alertsLayer.appendChild(shuttlePath);
+            }
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", d); path.setAttribute("class", "alert-base");
+            if (isDelay) path.classList.add("delay");
+
+            if (flow === 'both') path.classList.add("pulse-solid"); else if (flow === 'reverse') path.classList.add("flow-reverse"); else path.classList.add("flow-forward");
+            alertsLayer.appendChild(path);
+        }
+
+        function drawStationAlert(line, stationName, isDelay) {
+            const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
+            const s = lineObj.stations.find(st => st.name === stationName); if (!s) return;
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", s.x); circle.setAttribute("cy", s.y); circle.setAttribute("r", 10); circle.setAttribute("class", "station-alert-glow");
+            if (isDelay) circle.style.stroke = "var(--delay-color)";
+            if (isDelay) circle.style.fill = "var(--delay-color)";
+            alertsLayer.appendChild(circle);
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+
+</html>
