@@ -3,8 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <title>TTC Subway</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
@@ -151,7 +150,10 @@
         // --- Initialization ---
         function init() {
             renderMap();
-            setupInteractions();
+            renderMap();
+            setupDragAndZoom();
+            setupPinchZoom();
+            fetchData();
             fetchData();
             pollingInterval = setInterval(fetchData, 60000);
 
@@ -489,20 +491,127 @@
             badges.upcoming.classList.toggle('hidden', countFuture === 0);
         }
 
-        function setupInteractions() {
-            // Pinch Zoom (Basic Implementation)
-            let initialDist = 0;
-            viewport.addEventListener('touchstart', e => {
+        // --- Interactions (Ported from Desktop) ---
+        function setupDragAndZoom() {
+            if (typeof gsap === 'undefined' || typeof Draggable === 'undefined') return;
+            gsap.set(mapRoot, { x: 0, y: 0, scale: 1 });
+            mapDraggable = Draggable.create(mapRoot, {
+                type: "x,y",
+                inertia: true,
+                trigger: viewport,
+                edgeResistance: 0.65,
+                onDragStart: () => updateMapBounds(), // Ensure bounds are fresh
+            })[0];
+
+            // Initial bounds setup
+            updateMapBounds();
+
+            window.addEventListener('resize', updateMapBounds);
+        }
+
+        function setupPinchZoom() {
+            let initialDistance = 0;
+            let initialScale = 1;
+
+            viewport.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 2) {
-                    initialDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    initialDistance = getDistance(e.touches[0], e.touches[1]);
+                    initialScale = gsap.getProperty(mapRoot, "scale");
                 }
             });
-            viewport.addEventListener('touchmove', e => {
+
+            viewport.addEventListener('touchmove', (e) => {
                 if (e.touches.length === 2) {
-                    const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    // Scaling logic omitted for brevity in this single file write
+                    e.preventDefault();
+                    const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                    const scale = (currentDistance / initialDistance) * initialScale;
+                    const clampedScale = Math.min(Math.max(0.4, scale), 8);
+
+                    // Simple scale set. Ideally we should zoom towards the center of the pinch, 
+                    // but for now let's just ensure bounds are respected.
+                    gsap.set(mapRoot, { scale: clampedScale });
+                    updateMapBounds();
                 }
-            });
+            }, { passive: false });
+
+            function getDistance(touch1, touch2) {
+                const dx = touch1.clientX - touch2.clientX;
+                const dy = touch1.clientY - touch2.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+        }
+
+        function getMapBounds(scale) {
+            const mapWidth = 1000 * scale;
+            const mapHeight = 800 * scale;
+
+            // Calculate the current visual scale of the SVG relative to the viewport
+            // The SVG uses preserveAspectRatio="xMidYMid meet"
+            const svgScale = Math.min(viewport.clientWidth / 1000, viewport.clientHeight / 800);
+
+            // Convert viewport dimensions to SVG user units
+            const scaledViewportWidth = viewport.clientWidth / svgScale;
+            const scaledViewportHeight = viewport.clientHeight / svgScale;
+
+            let minX, maxX, minY, maxY;
+
+            const WIGGLE_ROOM = 100; // Pixels of wiggle room
+
+            // Horizontal Bounds (in SVG User Units)
+            if (mapWidth < scaledViewportWidth) {
+                // Center map if smaller than viewport but allow wiggle
+                const centerX = (scaledViewportWidth - mapWidth) / 2;
+                minX = centerX - WIGGLE_ROOM;
+                maxX = centerX + WIGGLE_ROOM;
+            } else {
+                minX = scaledViewportWidth - mapWidth - WIGGLE_ROOM;
+                maxX = WIGGLE_ROOM;
+            }
+
+            // Vertical Bounds (in SVG User Units)
+            if (mapHeight < scaledViewportHeight) {
+                // Center map vertically but allow wiggle
+                const centerY = (scaledViewportHeight - mapHeight) / 2;
+                minY = centerY - WIGGLE_ROOM;
+                maxY = centerY + WIGGLE_ROOM;
+            } else {
+                minY = scaledViewportHeight - mapHeight - WIGGLE_ROOM;
+                maxY = WIGGLE_ROOM;
+            }
+
+            return { minX, maxX, minY, maxY };
+        }
+
+        function updateMapBounds(specificScale) {
+            if (!mapDraggable) return;
+
+            const currentScale = gsap.getProperty(mapRoot, "scale");
+            const scale = specificScale || currentScale;
+
+            const bounds = getMapBounds(scale);
+
+            mapDraggable.applyBounds(bounds);
+
+            // If we are not currently animating (e.g. pinch zoom or window resize), 
+            // and the specificScale matches current (or wasn't provided), 
+            // enforce bounds on the element position immediately.
+            // This prevents "stuck out of bounds" state which causes rubber banding on next drag.
+            if (!gsap.isTweening(mapRoot) && (!specificScale || Math.abs(specificScale - currentScale) < 0.001)) {
+                const currX = gsap.getProperty(mapRoot, "x");
+                const currY = gsap.getProperty(mapRoot, "y");
+
+                let fixX = currX;
+                let fixY = currY;
+
+                if (fixX < bounds.minX) fixX = bounds.minX;
+                if (fixX > bounds.maxX) fixX = bounds.maxX;
+                if (fixY < bounds.minY) fixY = bounds.minY;
+                if (fixY > bounds.maxY) fixY = bounds.maxY;
+
+                if (fixX !== currX || fixY !== currY) {
+                    gsap.set(mapRoot, { x: fixX, y: fixY });
+                }
+            }
         }
 
         window.onload = init;
