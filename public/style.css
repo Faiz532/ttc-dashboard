@@ -100,7 +100,7 @@ body {
 .alert-base {
     fill: none;
     stroke: var(--alert-color);
-    stroke-width: 8;
+    stroke-width: 22px;
     stroke-linecap: round;
     pointer-events: none;
     opacity: 0.9;
@@ -116,10 +116,11 @@ body {
 
 .shuttle-outline {
     fill: none;
-    stroke: white;
-    stroke-width: 20;
-    stroke-dasharray: 4, 6;
-    stroke-opacity: 0.4;
+    stroke: var(--shuttle-color);
+    stroke-width: 30px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.9;
 }
 
 .station-alert-glow {
@@ -145,11 +146,13 @@ body {
 /* Flow Animations */
 .flow-forward {
     stroke-dasharray: 10, 10;
+    stroke-width: 22px;
     animation: flowDash 1s linear infinite;
 }
 
 .flow-reverse {
     stroke-dasharray: 10, 10;
+    stroke-width: 22px;
     animation: flowDashReverse 1s linear infinite;
 }
 
@@ -174,12 +177,12 @@ body {
     0%,
     100% {
         stroke-opacity: 0.6;
-        stroke-width: 8;
+        stroke-width: 22px;
     }
 
     50% {
         stroke-opacity: 1;
-        stroke-width: 10;
+        stroke-width: 26px;
     }
 }
 

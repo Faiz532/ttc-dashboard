@@ -21,8 +21,8 @@
         <svg id="map-root" viewBox="0 0 1000 800" preserveAspectRatio="xMidYMid meet"
             xmlns="http://www.w3.org/2000/svg">
             <g id="tracks-layer"></g>
-            <g id="stations-layer"></g>
             <g id="alerts-layer"></g>
+            <g id="stations-layer"></g>
         </svg>
     </div>
 
@@ -32,9 +32,10 @@
         <!-- Top Bar -->
         <div class="top-bar">
             <!-- Search Pill -->
-            <div class="search-pill" id="search-pill">
-                <i class="fas fa-search"></i>
-                <input type="text" class="search-input" placeholder="Find station..." id="search-input">
+
+            <!-- Info Button to replace Search -->
+            <div class="fab-stack" style="margin-left: 0; margin-right: auto; pointer-events: auto;">
+                <div class="fab" id="btn-info" style="margin-bottom:0;"><i class="fas fa-info-circle"></i></div>
             </div>
 
             <!-- Right Side FABs -->
@@ -95,12 +96,30 @@
                     </div>
                     <span>Upcoming</span>
                 </div>
-                <div class="nav-item" data-tab="settings">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
-                </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- DISCLAIMER MODAL -->
+    <div id="disclaimer-modal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; padding:20px;">
+        <div
+            style="background:var(--sidebar-bg); border:1px solid var(--border-color); padding:20px; border-radius:12px; max-width:400px; width:100%; color:white; font-family:'Inter', sans-serif;">
+            <h2 style="margin-bottom:12px; font-weight:700; font-size:18px; color: var(--l1-color);">
+                <i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>Disclaimer
+            </h2>
+            <p style="font-size:14px; line-height:1.5; color:#d1d5db; margin-bottom:12px;">
+                This is a <strong>personal project</strong> and not an official TTC map. There could be mistakes.
+            </p>
+            <p style="font-size:14px; line-height:1.5; color:#d1d5db; margin-bottom:20px;">
+                I made this because I was not able to easily know if an outage would affect me. I had to always look up
+                a map to know, and this makes it easier to verify.
+            </p>
+            <button id="close-disclaimer"
+                style="width:100%; padding:12px; background:var(--l4-color); border:none; border-radius:8px; color:white; font-weight:600; font-size:14px; cursor:pointer;">
+                Close
+            </button>
         </div>
     </div>
 
@@ -116,7 +135,6 @@
         // --- DOM Elements ---
         const mapRoot = document.getElementById('map-root');
         const viewport = document.getElementById('map-viewport');
-        const searchPill = document.getElementById('search-pill');
         const sheets = {
             alerts: document.getElementById('sheet-alerts'),
             upcoming: document.getElementById('sheet-upcoming')
@@ -137,14 +155,22 @@
             fetchData();
             pollingInterval = setInterval(fetchData, 60000);
 
-            // Setup Search
-            searchPill.addEventListener('click', () => {
-                searchPill.classList.add('expanded');
-                document.getElementById('search-input').focus();
-            });
-            document.addEventListener('click', (e) => {
-                if (!searchPill.contains(e.target)) searchPill.classList.remove('expanded');
-            });
+            // Disclaimer Logic
+            const modal = document.getElementById('disclaimer-modal');
+            const btnInfo = document.getElementById('btn-info');
+            const btnClose = document.getElementById('close-disclaimer');
+
+            if (btnInfo && modal && btnClose) {
+                btnInfo.addEventListener('click', () => {
+                    modal.style.display = 'flex';
+                });
+                btnClose.addEventListener('click', () => {
+                    modal.style.display = 'none';
+                });
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.style.display = 'none';
+                });
+            }
         }
 
         // --- Navigation Logic ---
@@ -198,9 +224,20 @@
                         t.textContent = l.line; t.setAttribute("class", "terminal-text"); t.setAttribute("fill", l.line === '1' ? 'black' : 'white');
                         g.appendChild(t);
                     } else if (s.interchange) {
-                        const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                        c.setAttribute("r", 10); c.setAttribute("fill", "white"); c.setAttribute("stroke", "black"); c.setAttribute("stroke-width", 3);
-                        g.appendChild(c);
+                        const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g"); gIcon.setAttribute("class", "station-marker");
+                        const sticker = document.createElementNS("http://www.w3.org/2000/svg", "circle"); sticker.setAttribute("r", 13); sticker.setAttribute("fill", "white"); gIcon.appendChild(sticker);
+                        const blackRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); blackRing.setAttribute("r", 11); blackRing.setAttribute("fill", "black"); gIcon.appendChild(blackRing);
+                        const whiteGap = document.createElementNS("http://www.w3.org/2000/svg", "circle"); whiteGap.setAttribute("r", 7.5); whiteGap.setAttribute("fill", "white"); gIcon.appendChild(whiteGap);
+                        const blueBtn = document.createElementNS("http://www.w3.org/2000/svg", "circle"); blueBtn.setAttribute("r", 6); blueBtn.setAttribute("fill", "#528CCB"); gIcon.appendChild(blueBtn);
+                        const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path"); iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z"); iconPath.setAttribute("fill", "white"); iconPath.setAttribute("transform", "translate(-4.8, -4.8) scale(0.6)"); gIcon.appendChild(iconPath);
+                        g.appendChild(gIcon);
+                    } else if (s.accessible) {
+                        const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                        const outerRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); outerRing.setAttribute("r", "4.5"); outerRing.setAttribute("fill", "black"); gIcon.appendChild(outerRing);
+                        const midRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); midRing.setAttribute("r", "3.8"); midRing.setAttribute("fill", "white"); gIcon.appendChild(midRing);
+                        const innerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle"); innerCircle.setAttribute("r", "3"); innerCircle.setAttribute("fill", "#528CCB"); gIcon.appendChild(innerCircle);
+                        const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path"); iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z"); iconPath.setAttribute("fill", "white"); iconPath.setAttribute("transform", "translate(-2, -2) scale(0.25)"); gIcon.appendChild(iconPath);
+                        g.appendChild(gIcon);
                     } else {
                         const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                         c.setAttribute("r", 4); c.setAttribute("fill", "white");
@@ -208,7 +245,14 @@
                     }
 
                     // Labels - Restoring comprehensive logic
-                    if (!(l.line === '4' && s.name === "Sheppard-Yonge")) { // Avoid duplicate label at interchange
+                    // Labels - Prevent duplicates at interchanges
+                    // Skip Line 4 Sheppard-Yonge (use Line 1)
+                    // Skip Line 1 Spadina, St George, Bloor-Yonge (use Line 2 rotated)
+                    const isDup = (l.line === '4' && s.name === "Sheppard-Yonge") ||
+                        (l.line === '1' && ["Spadina", "St George", "Bloor-Yonge"].includes(s.name));
+
+                    if (!isDup) {
+
                         const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
                         text.textContent = s.name;
                         text.setAttribute("class", "station-label");
@@ -223,7 +267,13 @@
                             else if (s.x >= 640 && s.y < 500) { tx = 15; ty = 5; anchor = "start"; } // East side of U
                         } else if (l.line === '2') {
                             // Rotate Line 2 labels to avoid track collision
-                            rot = 45; tx = 10; ty = 10; anchor = "start";
+                            if (s.name === 'St George') {
+                                rot = -45; tx = 10; ty = -10; anchor = "start";
+                            } else if (s.name === 'Spadina') {
+                                rot = 45; tx = -10; ty = -10; anchor = "end";
+                            } else {
+                                rot = 45; tx = 10; ty = 10; anchor = "start";
+                            }
                         }
 
                         // Line 4 diagonal
@@ -339,29 +389,63 @@
             const layer = document.getElementById('alerts-layer');
             layer.innerHTML = '';
 
-            activeAlerts.forEach(alert => {
-                if (alert.status !== 'active') return;
-
-                const color = (alert.effect === 'SIGNIFICANT_DELAYS') ? 'var(--delay-color)' : 'var(--alert-color)';
-                const dashClass = (alert.effect === 'SIGNIFICANT_DELAYS') ? 'delay' : '';
-
-                // Draw Path
-                const lineObj = rawMapData.find(l => l.line === alert.line);
-                if (lineObj && !alert.singleStation) {
-                    const s1 = lineObj.stations.findIndex(s => s.name === alert.start);
-                    const s2 = lineObj.stations.findIndex(s => s.name === alert.end);
-                    if (s1 !== -1 && s2 !== -1) {
-                        const segment = lineObj.stations.slice(Math.min(s1, s2), Math.max(s1, s2) + 1);
-                        const d = getPathFromStations(segment, alert.line);
-
-                        const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                        p.setAttribute("d", d);
-                        p.setAttribute("class", `alert-base ${dashClass} flow-forward`);
-                        layer.appendChild(p);
-                    }
+            // Only render active alerts on the map
+            const mapActiveAlerts = activeAlerts.filter(alert => alert.status === 'active');
+            mapActiveAlerts.forEach(alert => {
+                const isDelay = alert.effect === 'SIGNIFICANT_DELAYS' || alert.effect === 'REDUCED_SPEED';
+                if (alert.singleStation) drawStationAlert(alert.line, alert.start, isDelay);
+                else {
+                    const flow = calculateFlow(alert.line, alert.start, alert.end, alert.direction);
+                    drawAlertPath(alert.line, alert.start, alert.end, flow, alert.shuttle, isDelay);
                 }
             });
         }
+
+        function calculateFlow(line, startName, endName, direction) {
+            if (direction === 'Both Ways') return 'both';
+            const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return 'forward';
+            const idx1 = lineObj.stations.findIndex(s => s.name === startName); const idx2 = lineObj.stations.findIndex(s => s.name === endName);
+            if (direction && line === '1') {
+                const unionIdx = 21; const midIdx = (idx1 + idx2) / 2;
+                if (midIdx < unionIdx) {
+                    if (direction === 'Northbound') return 'reverse'; if (direction === 'Southbound') return 'forward';
+                } else {
+                    if (direction === 'Northbound') return 'forward'; if (direction === 'Southbound') return 'reverse';
+                }
+            }
+            if (idx1 < idx2) return 'forward'; return 'reverse';
+        }
+
+        function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay) {
+            const layer = document.getElementById('alerts-layer');
+            const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
+            const idx1 = lineObj.stations.findIndex(s => s.name === startName); const idx2 = lineObj.stations.findIndex(s => s.name === endName);
+            if (idx1 === -1 || idx2 === -1) return;
+            const segment = lineObj.stations.slice(Math.min(idx1, idx2), Math.max(idx1, idx2) + 1);
+            const d = getPathFromStations(segment, line);
+            if (isShuttle) {
+                const shuttlePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                shuttlePath.setAttribute("d", d); shuttlePath.setAttribute("class", "shuttle-outline"); layer.appendChild(shuttlePath);
+            }
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", d); path.setAttribute("class", "alert-base");
+            if (isDelay) path.classList.add("delay");
+
+            if (flow === 'both') path.classList.add("pulse-solid"); else if (flow === 'reverse') path.classList.add("flow-reverse"); else path.classList.add("flow-forward");
+            layer.appendChild(path);
+        }
+
+        function drawStationAlert(line, stationName, isDelay) {
+            const layer = document.getElementById('alerts-layer');
+            const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
+            const s = lineObj.stations.find(st => st.name === stationName); if (!s) return;
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", s.x); circle.setAttribute("cy", s.y); circle.setAttribute("r", 10); circle.setAttribute("class", "station-alert-glow");
+            if (isDelay) circle.style.stroke = "var(--delay-color)";
+            if (isDelay) circle.style.fill = "var(--delay-color)";
+            layer.appendChild(circle);
+        }
+
 
         function renderLists() {
             // Alerts List

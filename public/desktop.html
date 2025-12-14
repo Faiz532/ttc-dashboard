@@ -706,9 +706,9 @@
                     <span>Upcoming</span>
                     <span id="upcoming-badge" class="nav-badge hidden">0</span>
                 </div>
-                <div class="nav-item expandable" data-tab="settings">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
+                <div class="nav-item expandable" data-tab="about">
+                    <i class="fas fa-info-circle"></i>
+                    <span>About</span>
                 </div>
             </div>
 
@@ -792,9 +792,29 @@
                 </div>
 
                 <!-- Settings Placeholder -->
-                <div id="settings-panel" class="placeholder-panel">
-                    <i class="fas fa-cog"></i>
-                    <p>Settings Coming Soon</p>
+                <!-- About Panel -->
+                <div id="about-panel" class="placeholder-panel">
+                    <div
+                        style="background:var(--sidebar-bg); border:1px solid var(--border-color); padding:40px; border-radius:12px; max-width:600px; color:white; text-align: left;">
+                        <h2
+                            style="margin-bottom:20px; font-weight:700; font-size:24px; color: var(--l1-color); display:flex; align-items:center; gap:12px;">
+                            <i class="fas fa-exclamation-triangle"></i>Disclaimer
+                        </h2>
+                        <p style="font-size:16px; line-height:1.6; color:#d1d5db; margin-bottom:16px;">
+                            This is a <strong>personal project</strong> and not an official TTC map. There could be
+                            mistakes in the data or representation.
+                        </p>
+                        <p style="font-size:16px; line-height:1.6; color:#d1d5db; margin-bottom:24px;">
+                            <strong>Why I made this:</strong><br>
+                            I made this dashboard because I was not able to easily know if a subway outage would affect
+                            my commute. I always had to look up a map to cross-reference alerts. This tool makes it
+                            easier to verify if I am affected.
+                        </p>
+                        <div
+                            style="margin-top:30px; padding-top:20px; border-top:1px solid var(--border-color); font-size:14px; color:var(--text-muted);">
+                            Data provided by TTC Open Data.
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -852,7 +872,7 @@
             document.getElementById('viewport').style.display = (tab === 'lines') ? 'block' : 'none';
             document.getElementById('alerts-panel').classList.toggle('active', tab === 'alerts');
             document.getElementById('upcoming-panel').classList.toggle('active', tab === 'upcoming');
-            document.getElementById('settings-panel').classList.toggle('active', tab === 'settings');
+            document.getElementById('about-panel').classList.toggle('active', tab === 'about');
         }
 
         const rawMapData = [{ line: "1", stations: [{ name: "Vaughan Metropolitan Centre", x: 220, y: 50, accessible: !0 }, { name: "Highway 407", x: 240, y: 80, accessible: !0 }, { name: "Pioneer Village", x: 260, y: 110, accessible: !0 }, { name: "York University", x: 280, y: 140, accessible: !0 }, { name: "Finch West", x: 300, y: 170, accessible: !0 }, { name: "Downsview Park", x: 320, y: 200, accessible: !0 }, { name: "Sheppard West", x: 340, y: 230, accessible: !0 }, { name: "Wilson", x: 360, y: 260, accessible: !0 }, { name: "Yorkdale", x: 360, y: 290, accessible: !0 }, { name: "Lawrence West", x: 360, y: 320, accessible: !0 }, { name: "Glencairn", x: 360, y: 350, accessible: !1 }, { name: "Eglinton West", x: 360, y: 380, accessible: !0 }, { name: "St Clair West", x: 360, y: 410, accessible: !0 }, { name: "Dupont", x: 360, y: 440, accessible: !0 }, { name: "Spadina", x: 360, y: 500, interchange: !0, accessible: !0 }, { name: "St George", x: 400, y: 500, interchange: !0, accessible: !0 }, { name: "Museum", x: 400, y: 550, accessible: !1 }, { name: "Queen's Park", x: 400, y: 580, accessible: !0 }, { name: "St Patrick", x: 400, y: 610, accessible: !0 }, { name: "Osgoode", x: 400, y: 640, accessible: !0 }, { name: "St Andrew", x: 400, y: 670, accessible: !0 }, { name: "Union", x: 520, y: 700, accessible: !0 }, { name: "King", x: 640, y: 670, accessible: !1 }, { name: "Queen", x: 640, y: 640, accessible: !0 }, { name: "Dundas", x: 640, y: 610, accessible: !0 }, { name: "College", x: 640, y: 580, accessible: !1 }, { name: "Wellesley", x: 640, y: 550, accessible: !0 }, { name: "Bloor-Yonge", x: 640, y: 500, interchange: !0, accessible: !0 }, { name: "Rosedale", x: 640, y: 460, accessible: !1 }, { name: "Summerhill", x: 640, y: 430, accessible: !1 }, { name: "St Clair", x: 640, y: 400, accessible: !0 }, { name: "Davisville", x: 640, y: 370, accessible: !0 }, { name: "Eglinton", x: 640, y: 340, accessible: !0 }, { name: "Lawrence", x: 640, y: 310, accessible: !0 }, { name: "York Mills", x: 640, y: 280, accessible: !0 }, { name: "Sheppard-Yonge", x: 640, y: 200, interchange: !0, accessible: !0 }, { name: "North York Centre", x: 640, y: 150, accessible: !0 }, { name: "Finch", x: 640, y: 100, accessible: !0 }] }, { line: "2", stations: [{ name: "Kipling", x: 30, y: 500, accessible: !0 }, { name: "Islington", x: 53, y: 500, accessible: !1 }, { name: "Royal York", x: 76, y: 500, accessible: !0 }, { name: "Old Mill", x: 99, y: 500, accessible: !1 }, { name: "Jane", x: 122, y: 500, accessible: !0 }, { name: "Runnymede", x: 145, y: 500, accessible: !0 }, { name: "High Park", x: 168, y: 500, accessible: !1 }, { name: "Keele", x: 191, y: 500, accessible: !0 }, { name: "Dundas West", x: 214, y: 500, accessible: !0 }, { name: "Lansdowne", x: 237, y: 500, accessible: !1 }, { name: "Dufferin", x: 260, y: 500, accessible: !0 }, { name: "Ossington", x: 283, y: 500, accessible: !0 }, { name: "Christie", x: 306, y: 500, accessible: !1 }, { name: "Bathurst", x: 329, y: 500, accessible: !0 }, { name: "Spadina", x: 360, y: 500, interchange: !0, accessible: !0 }, { name: "St George", x: 400, y: 500, interchange: !0, accessible: !0 }, { name: "Bay", x: 520, y: 500, accessible: !0 }, { name: "Bloor-Yonge", x: 640, y: 500, interchange: !0, accessible: !0 }, { name: "Sherbourne", x: 670, y: 500, accessible: !0 }, { name: "Castle Frank", x: 695, y: 500, accessible: !1 }, { name: "Broadview", x: 720, y: 500, accessible: !0 }, { name: "Chester", x: 745, y: 500, accessible: !0 }, { name: "Pape", x: 770, y: 500, accessible: !0 }, { name: "Donlands", x: 795, y: 500, accessible: !1 }, { name: "Greenwood", x: 820, y: 500, accessible: !1 }, { name: "Coxwell", x: 845, y: 500, accessible: !0 }, { name: "Woodbine", x: 870, y: 500, accessible: !0 }, { name: "Main Street", x: 895, y: 500, accessible: !0 }, { name: "Victoria Park", x: 920, y: 500, accessible: !0 }, { name: "Warden", x: 945, y: 500, accessible: !1 }, { name: "Kennedy", x: 970, y: 500, accessible: !0 }] }, { line: "4", stations: [{ name: "Sheppard-Yonge", x: 640, y: 200, interchange: !0, accessible: !0 }, { name: "Bayview", x: 690, y: 200, accessible: !0 }, { name: "Bessarion", x: 740, y: 200, accessible: !0 }, { name: "Leslie", x: 790, y: 200, accessible: !0 }, { name: "Don Mills", x: 840, y: 200, accessible: !0 }] }];
@@ -943,13 +963,24 @@
                     g.appendChild(dot);
                 }
 
-                if (!(s.line === '4' && s.name === "Sheppard-Yonge")) {
+                const isDup = (s.line === '4' && s.name === "Sheppard-Yonge") ||
+                    (s.line === '1' && ["Spadina", "St George", "Bloor-Yonge"].includes(s.name));
+
+                if (!isDup) {
                     const text = document.createElementNS("http://www.w3.org/2000/svg", "text"); text.textContent = s.name; text.setAttribute("class", "station-label");
                     let tx = 12, ty = 4, rot = 0, anchor = "start";
                     if (s.line === '1' && (s.name === "Sheppard-Yonge" || s.name === "Wellesley" || s.name === "St Andrew")) { tx = -15; ty = 4; anchor = "end"; }
                     else if (s.line === '1' && s.name === "Union") { tx = 0; ty = 25; anchor = "middle"; }
                     else if (s.line === '4' || s.y === 500) { rot = 45; tx = 10; ty = 10; anchor = "start"; }
-                    else if (s.line === '2') { rot = 45; tx = 10; ty = 10; anchor = "start"; } // PROACTIVE FIX: Add this for Line 2
+                    else if (s.line === '2') {
+                        if (s.name === 'St George') {
+                            rot = -45; tx = 10; ty = -10; anchor = "start";
+                        } else if (s.name === 'Spadina') {
+                            rot = 45; tx = -10; ty = -10; anchor = "end";
+                        } else {
+                            rot = 45; tx = 10; ty = 10; anchor = "start";
+                        }
+                    } // PROACTIVE FIX: Add this for Line 2
                     else if (s.line === '1' && s.x < 360) { tx = -12; ty = 4; anchor = "end"; }
                     else if (s.line === '1' && s.x >= 640 && s.y < 500) { tx = 12; ty = 4; anchor = "start"; }
 
