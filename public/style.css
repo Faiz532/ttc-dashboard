@@ -55,7 +55,9 @@ body {
 
 #map-root {
     transform-origin: center;
-    will-change: transform;
+    /* Removed will-change to prevent blurry rasterization during scale */
+    shape-rendering: geometricPrecision;
+    /* Force crisp edges */
 }
 
 /* SVG Elements */
