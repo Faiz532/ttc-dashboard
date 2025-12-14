@@ -9,6 +9,7 @@
     --l1-color: #FFC425;
     --l2-color: #009639;
     --l4-color: #A319FF;
+    --l5-color: #F37021;
 
     --alert-color: #ef4444;
     --delay-color: #f59e0b;
@@ -54,7 +55,7 @@ body {
 }
 
 #map-root {
-    transform-origin: 0 0;
+    transform-origin: center;
     /* Removed will-change to prevent blurry rasterization during scale */
     shape-rendering: geometricPrecision;
     /* Force crisp edges */
@@ -63,7 +64,7 @@ body {
 /* SVG Elements */
 .track {
     fill: none;
-    stroke-width: 18;
+    stroke-width: 18px;
     stroke-linecap: round;
     stroke-linejoin: round;
     filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.8));
@@ -80,6 +81,11 @@ body {
 .line-4 {
     stroke: var(--l4-color);
 }
+
+.line-5 {
+    stroke: var(--l5-color);
+}
+
 
 .station-label {
     font-family: 'Inter';
