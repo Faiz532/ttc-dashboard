@@ -149,7 +149,6 @@ async function parseAlertWithAI(text) {
           "status": "active" | "cleared" | "future",
           "direction": "Both Ways",
           "start_time": "ISO 8601 string or null (if known future start)",
-          "start_time": "ISO 8601 string or null (if known future start)",
           "end_time": "ISO 8601 string or null (if known future end)",
           "severity": "Suspension" | "Delay" | "Minor"
         }
@@ -300,20 +299,20 @@ async function fetchTTCLiveAlerts() {
         if (!data.routes || !Array.isArray(data.routes)) return { current: [], upcoming: [] };
 
         // Helper to process alerts with AI in parallel limit or sequence
-        // We will process all routes that match subway
+        // We will process all routes that match subway or LRT
         for (const route of data.routes) {
-            if (route.routeType !== 'Subway') continue;
+            if (!['Subway', 'LRT'].includes(route.routeType)) continue;
 
             const lineId = route.route;
-            if (!['1', '2', '4'].includes(lineId)) continue;
+            if (!['1', '2', '4', '5', '6'].includes(lineId)) continue;
 
             const title = route.title || route.alertTitle || '';
             const description = route.description || title;
             const headerText = route.headerText || route.customHeaderText || '';
 
             // Use AI to validate this Live Alert
-            // We combine headerText (most detailed) with title/desc for context
-            const fullText = headerText ? `${headerText} ${description}` : `${title}. ${description}`;
+            // Prioritize headerText (most detailed), avoid combining if they're similar
+            const fullText = headerText || description || title;
 
             const parsed = await parseAlertWithAI(fullText);
 
@@ -335,7 +334,22 @@ async function fetchTTCLiveAlerts() {
             }
         }
 
-        return { current: alerts, upcoming: upcomingAlerts };
+        // Deduplicate alerts before returning (TTC API may return same alert under multiple route entries)
+        const seenKeys = new Set();
+        const deduplicatedAlerts = alerts.filter(a => {
+            const key = `${a.line}-${a.start}-${a.end}`;
+            if (seenKeys.has(key)) return false;
+            seenKeys.add(key);
+            return true;
+        });
+        const deduplicatedUpcoming = upcomingAlerts.filter(a => {
+            const key = `${a.line}-${a.start}-${a.end}`;
+            if (seenKeys.has(key)) return false;
+            seenKeys.add(key);
+            return true;
+        });
+
+        return { current: deduplicatedAlerts, upcoming: deduplicatedUpcoming };
     } catch (error) {
         console.error("Error fetching TTC Live Alerts API:", error.message);
         return { current: [], upcoming: [] };

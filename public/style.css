@@ -10,10 +10,12 @@
     --l2-color: #009639;
     --l4-color: #A319FF;
     --l5-color: #F37021;
+    --l6-color: #9ca3af;
+    /* Line 6 - Finch West LRT - Grey */
 
     --alert-color: #ef4444;
     --delay-color: #f59e0b;
-    --shuttle-color: #3b82f6;
+    --shuttle-color: #9ca3af;
 
     --text-main: #ffffff;
     --text-muted: #a1a1aa;
@@ -86,14 +88,76 @@ body {
     stroke: var(--l5-color);
 }
 
+.line-6 {
+    stroke: var(--l6-color);
+}
+
+/* Line Filter Buttons */
+.line-filter {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    border: none;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.filter-btn:hover {
+    transform: scale(1.05);
+}
+
+.filter-btn.active {
+    box-shadow: 0 0 0 2px white;
+}
+
+.filter-btn.bg-l1 {
+    background: var(--l1-color);
+    color: black;
+}
+
+.filter-btn.bg-l2 {
+    background: var(--l2-color);
+    color: white;
+}
+
+.filter-btn.bg-l4 {
+    background: var(--l4-color);
+    color: white;
+}
+
+.filter-btn.bg-l5 {
+    background: var(--l5-color);
+    color: white;
+}
+
+.filter-btn.bg-l6 {
+    background: var(--l6-color);
+    color: white;
+}
+
 
 .station-label {
     font-family: 'Inter';
     font-weight: 700;
-    font-size: 14px;
+    font-size: 12px;
     fill: white;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
     pointer-events: none;
+}
+
+.terminal-label {
+    font-size: 15px;
+    font-weight: 800;
 }
 
 .terminal-text {
@@ -128,7 +192,8 @@ body {
     stroke-width: 30px;
     stroke-linecap: round;
     stroke-linejoin: round;
-    opacity: 0.9;
+    stroke-dasharray: 10, 15;
+    opacity: 0.8;
 }
 
 .station-alert-glow {
@@ -153,15 +218,15 @@ body {
 
 /* Flow Animations */
 .flow-forward {
-    stroke-dasharray: 10, 10;
+    stroke-dasharray: 20, 20;
     stroke-width: 22px;
-    animation: flowDash 1s linear infinite;
+    animation: flowDash 2s linear infinite;
 }
 
 .flow-reverse {
-    stroke-dasharray: 10, 10;
+    stroke-dasharray: 20, 20;
     stroke-width: 22px;
-    animation: flowDashReverse 1s linear infinite;
+    animation: flowDashReverse 2s linear infinite;
 }
 
 .pulse-solid {
@@ -170,13 +235,13 @@ body {
 
 @keyframes flowDash {
     to {
-        stroke-dashoffset: -20;
+        stroke-dashoffset: -40;
     }
 }
 
 @keyframes flowDashReverse {
     to {
-        stroke-dashoffset: 20;
+        stroke-dashoffset: 40;
     }
 }
 
@@ -282,6 +347,237 @@ body {
     transform: scale(0.95);
 }
 
+/* 3D Layer Button Animation */
+#btn-legend {
+    position: relative;
+    /* Fix: Establish stacking context for absolute children */
+    /* Removed skew/rotate to keep perfect circle */
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    transition: transform 0.5s;
+    overflow: visible;
+}
+
+#btn-legend span {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--surface-glass);
+    border: 1px solid var(--surface-glass-border);
+    border-radius: 50%;
+    transition: 0.5s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(20px);
+}
+
+/* Top layer with icon */
+#btn-legend .fab-icon {
+    z-index: 5;
+    background: var(--surface-glass);
+    color: white;
+    font-size: 18px;
+}
+
+/* Active Effects (Menu Open) */
+#btn-legend.active span:nth-child(5) {
+    transform: translate(-12px, 0);
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+#btn-legend.active span:nth-child(4) {
+    transform: translate(-9px, 0);
+    opacity: 0.8;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#btn-legend.active span:nth-child(3) {
+    transform: translate(-6px, 0);
+    opacity: 0.6;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+#btn-legend.active span:nth-child(2) {
+    transform: translate(-3px, 0);
+    opacity: 0.4;
+}
+
+#btn-legend:hover span:nth-child(1),
+#btn-legend.active span:nth-child(1) {
+    transform: translate(0, 0);
+    opacity: 0.2;
+}
+
+/* No icon rotation needed */
+#btn-legend .fab-icon i {
+    transform: none;
+}
+
+/* Layer Popup */
+.layer-popup {
+    position: absolute;
+    top: 130px;
+    right: 60px;
+    width: 220px;
+    background: var(--surface-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--surface-glass-border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 100;
+    transition: opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), backdrop-filter 0.5s ease;
+    transform-origin: top right;
+    pointer-events: auto;
+}
+
+.layer-popup.hidden {
+    opacity: 0;
+    transform: scale(0.9);
+    pointer-events: none;
+    display: block;
+    /* Override generic .hidden display: none */
+}
+
+/* Info Popup specific override */
+#info-popup {
+    transform-origin: top left;
+}
+
+/* Header Clock */
+.header-clock {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    margin-top: 4px;
+    /* Slight adjustment */
+    pointer-events: none;
+
+    /* Box Styling */
+    background: var(--surface-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--surface-glass-border);
+    padding: 8px 16px;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.clock-time {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.clock-date {
+    font-size: 11px;
+    opacity: 0.8;
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+/* Disclaimer Banner */
+.disclaimer-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(22, 25, 31, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--surface-glass-border);
+    padding: 20px 24px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.disclaimer-banner.visible {
+    transform: translateY(0);
+}
+
+.disclaimer-content {
+    display: flex;
+    align-items: flex-start;
+    color: #eee;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+#btn-accept-disclaimer {
+    width: 100%;
+    background: white;
+    color: black;
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+#btn-accept-disclaimer:active {
+    transform: scale(0.98);
+}
+
+.layer-popup-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: white;
+}
+
+.layer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    cursor: pointer;
+    font-size: 13px;
+    color: #ccc;
+}
+
+.layer-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.toggle-indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.2s;
+}
+
+.toggle-indicator.outage {
+    background: var(--alert-color);
+}
+
+.toggle-indicator.delay {
+    background: var(--delay-color);
+}
+
+.layer-toggle input:not(:checked)+.toggle-indicator {
+    opacity: 0.3;
+}
+
 /* --- Bottom Sheets --- */
 /* The interactive area for sheets and nav */
 .bottom-ui {
@@ -298,7 +594,7 @@ body {
     width: 100%;
     height: 85vh;
     /* Max height */
-    background: #121214;
+    background: #16191f;
     border-radius: 24px 24px 0 0;
     transform: translateY(100%);
     /* Hidden by default */
@@ -356,7 +652,7 @@ body {
 /* --- Bottom Navigation --- */
 .bottom-nav {
     height: calc(var(--nav-height) + var(--safe-area-bottom));
-    background: rgba(10, 10, 12, 0.95);
+    background: rgba(22, 25, 31, 0.95);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     border-top: 1px solid var(--surface-glass-border);
@@ -482,4 +778,11 @@ body {
     border-radius: 8px;
     font-size: 12px;
     font-weight: 600;
+}
+
+.line-5-inner {
+    stroke: #0f1115;
+    stroke-width: 10px;
+    fill: none;
+    pointer-events: none;
 }

@@ -20,7 +20,7 @@
             --panel-bg: #181b21;
             --l1-color: #FFC425;
             --l2-color: #009639;
-            --l4-color: #A319FF;
+            --l4-color: #B5236B;
             --alert-color: #ef4444;
             --delay-color: #f59e0b;
             --shuttle-color: #3b82f6;
@@ -355,6 +355,18 @@
             transform: scale(1.3);
             transform-box: fill-box;
             transform-origin: center;
+        }
+
+        /* Custom transfer stations - scale from center on hover like Bloor-Yonge */
+        .spadina-inner,
+        .st-george-inner {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .spadina-inner:hover,
+        .st-george-inner:hover {
+            transform: scale(1.2);
         }
 
         .regular-station {
@@ -998,6 +1010,31 @@
                 const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 path.setAttribute("d", d); path.setAttribute("class", `track line-${lineData.line}`);
                 tracksLayer.appendChild(path);
+
+                // Add line number bubble on the left for Line 4
+                if (lineData.line === '4' && lineData.stations.length > 0) {
+                    const firstStation = lineData.stations[0];
+                    const labelX = firstStation.x - 120; // 120px left of first station
+                    const labelY = firstStation.y;
+
+                    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    g.setAttribute("transform", `translate(${labelX}, ${labelY})`);
+
+                    const bubble = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    bubble.setAttribute("r", 14);
+                    bubble.setAttribute("fill", getLineColor('4'));
+                    bubble.setAttribute("stroke", "white");
+                    bubble.setAttribute("stroke-width", "3");
+                    g.appendChild(bubble);
+
+                    const num = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    num.textContent = "4";
+                    num.setAttribute("class", "terminal-text");
+                    num.setAttribute("fill", "white");
+                    g.appendChild(num);
+
+                    tracksLayer.appendChild(g);
+                }
             });
         }
 
@@ -1021,7 +1058,7 @@
             return d;
         }
 
-        function getLineColor(lineId) { if (lineId === '1') return "#FFC425"; if (lineId === '2') return "#009639"; if (lineId === '4') return "#A319FF"; if (lineId === '5') return "#F37021"; return "#ffffff"; }
+        function getLineColor(lineId) { if (lineId === '1') return "#FFC425"; if (lineId === '2') return "#009639"; if (lineId === '4') return "#B5236B"; if (lineId === '5') return "#F37021"; return "#ffffff"; }
         function getLineTextColor(lineId) { return (lineId === '1') ? "black" : "white"; }
 
         function renderStations() {
@@ -1033,16 +1070,16 @@
             });
 
             allStations.forEach(s => {
+                // Skip Spadina - handled by custom drawSpadinaTransfer
+                if (s.name === 'Spadina') return;
+                // Skip St George - handled by custom drawStGeorge
+                if (s.name === 'St George') return;
+
                 const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
                 g.setAttribute("transform", `translate(${s.x}, ${s.y})`);
 
-                if (s.isTerminal) {
-                    const bubble = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                    bubble.setAttribute("r", 14); bubble.setAttribute("fill", getLineColor(s.line)); bubble.setAttribute("stroke", "white"); bubble.setAttribute("stroke-width", "3"); bubble.setAttribute("class", "terminal-bubble");
-                    const num = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    num.textContent = s.line; num.setAttribute("class", "terminal-text"); num.setAttribute("fill", getLineTextColor(s.line));
-                    g.appendChild(bubble); g.appendChild(num);
-                } else if (s.interchange) {
+                if (s.interchange) {
+                    // Interchange style takes priority over terminal
                     const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g"); gIcon.setAttribute("class", "station-marker");
                     const sticker = document.createElementNS("http://www.w3.org/2000/svg", "circle"); sticker.setAttribute("r", 13); sticker.setAttribute("fill", "white"); gIcon.appendChild(sticker);
                     const blackRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); blackRing.setAttribute("r", 11); blackRing.setAttribute("fill", "black"); gIcon.appendChild(blackRing);
@@ -1050,6 +1087,13 @@
                     const blueBtn = document.createElementNS("http://www.w3.org/2000/svg", "circle"); blueBtn.setAttribute("r", 6); blueBtn.setAttribute("fill", "#528CCB"); gIcon.appendChild(blueBtn);
                     const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path"); iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z"); iconPath.setAttribute("fill", "white"); iconPath.setAttribute("transform", "translate(-4.8, -4.8) scale(0.6)"); gIcon.appendChild(iconPath);
                     g.appendChild(gIcon);
+                } else if (s.isTerminal) {
+                    // Terminal bubble with line number
+                    const bubble = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    bubble.setAttribute("r", 14); bubble.setAttribute("fill", getLineColor(s.line)); bubble.setAttribute("stroke", "white"); bubble.setAttribute("stroke-width", "3"); bubble.setAttribute("class", "terminal-bubble");
+                    const num = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    num.textContent = s.line; num.setAttribute("class", "terminal-text"); num.setAttribute("fill", getLineTextColor(s.line));
+                    g.appendChild(bubble); g.appendChild(num);
                 } else if (s.accessible) {
                     const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g"); gIcon.setAttribute("class", "station-marker");
                     const outerRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); outerRing.setAttribute("r", "4.5"); outerRing.setAttribute("fill", "black"); gIcon.appendChild(outerRing);
@@ -1089,7 +1133,171 @@
                 }
                 stationsLayer.appendChild(g);
             });
+
+            // Custom station rendering
+            drawSpadinaTransfer();
+            drawStGeorge();
         }
+
+        function drawSpadinaTransfer() {
+            // Spadina: Line 1 (Yellow) at y=480, Line 2 (Green) at y=500. x=360.
+            // Capsule design: white circle top, Bloor-Yonge style accessibility at bottom, connected by white line
+            const x = 360;
+            const y1 = 480; // Line 1 (Yellow)
+            const y2 = 500; // Line 2 (Green)
+            const yCenter = (y1 + y2) / 2; // Center point for positioning
+
+            // Outer group for positioning (uses SVG transform attribute)
+            const outer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            outer.setAttribute("transform", `translate(${x}, ${yCenter})`);
+
+            // Inner group for hover effect (uses CSS transform - won't conflict)
+            const inner = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            inner.setAttribute("class", "station-marker spadina-inner");
+
+            // Relative coordinates (relative to center at yCenter=490)
+            const relY1 = y1 - yCenter; // -10
+            const relY2 = y2 - yCenter; // +10
+
+            // 1. The Capsule Container (White stroke, Black fill)
+            const pill = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            const w = 24;
+            const h = 42;
+            pill.setAttribute("x", -w / 2);
+            pill.setAttribute("y", relY1 - 10);
+            pill.setAttribute("width", w);
+            pill.setAttribute("height", h);
+            pill.setAttribute("rx", w / 2);
+            pill.setAttribute("fill", "black");
+            pill.setAttribute("stroke", "white");
+            pill.setAttribute("stroke-width", "3");
+            inner.appendChild(pill);
+
+            // 2. Vertical White Connector Line
+            const connector = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            connector.setAttribute("x1", 0);
+            connector.setAttribute("y1", relY1);
+            connector.setAttribute("x2", 0);
+            connector.setAttribute("y2", relY2);
+            connector.setAttribute("stroke", "white");
+            connector.setAttribute("stroke-width", "4");
+            inner.appendChild(connector);
+
+            // 3. Top Circle (White filled - empty circle for Line 1 connection)
+            const topCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            topCircle.setAttribute("cx", 0);
+            topCircle.setAttribute("cy", relY1);
+            topCircle.setAttribute("r", 8);
+            topCircle.setAttribute("fill", "white");
+            inner.appendChild(topCircle);
+
+            // 4. Bottom Group (Bloor-Yonge style interchange + accessibility)
+            const bottomGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            bottomGroup.setAttribute("transform", `translate(0, ${relY2})`);
+
+            // White sticker (outer) - scaled down
+            const sticker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            sticker.setAttribute("r", 10);
+            sticker.setAttribute("fill", "white");
+            bottomGroup.appendChild(sticker);
+
+            // Black ring
+            const blackRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            blackRing.setAttribute("r", 8);
+            blackRing.setAttribute("fill", "black");
+            bottomGroup.appendChild(blackRing);
+
+            // White gap
+            const whiteGap = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            whiteGap.setAttribute("r", 5.5);
+            whiteGap.setAttribute("fill", "white");
+            bottomGroup.appendChild(whiteGap);
+
+            // Blue button
+            const blueBtn = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            blueBtn.setAttribute("r", 4.5);
+            blueBtn.setAttribute("fill", "#528CCB");
+            bottomGroup.appendChild(blueBtn);
+
+            // Wheelchair Accessibility Icon (White) - scaled down
+            const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z");
+            iconPath.setAttribute("fill", "white");
+            iconPath.setAttribute("transform", "translate(-3.5, -3.5) scale(0.45)");
+            bottomGroup.appendChild(iconPath);
+
+            inner.appendChild(bottomGroup);
+            outer.appendChild(inner);
+            document.getElementById('stations-layer').appendChild(outer);
+
+            // Spadina Label (Below the capsule)
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.textContent = "Spadina";
+            text.setAttribute("class", "station-label");
+            text.setAttribute("x", x);
+            text.setAttribute("y", y2 + 28);
+            text.setAttribute("text-anchor", "middle");
+            document.getElementById('stations-layer').appendChild(text);
+        }
+
+        function drawStGeorge() {
+            // St George: Line 1 (Yellow) at y=480, Line 2 (Green) at y=500. x=400.
+            // Use exact Bloor-Yonge interchange design
+            const x = 400;
+            const y = 490; // Midpoint between Line 1 and Line 2
+
+            // Outer group for positioning (uses SVG transform attribute)
+            const outer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            outer.setAttribute("transform", `translate(${x}, ${y})`);
+
+            // Inner group for hover effect (uses CSS transform - won't conflict)
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.setAttribute("class", "station-marker st-george-inner");
+
+            // White sticker (outer) - exact Bloor-Yonge style
+            const sticker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            sticker.setAttribute("r", 13);
+            sticker.setAttribute("fill", "white");
+            g.appendChild(sticker);
+
+            // Black ring
+            const blackRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            blackRing.setAttribute("r", 11);
+            blackRing.setAttribute("fill", "black");
+            g.appendChild(blackRing);
+
+            // White gap
+            const whiteGap = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            whiteGap.setAttribute("r", 7.5);
+            whiteGap.setAttribute("fill", "white");
+            g.appendChild(whiteGap);
+
+            // Blue button
+            const blueBtn = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            blueBtn.setAttribute("r", 6);
+            blueBtn.setAttribute("fill", "#528CCB");
+            g.appendChild(blueBtn);
+
+            // Wheelchair Accessibility Icon (White) - exact Bloor-Yonge scale
+            const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z");
+            iconPath.setAttribute("fill", "white");
+            iconPath.setAttribute("transform", "translate(-4.8, -4.8) scale(0.6)");
+            g.appendChild(iconPath);
+
+            outer.appendChild(g);
+            document.getElementById('stations-layer').appendChild(outer);
+
+            // St George Label (Above the marker)
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.textContent = "St George";
+            text.setAttribute("class", "station-label");
+            text.setAttribute("x", x);
+            text.setAttribute("y", y - 20);
+            text.setAttribute("text-anchor", "middle");
+            document.getElementById('stations-layer').appendChild(text);
+        }
+
 
         function setupDragAndZoom() {
             if (typeof gsap === 'undefined' || typeof Draggable === 'undefined') return;
