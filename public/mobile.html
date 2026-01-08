@@ -7,7 +7,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TTC Subway</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=13">
+    <link rel="stylesheet" href="style.css?v=19">
 
     <style>
         /* Prevent blurry SVG when scaled */
@@ -1243,35 +1243,38 @@
             const mapWidth = 1020 * scale;
             const mapHeight = 800 * scale;
 
-            // Extra padding to allow some overflow past edges
-            const EDGE_PADDING = 100;
+            // Custom Padding configuration as requested
+            const PAD_TOP = 300;
+            const PAD_BOTTOM = 0; // Reduced to 0
+            const PAD_LEFT = 200;
+            const PAD_RIGHT = -200; // Increased by 300 (from -500)
 
             let minX, maxX, minY, maxY;
 
             if (mapWidth <= viewWidth) {
                 // Map fits in viewport - allow some wiggle room around center
                 const centerX = (viewWidth - mapWidth) / 2;
-                minX = centerX - EDGE_PADDING;
-                maxX = centerX + EDGE_PADDING;
+                minX = centerX - PAD_RIGHT;
+                maxX = centerX + PAD_LEFT;
             } else {
-                // Map is larger than viewport - allow panning to see all of it
-                // minX: map's right edge at viewport's right edge (shows left side of map)
-                // maxX: map's left edge at viewport's left edge (shows right side of map)
-                // Line 6 extends to x=-125, so we need to allow dragging further right to see negative X
-                const extraLeftPan = 300 * scale;
-                minX = viewWidth - mapWidth - EDGE_PADDING;  // Can drag left (see right of map)
-                maxX = EDGE_PADDING + extraLeftPan;           // Can drag right (see extended left of map)
+                // Map is larger than viewport
+                // minX: dragging left (seeing right side) -> uses PAD_RIGHT
+                minX = viewWidth - mapWidth - PAD_RIGHT;
+                // maxX: dragging right (seeing left side) -> uses PAD_LEFT
+                maxX = PAD_LEFT;
             }
 
             if (mapHeight <= viewHeight) {
-                // Map fits in viewport - allow some wiggle room around center
+                // Map fits in viewport
                 const centerY = (viewHeight - mapHeight) / 2;
-                minY = centerY - EDGE_PADDING;
-                maxY = centerY + EDGE_PADDING;
+                minY = centerY - PAD_BOTTOM;
+                maxY = centerY + PAD_TOP;
             } else {
-                // Map is larger than viewport - allow panning to see all of it
-                minY = viewHeight - mapHeight - EDGE_PADDING;
-                maxY = EDGE_PADDING;
+                // Map is larger than viewport
+                // minY: dragging up (seeing bottom) -> uses PAD_BOTTOM
+                minY = viewHeight - mapHeight - PAD_BOTTOM;
+                // maxY: dragging down (seeing top) -> uses PAD_TOP
+                maxY = PAD_TOP;
             }
 
             return { minX, maxX, minY, maxY };
