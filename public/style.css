@@ -171,18 +171,21 @@ canvas.vanta-canvas {
     stroke-width: 18px;
     stroke-linecap: round;
     stroke-linejoin: round;
-    filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.8));
+    /* Generic shadow removed, specific colored glows added to line classes below */
 }
 
 .line-1 {
+    stroke: var(--l1-color);
     stroke: var(--l1-color);
 }
 
 .line-2 {
     stroke: var(--l2-color);
+    stroke: var(--l2-color);
 }
 
 .line-4 {
+    stroke: var(--l4-color);
     stroke: var(--l4-color);
 }
 
@@ -193,6 +196,7 @@ canvas.vanta-canvas {
     stroke-linecap: butt !important;
     /* Clean rectangular dash ends */
     animation: line5Snake 1.5s linear infinite;
+    filter: none;
 }
 
 @keyframes line5Snake {
@@ -207,6 +211,7 @@ canvas.vanta-canvas {
 }
 
 .line-6 {
+    stroke: var(--l6-color);
     stroke: var(--l6-color);
 }
 
@@ -295,13 +300,15 @@ canvas.vanta-canvas {
     stroke-linecap: round;
     pointer-events: none;
     opacity: 0.9;
-    filter: drop-shadow(0 0 6px var(--alert-color));
+    /* Filter removed - using geometry glow */
+
     /* Glow Effect */
 }
 
 .alert-base.delay {
     stroke: var(--delay-color);
-    filter: drop-shadow(0 0 6px var(--delay-color));
+    /* Filter removed */
+
     /* Glow Effect */
 }
 
@@ -323,6 +330,8 @@ canvas.vanta-canvas {
     animation: pulseGlow 1.5s infinite;
 }
 
+
+
 @keyframes pulseGlow {
     0% {
         r: 8;
@@ -337,15 +346,17 @@ canvas.vanta-canvas {
 
 /* Flow Animations */
 .flow-forward {
-    stroke-dasharray: 20, 20;
+    stroke-dasharray: 20, 45;
+    /* 20px dash, 45px gap (More spaced) */
     stroke-width: 22px;
-    animation: flowDash 2s linear infinite;
+    animation: flowDash 1s linear infinite;
+    /* Faster (1s) */
 }
 
 .flow-reverse {
-    stroke-dasharray: 20, 20;
+    stroke-dasharray: 20, 45;
     stroke-width: 22px;
-    animation: flowDashReverse 2s linear infinite;
+    animation: flowDashReverse 1s linear infinite;
 }
 
 .pulse-solid {
@@ -354,13 +365,14 @@ canvas.vanta-canvas {
 
 @keyframes flowDash {
     to {
-        stroke-dashoffset: -40;
+        stroke-dashoffset: -65;
+        /* Must match total length (20+45) */
     }
 }
 
 @keyframes flowDashReverse {
     to {
-        stroke-dashoffset: 40;
+        stroke-dashoffset: 65;
     }
 }
 

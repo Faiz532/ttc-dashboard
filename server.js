@@ -181,6 +181,9 @@ async function parseAlertWithAI(text) {
         const response = await result.response;
         let textResponse = response.text();
 
+        console.log("📝 AI Input Text:", text);
+        console.log("🤖 AI Raw Response:", textResponse);
+
         // Clean markdown code blocks if present
         textResponse = textResponse.replace(/^```json/g, '').replace(/```$/g, '').trim();
 
@@ -198,10 +201,11 @@ async function parseAlertWithAI(text) {
             shuttle: text.toLowerCase().includes('shuttle'),
             originalText: text,
             activeStartTime: json.start_time ? new Date(json.start_time).getTime() : null,
-            activeStartTime: json.start_time ? new Date(json.start_time).getTime() : null,
             activeEndTime: json.end_time ? new Date(json.end_time).getTime() : null,
             effect: (json.severity === 'Delay' || json.severity === 'Minor') ? 'SIGNIFICANT_DELAYS' : 'NO_SERVICE'
         };
+
+        console.log("✅ AI Parsed Object:", JSON.stringify(resultObj, null, 2));
 
         // Cache valid results
         if (resultObj.line && resultObj.start) {

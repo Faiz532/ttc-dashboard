@@ -7,7 +7,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TTC Subway</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=49">
+    <link rel="stylesheet" href="style.css?v=66">
 
     <style>
         /* Prevent blurry SVG when scaled */
@@ -40,6 +40,78 @@
         <!-- SVG Map Container - viewBox extended to 1020 to include Kennedy Line 5 terminal -->
         <svg id="map-root" viewBox="0 0 1020 800" preserveAspectRatio="xMidYMid meet"
             xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- Line 1 Glow -->
+                <filter id="glow-l1" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                    <feFlood flood-color="#FFC425" flood-opacity="0.5" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Line 2 Glow -->
+                <filter id="glow-l2" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                    <feFlood flood-color="#009639" flood-opacity="0.5" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Line 4 Glow -->
+                <filter id="glow-l4" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                    <feFlood flood-color="#B11D8C" flood-opacity="0.5" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Line 5 Glow -->
+                <filter id="glow-l5" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                    <feFlood flood-color="#F37021" flood-opacity="0.5" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Line 6 Glow -->
+                <filter id="glow-l6" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
+                    <feFlood flood-color="#9ca3af" flood-opacity="0.4" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Alert Glow (Strong Red) -->
+                <filter id="glow-alert" x="-500%" y="-500%" width="1000%" height="1000%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="15" result="blur" />
+                    <feFlood flood-color="#ef4444" flood-opacity="1" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Delay Glow (Strong Orange) -->
+                <filter id="glow-delay" x="-500%" y="-500%" width="1000%" height="1000%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="15" result="blur" />
+                    <feFlood flood-color="#f59e0b" flood-opacity="1" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
             <g id="tracks-layer"></g>
             <g id="alerts-layer"></g>
             <g id="stations-layer"></g>
@@ -1036,6 +1108,20 @@
         setInterval(updateClock, 1000);
         updateClock(); // Initial call
 
+        // Helper to find station index with fuzzy matching
+        function findStationIndex(lineObj, name) {
+            if (!name) return -1;
+            const clean = name.toLowerCase().replace(/ station/g, '').replace(/\./g, '').trim();
+            // Try exact match first for speed
+            let idx = lineObj.stations.findIndex(s => s.name === name);
+            if (idx !== -1) return idx;
+            // Fuzzy match
+            return lineObj.stations.findIndex(s => {
+                const sClean = s.name.toLowerCase().replace(/\./g, '').trim();
+                return sClean === clean;
+            });
+        }
+
         function mergeOverlappingAlerts(alerts) {
             const pointAlerts = alerts.filter(a => a.singleStation);
             const pathAlerts = alerts.filter(a => !a.singleStation);
@@ -1053,8 +1139,8 @@
                 if (!lineVal) return;
 
                 const mapped = alertsByLine[line].map(a => {
-                    const idx1 = lineVal.stations.findIndex(s => s.name === a.start);
-                    const idx2 = lineVal.stations.findIndex(s => s.name === a.end);
+                    const idx1 = findStationIndex(lineVal, a.start);
+                    const idx2 = findStationIndex(lineVal, a.end);
                     return {
                         original: a,
                         startIdx: Math.min(idx1, idx2),
@@ -1103,7 +1189,7 @@
         function calculateFlow(line, startName, endName, direction) {
             if (direction === 'Both Ways') return 'both';
             const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return 'forward';
-            const idx1 = lineObj.stations.findIndex(s => s.name === startName); const idx2 = lineObj.stations.findIndex(s => s.name === endName);
+            const idx1 = findStationIndex(lineObj, startName); const idx2 = findStationIndex(lineObj, endName);
             if (direction && line === '1') {
                 const unionIdx = 21; const midIdx = (idx1 + idx2) / 2;
                 if (midIdx < unionIdx) {
@@ -1118,7 +1204,7 @@
         function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay) {
             const layer = document.getElementById('alerts-layer');
             const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
-            const idx1 = lineObj.stations.findIndex(s => s.name === startName); const idx2 = lineObj.stations.findIndex(s => s.name === endName);
+            const idx1 = findStationIndex(lineObj, startName); const idx2 = findStationIndex(lineObj, endName);
             if (idx1 === -1 || idx2 === -1) return;
             const segment = lineObj.stations.slice(Math.min(idx1, idx2), Math.max(idx1, idx2) + 1);
             const d = getPathFromStations(segment, line);
@@ -1126,6 +1212,8 @@
                 const shuttlePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 shuttlePath.setAttribute("d", d); shuttlePath.setAttribute("class", "shuttle-outline"); layer.appendChild(shuttlePath);
             }
+
+            // Create Main Path (Foreground)
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             path.setAttribute("d", d); path.setAttribute("class", "alert-base");
             if (isDelay) path.classList.add("delay");
@@ -1137,7 +1225,10 @@
         function drawStationAlert(line, stationName, isDelay) {
             const layer = document.getElementById('alerts-layer');
             const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
-            const s = lineObj.stations.find(st => st.name === stationName); if (!s) return;
+            const idx = findStationIndex(lineObj, stationName);
+            if (idx === -1) return;
+            const s = lineObj.stations[idx];
+
             const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             circle.setAttribute("cx", s.x); circle.setAttribute("cy", s.y); circle.setAttribute("r", 10); circle.setAttribute("class", "station-alert-glow");
             if (isDelay) circle.style.stroke = "var(--delay-color)";
