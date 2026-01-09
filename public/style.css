@@ -40,14 +40,16 @@ body.light-mode {
 /* Light mode footer - solid color, no gradient */
 body.light-mode .bottom-nav {
     background: #c4c4c8;
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    /* Full border override */
 }
 
 /* Light mode disclaimer banner */
 body.light-mode .disclaimer-banner {
     background: rgba(200, 200, 205, 0.98);
     color: #000000;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    /* Full border override */
 }
 
 body.light-mode .disclaimer-banner .disclaimer-content {
@@ -56,7 +58,7 @@ body.light-mode .disclaimer-banner .disclaimer-content {
 
 /* Light mode FAB shadows */
 body.light-mode .fab {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Ensure Info and Layers buttons get shadows (they have 3D animation spans) */
@@ -694,26 +696,31 @@ canvas.vanta-canvas {
 }
 
 /* Disclaimer Banner */
+/* Disclaimer Banner */
 .disclaimer-banner {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
+    bottom: 30px;
+    /* Cover floating footer */
+    left: 20px;
+    right: 20px;
+    width: auto;
+    border-radius: 20px;
+    /* Floating Pill */
     background: rgba(22, 25, 31, 0.95);
-    backdrop-filter: blur(10px);
-    color: white;
-    /* Always white on dark banner */
-    -webkit-backdrop-filter: blur(10px);
-    border-top: 1px solid var(--surface-glass-border);
-    padding: 20px 24px;
-    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--surface-glass-border);
+    padding: 16px 20px;
+    /* Compact padding */
     z-index: 200;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    transform: translateY(100%);
+    gap: 12px;
+    transform: translateY(150%);
+    /* Start lower */
     transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    /* Strong lift */
 }
 
 .disclaimer-banner.visible {
@@ -943,6 +950,8 @@ canvas.vanta-canvas {
     /* Lift effect */
     padding: 0 6px;
     /* Inner padding for pills */
+    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    /* Animate hide/show */
 }
 
 /* Ensure padding for safe area logic is handled by margin on container if needed, 

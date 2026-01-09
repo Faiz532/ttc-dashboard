@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>TTC Subway</title>
+    <title>Toronto Transit Live</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=77">
+    <link rel="stylesheet" href="style.css?v=79">
 
     <style>
         /* Prevent blurry SVG when scaled */
@@ -150,7 +150,7 @@
 
                 <!-- Info Popup -->
                 <div id="info-popup" class="layer-popup hidden" style="left: 60px; right: auto; top: 0;">
-                    <div class="layer-popup-title">TTC Dashboard <span
+                    <div class="layer-popup-title">Toronto Transit Live <span
                             style="font-size: 10px; opacity: 0.6; font-weight: 400; margin-left: 4px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">ALPHA</span>
                     </div>
                     <div class="info-popup-content">
@@ -280,7 +280,8 @@
                 <i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>Disclaimer
             </h2>
             <p style="font-size:14px; line-height:1.5; color:#d1d5db; margin-bottom:12px;">
-                This is a <strong>personal project</strong> and not an official TTC map. There could be mistakes.
+                This is a <strong>personal project</strong> and not an official TTC map. There could be mistakes. This
+                app is not affiliated with the Toronto Transit Commission (TTC).
             </p>
             <p style="font-size:14px; line-height:1.5; color:#d1d5db; margin-bottom:20px;">
                 I made this because I was not able to easily know if an outage would affect me. I had to always look up
@@ -1564,7 +1565,8 @@
     <div id="disclaimer-banner" class="disclaimer-banner">
         <div class="disclaimer-content">
             <i class="fas fa-exclamation-triangle" style="color: #FFB700; margin-right: 12px; font-size: 16px;"></i>
-            <span>This is a personal project. Data and alerts may be inaccurate or delayed.</span>
+            <span>This is a personal project. Data and alerts may be inaccurate or delayed. This app is not affiliated
+                with the Toronto Transit Commission (TTC).</span>
         </div>
         <button id="btn-accept-disclaimer">I Understand</button>
     </div>
@@ -1574,14 +1576,20 @@
         document.addEventListener('DOMContentLoaded', () => {
             const banner = document.getElementById('disclaimer-banner');
             const btn = document.getElementById('btn-accept-disclaimer');
+            const nav = document.querySelector('.bottom-nav');
+
+            // Hide Nav immediately to let disclaimer take focus
+            if (nav) nav.style.transform = 'translateY(200%)';
 
             // Always show on load (as requested)
             setTimeout(() => {
                 banner.classList.add('visible');
-            }, 1000); // Delay slightly for effect
+            }, 500);
 
             btn.addEventListener('click', () => {
                 banner.classList.remove('visible');
+                // Bring nav back
+                if (nav) nav.style.transform = 'translateY(0)';
             });
         });
     </script>
