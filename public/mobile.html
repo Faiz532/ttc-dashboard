@@ -7,7 +7,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TTC Subway</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=66">
+    <link rel="stylesheet" href="style.css?v=77">
 
     <style>
         /* Prevent blurry SVG when scaled */
@@ -153,13 +153,12 @@
                     <div class="layer-popup-title">TTC Dashboard <span
                             style="font-size: 10px; opacity: 0.6; font-weight: 400; margin-left: 4px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">ALPHA</span>
                     </div>
-                    <div style="font-size: 13px; color: #ccc; margin-bottom: 15px; line-height: 1.4;">
+                    <div class="info-popup-content">
                         Real-time tracking of TTC subway alerts, outages, and delays.
                         <br><br>
                         v1.2.0 Alpha • 2026
                     </div>
-                    <div
-                        style="font-size: 11px; color: var(--l1-color); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+                    <div class="info-popup-footer">
                         Made by Faiz P
                     </div>
                 </div>
@@ -465,6 +464,7 @@
             renderMap();
             setupDragAndZoom(); // Now handles all dragging setup including initial positioning
             setupPinchZoom();
+            setupSheetGestures();
             fetchData();
             pollingInterval = setInterval(fetchData, 60000);
 
@@ -523,10 +523,41 @@
             // Handle Sheets
             Object.values(sheets).forEach(s => s.classList.remove('active'));
             if (tab === 'alerts' || tab === 'upcoming') {
-                if (sheets[tab]) sheets[tab].classList.add('active');
+                if (sheets[tab]) {
+                    sheets[tab].classList.add('active');
+                    // Reset any random drag position
+                    gsap.set(sheets[tab], { clearProps: "transform" });
+                }
             }
 
             activeTab = tab;
+        }
+
+        // --- Draggable Sheets Logic ---
+        function setupSheetGestures() {
+            if (typeof Draggable === 'undefined') return;
+
+            Object.values(sheets).forEach(sheet => {
+                if (!sheet) return;
+                Draggable.create(sheet, {
+                    type: "y",
+                    trigger: sheet.querySelector('.sheet-handle-area'),
+                    bounds: { minY: 0, maxY: window.innerHeight },
+                    inertia: true,
+                    zIndexBoost: false, // Prevent sheet from covering footer
+                    onDragEnd: function () {
+                        if (this.y > 80) {
+                            // Dragged down enough -> Close
+                            switchTab('map');
+                            // Clear props to let CSS transition take over for hiding
+                            gsap.set(this.target, { clearProps: "transform,zIndex" });
+                        } else {
+                            // Snap back to open position
+                            gsap.to(this.target, { y: 0, duration: 0.3, ease: "power2.out" });
+                        }
+                    }
+                });
+            });
         }
 
         // --- Map Rendering ---
