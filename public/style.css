@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --bg-color: #000000;
+    --bg-color: #0F1014;
     /* Deep black for OLED */
     --surface-glass: rgba(22, 22, 24, 0.85);
     --surface-glass-border: rgba(255, 255, 255, 0.1);
 
     --l1-color: #FFC425;
     --l2-color: #009639;
-    --l4-color: #A319FF;
+    --l4-color: #B11D8C;
     --l5-color: #F37021;
     --l6-color: #9ca3af;
     /* Line 6 - Finch West LRT - Grey */
@@ -25,13 +25,112 @@
     --safe-area-bottom: env(safe-area-inset-bottom, 20px);
 }
 
+/* Light Mode Overrides */
+body.light-mode {
+    --bg-color: #d4d4d8;
+    /* Softer grey, less bright */
+    --surface-glass: rgba(220, 220, 220, 0.9);
+    --surface-glass-border: rgba(0, 0, 0, 0.1);
+    --text-main: #1f2937;
+    --text-muted: #4b5563;
+    --alert-color: #dc2626;
+    /* Slightly darker red for contrast */
+}
+
+/* Light mode footer - solid color, no gradient */
+body.light-mode .bottom-nav {
+    background: #c4c4c8;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Light mode disclaimer banner */
+body.light-mode .disclaimer-banner {
+    background: rgba(200, 200, 205, 0.98);
+    color: #000000;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .disclaimer-banner .disclaimer-content {
+    color: #000000;
+}
+
+/* Light mode FAB shadows */
+body.light-mode .fab {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Ensure Info and Layers buttons get shadows (they have 3D animation spans) */
+body.light-mode #btn-info,
+body.light-mode #btn-legend {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Line 5 Opening Soon label - light mode */
+body.light-mode #line5-label rect {
+    fill: #d4d4d8;
+}
+
+body.light-mode #line5-label text {
+    fill: #1f2937;
+}
+
+/* Light mode sheet container */
+body.light-mode .sheet-container {
+    background: #d4d4d8;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .sheet-handle {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+body.light-mode .sheet-title {
+    color: #1f2937;
+}
+
+body.light-mode .sheet-subtitle {
+    color: #4b5563;
+}
+
+/* Light mode alert cards */
+body.light-mode .alert-card {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .alert-title {
+    color: #1f2937;
+}
+
+body.light-mode .alert-desc {
+    color: #4b5563;
+}
+
+body.light-mode .alert-header {
+    color: #1f2937;
+}
+
+body.light-mode .alert-body {
+    color: #374151;
+}
+
+body.light-mode .alert-body div {
+    color: #374151 !important;
+}
+
+/* Remove text shadows in light mode for cleaner text */
+body.light-mode .station-label,
+body.light-mode .terminal-label,
+body.light-mode .header-clock {
+    text-shadow: none;
+}
+
 * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
 }
 
 body {
-    background-color: #0f1115;
+    background-color: var(--bg-color);
     color: var(--text-main);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     overflow: hidden;
@@ -44,16 +143,19 @@ body {
 }
 
 /* --- Map Container --- */
+/* --- Map Container --- */
 #map-viewport {
     width: 100%;
     height: 100%;
     position: absolute;
-    top: 0;
+    z-index: 10;
+}
+
+canvas.vanta-canvas {
+    z-index: -1 !important;
+    position: absolute;
     left: 0;
-    z-index: 1;
-    /* Lowest level */
-    background-color: #0f1115;
-    /* Solid dark background */
+    top: 0;
 }
 
 #map-root {
@@ -86,6 +188,22 @@ body {
 
 .line-5 {
     stroke: var(--l5-color);
+    stroke-dasharray: 30 15;
+    /* 30px dash, 15px gap */
+    stroke-linecap: butt !important;
+    /* Clean rectangular dash ends */
+    animation: line5Snake 1.5s linear infinite;
+}
+
+@keyframes line5Snake {
+    0% {
+        stroke-dashoffset: 0;
+    }
+
+    100% {
+        stroke-dashoffset: 45;
+        /* Total of dash + gap */
+    }
 }
 
 .line-6 {
@@ -150,7 +268,7 @@ body {
     font-family: 'Inter';
     font-weight: 700;
     font-size: 12px;
-    fill: white;
+    fill: var(--text-main);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
     pointer-events: none;
 }
@@ -166,6 +284,7 @@ body {
     font-size: 14px;
     text-anchor: middle;
     dominant-baseline: middle;
+    /* fill is set inline: black for Line 1, white for others */
 }
 
 /* Alert Styling on Map */
@@ -296,7 +415,7 @@ body {
     width: 60px;
     /* Expands on focus */
     transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-    color: white;
+    color: var(--text-main);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
@@ -307,7 +426,7 @@ body {
 .search-input {
     background: transparent;
     border: none;
-    color: white;
+    color: var(--text-main);
     width: 100%;
     margin-left: 12px;
     outline: none;
@@ -335,7 +454,7 @@ body {
     background: var(--surface-glass);
     backdrop-filter: blur(20px);
     border: 1px solid var(--surface-glass-border);
-    color: white;
+    color: var(--text-main);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -345,6 +464,10 @@ body {
 
 .fab:active {
     transform: scale(0.95);
+}
+
+.fab i {
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 3D Layer Button Animation */
@@ -380,7 +503,7 @@ body {
 #btn-legend .fab-icon {
     z-index: 5;
     background: var(--surface-glass);
-    color: white;
+    color: var(--text-main);
     font-size: 18px;
 }
 
@@ -449,6 +572,77 @@ body {
 /* Info Popup specific override */
 #info-popup {
     transform-origin: top left;
+    top: 70px !important;
+    /* Move down below button */
+}
+
+/* 3D Info Button Animation (Reversed Direction) */
+#btn-info {
+    position: relative;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    transition: transform 0.5s;
+    overflow: visible;
+}
+
+#btn-info span {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--surface-glass);
+    border: 1px solid var(--surface-glass-border);
+    border-radius: 50%;
+    transition: 0.5s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(20px);
+}
+
+/* Top layer with icon */
+#btn-info .fab-icon {
+    z-index: 5;
+    background: var(--surface-glass);
+    color: var(--text-main);
+    font-size: 18px;
+}
+
+/* Active Effects (Menu Open) - Translate RIGHT (Positive) */
+#btn-info.active span:nth-child(5) {
+    transform: translate(12px, 0);
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+#btn-info.active span:nth-child(4) {
+    transform: translate(9px, 0);
+    opacity: 0.8;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#btn-info.active span:nth-child(3) {
+    transform: translate(6px, 0);
+    opacity: 0.6;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+#btn-info.active span:nth-child(2) {
+    transform: translate(3px, 0);
+    opacity: 0.4;
+}
+
+#btn-info:hover span:nth-child(1),
+#btn-info.active span:nth-child(1) {
+    transform: translate(0, 0);
+    opacity: 0.2;
+}
+
+#btn-info .fab-icon i {
+    transform: none;
 }
 
 /* Header Clock */
@@ -457,7 +651,7 @@ body {
     left: 50%;
     transform: translateX(-50%);
     text-align: center;
-    color: white;
+    color: var(--text-main);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     margin-top: 4px;
     /* Slight adjustment */
@@ -495,6 +689,8 @@ body {
     width: 100%;
     background: rgba(22, 25, 31, 0.95);
     backdrop-filter: blur(10px);
+    color: white;
+    /* Always white on dark banner */
     -webkit-backdrop-filter: blur(10px);
     border-top: 1px solid var(--surface-glass-border);
     padding: 20px 24px;
@@ -541,7 +737,7 @@ body {
     font-size: 14px;
     font-weight: 700;
     margin-bottom: 12px;
-    color: white;
+    color: var(--text-main);
 }
 
 .layer-toggle {
@@ -551,7 +747,7 @@ body {
     padding: 8px 0;
     cursor: pointer;
     font-size: 13px;
-    color: #ccc;
+    color: var(--text-muted);
 }
 
 .layer-toggle input[type="checkbox"] {
@@ -562,7 +758,7 @@ body {
     width: 16px;
     height: 16px;
     border-radius: 4px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid var(--surface-glass-border);
     transition: all 0.2s;
 }
 
@@ -576,6 +772,17 @@ body {
 
 .layer-toggle input:not(:checked)+.toggle-indicator {
     opacity: 0.3;
+}
+
+.toggle-indicator.theme-toggle {
+    border: 2px solid var(--text-muted);
+    background: transparent;
+}
+
+.layer-toggle input:checked+.toggle-indicator.theme-toggle {
+    background: var(--text-main);
+    border-color: var(--text-main);
+    opacity: 1;
 }
 
 /* --- Bottom Sheets --- */
@@ -652,7 +859,7 @@ body {
 /* --- Bottom Navigation --- */
 .bottom-nav {
     height: calc(var(--nav-height) + var(--safe-area-bottom));
-    background: rgba(22, 25, 31, 0.95);
+    background: rgba(15, 16, 20, 0.95);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     border-top: 1px solid var(--surface-glass-border);
@@ -781,7 +988,7 @@ body {
 }
 
 .line-5-inner {
-    stroke: #0f1115;
+    stroke: var(--bg-color);
     stroke-width: 10px;
     fill: none;
     pointer-events: none;

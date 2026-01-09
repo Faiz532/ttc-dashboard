@@ -7,7 +7,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TTC Subway</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=19">
+    <link rel="stylesheet" href="style.css?v=49">
 
     <style>
         /* Prevent blurry SVG when scaled */
@@ -31,16 +31,27 @@
 </head>
 
 <body>
+    <div id="vanta-bg"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0.25;">
+    </div>
 
     <!-- MAP CONTAINER (Background) -->
-    <div id="map-viewport"
-        style="background-color: #0f1115; background-image: radial-gradient(circle at center, #1a1d24 1px, transparent 1px); background-size: 40px 40px;">
+    <div id="map-viewport">
         <!-- SVG Map Container - viewBox extended to 1020 to include Kennedy Line 5 terminal -->
         <svg id="map-root" viewBox="0 0 1020 800" preserveAspectRatio="xMidYMid meet"
             xmlns="http://www.w3.org/2000/svg">
             <g id="tracks-layer"></g>
             <g id="alerts-layer"></g>
             <g id="stations-layer"></g>
+            <!-- Line 5 Opening Soon Label -->
+            <g id="line5-label" transform="translate(830, 420)">
+                <rect x="-75" y="-18" width="150" height="36" rx="6" fill="#0F1014" stroke="var(--l5-color)"
+                    stroke-width="2" />
+                <circle cx="-55" cy="0" r="12" fill="var(--l5-color)" />
+                <text x="-55" y="4" fill="white" font-size="11" font-weight="700" text-anchor="middle">5</text>
+                <text x="10" y="5" fill="white" font-size="11" font-weight="600" text-anchor="middle">Opening
+                    Soon</text>
+            </g>
         </svg>
     </div>
 
@@ -53,7 +64,17 @@
 
             <!-- Info Button to replace Search -->
             <div class="fab-stack" style="margin-left: 0; margin-right: auto; pointer-events: auto;">
-                <div class="fab" id="btn-info" style="margin-bottom:0;"><i class="fas fa-info-circle"></i></div>
+                <div class="fab" id="btn-info" style="margin-bottom:0;">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span class="fab-icon"><i class="fas fa-info-circle"></i></span>
+                </div>
+                <!-- Theme Toggle Button -->
+                <div class="fab" id="btn-theme">
+                    <i class="fas fa-moon"></i>
+                </div>
 
                 <!-- Info Popup -->
                 <div id="info-popup" class="layer-popup hidden" style="left: 60px; right: auto; top: 0;">
@@ -126,7 +147,17 @@
                     </div>
                 </div>
                 <div class="sheet-content" id="alerts-list">
-                    <!-- Alert Cards Here -->
+                    <!-- Line 5 Coming Soon Notice -->
+                    <div class="alert-card" style="border-left: 4px solid var(--l5-color); opacity: 0.9;">
+                        <div class="alert-badge" style="background: var(--l5-color);">5</div>
+                        <div class="alert-info">
+                            <div class="alert-title"><i class="fas fa-hard-hat" style="margin-right: 6px;"></i>Line 5
+                                Eglinton - Coming Soon</div>
+                            <div class="alert-desc">This line is not yet in service. Real-time tracking will be
+                                available once the line opens.</div>
+                        </div>
+                    </div>
+                    <!-- Dynamic Alert Cards Here -->
                 </div>
             </div>
 
@@ -192,6 +223,8 @@
     </div>
 
     <!-- MAIN APP SCRIPT -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanta/0.5.24/vanta.net.min.js"></script>
     <script>
         // --- State Management ---
         let activeTab = 'map';
@@ -549,8 +582,7 @@
                         // Skip Line 6 Finch West (use Line 1)
                         const sName = s.name.trim(); // Sanitize name
                         const isDup = (l.line === '4' && sName === "Sheppard-Yonge") ||
-                            (l.line === '1' && ["Spadina", "St George", "Bloor-Yonge"].includes(sName)) ||
-                            (l.line === '6' && sName === "Finch West");
+                            (l.line === '1' && ["Spadina", "St George", "Bloor-Yonge"].includes(sName));
 
                         if (!isDup) {
                             // Use displayName if available, otherwise use name
@@ -603,6 +635,8 @@
                                 // Line 6 stations - label positioning
                                 if (s.name === "Humber College") {
                                     rot = 0; tx = 25; ty = 5; anchor = "start";  // Humber College: Name on Right, Badge Bottom
+                                } else if (sName === "Finch West") {
+                                    rot = 0; tx = 20; ty = 5; anchor = "start"; // Finch West: Name on Right
                                 } else {
                                     // Stations to show on TOP (above track)
                                     const topStations = ["Westmore", "Martin Grove", "Albion", "Stevenson", "Mount Olive", "Rowntree Mills", "Pearldale", "Duncanwoods"];
@@ -649,12 +683,12 @@
             const pillGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
             pillGroup.setAttribute("class", "station-marker spadina-transfer");
 
-            // 1. The Pill Container (White stroke, Black fill) - LARGER
+            // 1. The Pill Container (White stroke, Black fill) - Smaller to fit tracks
             const pill = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            const w = 32;   // Increased from 26
-            const h = 52;   // Increased from 44
+            const w = 24;   // Reduced from 32
+            const h = 40;   // Reduced from 52
             pill.setAttribute("x", x - w / 2);
-            pill.setAttribute("y", y1 - 12);  // Adjusted for taller pill
+            pill.setAttribute("y", y1 - 12);  // Extended upwards by 4px
             pill.setAttribute("width", w);
             pill.setAttribute("height", h);
             pill.setAttribute("rx", w / 2); // Full rounded
@@ -673,21 +707,21 @@
             line.setAttribute("stroke-width", "4");
             pillGroup.appendChild(line);
 
-            // 3. Top Circle (White filled - Line 1) - LARGER
+            // 3. Top Circle (White filled - Line 1) - Smaller to match pill
             const topCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             topCircle.setAttribute("cx", x);
             topCircle.setAttribute("cy", y1);
-            topCircle.setAttribute("r", 9);  // Reduced from 10
+            topCircle.setAttribute("r", 7);  // Reduced from 9
             topCircle.setAttribute("fill", "white");
             pillGroup.appendChild(topCircle);
 
             // 4. Bottom Circle (Blue Access Icon - Line 2)
             const bottomGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            bottomGroup.setAttribute("transform", `translate(${x}, ${y2 + 8})`);  // Moved down 8px
+            bottomGroup.setAttribute("transform", `translate(${x}, ${y2 - 2})`);  // Moved up 2px more
 
             // Access icon background (Blue circle) - with white border
             const blueBtn = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            blueBtn.setAttribute("r", 8);  // Smaller
+            blueBtn.setAttribute("r", 6);  // Reduced from 8
             blueBtn.setAttribute("fill", "#528CCB");
             blueBtn.setAttribute("stroke", "white");
             blueBtn.setAttribute("stroke-width", "2");
@@ -805,7 +839,7 @@
         function getLineColor(id) {
             if (id === '1') return '#FFC425';
             if (id === '2') return '#009639';
-            if (id === '4') return '#A319FF';
+            if (id === '4') return '#B11D8C';
             if (id === '5') return '#F37021';
             if (id === '6') return '#9ca3af';  // Finch West LRT - Grey
             return 'white';
@@ -827,6 +861,80 @@
                 updateBadges();
             } catch (e) { console.warn("Fetch error", e); }
         }
+
+        // Theme & Vanta Logic
+        let vantaEffect = null;
+        const themeBtn = document.getElementById('btn-theme');
+        const themeIcon = themeBtn.querySelector('i');
+
+        function updateVanta(theme) {
+            const isLight = theme === 'light';
+            // Dark Mode: Greyish Black (#0F1014 / 0x0F1014)
+            const bg = isLight ? 0xd4d4d8 : 0x0F1014;
+            const color = isLight ? 0x000000 : 0xffffff;
+
+            if (!vantaEffect) {
+                if (window.VANTA) {
+                    vantaEffect = VANTA.NET({
+                        el: "#vanta-bg",
+                        mouseControls: true,
+                        touchControls: true,
+                        gyroControls: false,
+                        minHeight: 200.00,
+                        minWidth: 200.00,
+                        scale: 1.00,
+                        scaleMobile: 1.00,
+                        color: color,
+                        backgroundColor: bg,
+                        maxDistance: 25.00,
+                        spacing: 30.00,
+                        points: 8.0
+                    });
+                }
+            } else {
+                vantaEffect.setOptions({
+                    color: color,
+                    backgroundColor: bg
+                });
+            }
+        }
+
+        function updateThemeIcon(theme) {
+            if (theme === 'light') {
+                themeIcon.className = 'fas fa-sun';
+            } else {
+                themeIcon.className = 'fas fa-moon';
+            }
+        }
+
+        // Initialize Theme
+        let currentTheme = localStorage.getItem('theme') || 'dark';
+        if (currentTheme === 'light') {
+            document.body.classList.add('light-mode');
+        }
+        updateThemeIcon(currentTheme);
+        updateVanta(currentTheme);
+
+        // Theme Button Click Handler with Animation
+        themeBtn.addEventListener('click', () => {
+            // Rotate icon animation
+            themeIcon.style.transform = 'rotate(360deg)';
+            setTimeout(() => { themeIcon.style.transform = 'none'; }, 500);
+
+            if (document.body.classList.contains('light-mode')) {
+                // Switch to Dark
+                document.body.classList.remove('light-mode');
+                localStorage.setItem('theme', 'dark');
+                updateVanta('dark');
+                updateThemeIcon('dark');
+            } else {
+                // Switch to Light
+                document.body.classList.add('light-mode');
+                localStorage.setItem('theme', 'light');
+                updateVanta('light');
+                updateThemeIcon('light');
+            }
+        });
 
         // Layer toggle states
         let showOutages = true;
@@ -867,12 +975,14 @@
             document.getElementById('btn-legend').classList.toggle('active');
             // Close info popup if open
             document.getElementById('info-popup').classList.add('hidden');
+            document.getElementById('btn-info').classList.remove('active');
         });
 
         // Info button toggle
         document.getElementById('btn-info').addEventListener('click', (e) => {
             e.stopPropagation();
             document.getElementById('info-popup').classList.toggle('hidden');
+            document.getElementById('btn-info').classList.toggle('active');
             // Close layer popup if open
             document.getElementById('layer-popup').classList.add('hidden');
             document.getElementById('btn-legend').classList.remove('active');
@@ -894,6 +1004,7 @@
             // Close Info Popup
             if (!infoPopup.classList.contains('hidden') && !infoPopup.contains(e.target) && !infoBtn.contains(e.target)) {
                 infoPopup.classList.add('hidden');
+                infoBtn.classList.remove('active');
             }
         });
 
@@ -1044,10 +1155,23 @@
                 : activeAlerts.filter(a => a.line === selectedAlertLine);
 
             // Alerts List
-            const alertsHtml = filteredAlerts.length
+            // Line 5 Coming Soon Notice (always shown at top)
+            const line5Notice = `
+                <div class="alert-card" style="border-left: 4px solid var(--l5-color); opacity: 0.9;">
+                    <div class="alert-badge" style="background: var(--l5-color); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">5</div>
+                    <div class="alert-info">
+                        <div class="alert-title"><i class="fas fa-hard-hat" style="margin-right: 6px;"></i>Line 5 Eglinton - Coming Soon</div>
+                        <div class="alert-desc">This line is not yet in service. Real-time tracking will be available once the line opens.</div>
+                    </div>
+                </div>`;
+
+            const dynamicAlertsHtml = filteredAlerts.length
                 ? filteredAlerts.map(a => createAlertCard(a)).join('')
                 : '<div style="text-align:center; padding:20px; color:gray">No alerts for this line</div>';
-            document.getElementById('alerts-list').innerHTML = alertsHtml;
+
+            // Show Line 5 notice only when filter is 'all' or '5'
+            const showLine5Notice = selectedAlertLine === 'all' || selectedAlertLine === '5';
+            document.getElementById('alerts-list').innerHTML = (showLine5Notice ? line5Notice : '') + dynamicAlertsHtml;
 
             // Upcoming List
             const upcomingHtml = upcomingAlerts.length ? upcomingAlerts.map(a => createAlertCard(a, true)).join('') : '<div style="text-align:center; padding:20px; color:gray">No upcoming alerts</div>';

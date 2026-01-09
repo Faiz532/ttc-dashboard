@@ -131,25 +131,46 @@ async function parseAlertWithAI(text) {
     try {
         const currentTime = new Date().toLocaleString('en-US', { timeZone: 'America/Toronto' });
         const prompt = `
-        You are a TTC Subway Alert Parser. Current Time in Toronto: "${currentTime}".
+        You are a TTC Subway Alert Parser for a real-time subway map app.
+        Current Time in Toronto: "${currentTime}".
         
-        Analyze this alert text. determine if it is ACTIVE NOW or in the FUTURE.
-        - If "Starts at 11pm" and it is 10pm -> FUTURE.
-        - If "Weekend Closure" and it is Friday -> FUTURE (unless it says Friday late evening).
-        - If "Active" or "Delays" -> ACTIVE.
+        ## APP CONTEXT
+        This app displays a visual subway map with animated alerts:
+        - Line 1 (Yellow): Vaughan MC to Finch via Union (U-shaped)
+        - Line 2 (Green): Kipling to Kennedy (horizontal)
+        - Line 4 (Purple): Sheppard-Yonge to Don Mills (short horizontal)
+        - Line 5 (Orange): Eglinton - NOT YET IN SERVICE (coming soon)
+        - Line 6 (Grey): Finch West LRT
         
-        Return ONLY valid JSON.
+        ## VALID STATION NAMES (use exactly these names)
+        Line 1: Vaughan Metropolitan Centre, Highway 407, Pioneer Village, York University, Finch West, Downsview Park, Sheppard West, Wilson, Yorkdale, Lawrence West, Glencairn, Eglinton West, St Clair West, Dupont, Spadina, St George, Museum, Queen's Park, St Patrick, Osgoode, St Andrew, Union, King, Queen, Dundas, College, Wellesley, Bloor-Yonge, Rosedale, Summerhill, St Clair, Davisville, Eglinton, Lawrence, York Mills, Sheppard-Yonge, North York Centre, Finch
+        Line 2: Kipling, Islington, Royal York, Old Mill, Jane, Runnymede, High Park, Keele, Dundas West, Lansdowne, Dufferin, Ossington, Christie, Bathurst, Spadina, St George, Bay, Bloor-Yonge, Sherbourne, Castle Frank, Broadview, Chester, Pape, Donlands, Greenwood, Coxwell, Woodbine, Main Street, Victoria Park, Warden, Kennedy
+        Line 4: Sheppard-Yonge, Bayview, Bessarion, Leslie, Don Mills
         
-        Schema:
+        ## TASK
+        Parse the alert text below. Determine:
+        1. Which LINE is affected (1, 2, or 4)
+        2. START and END stations of the affected segment
+        3. Is it ACTIVE now or scheduled for FUTURE?
+        4. Direction affected ("Northbound", "Southbound", "Eastbound", "Westbound", or "Both Ways")
+        5. Severity: "Suspension" (no trains), "Delay" (slow/reduced), or "Minor"
+        
+        ## TIMING RULES
+        - "Starts at 11pm" and current time is 10pm → status: "future"
+        - "Weekend closure" on Friday before evening → status: "future"
+        - "Delays" or "Currently" → status: "active"
+        - "Cleared" or "Resumed" → status: "cleared"
+        
+        ## OUTPUT FORMAT (JSON only, no markdown)
         {
           "line": "1" | "2" | "4",
-          "start": "Station Name",
-          "end": "Station Name",
-          "reason": "Short reason",
-          "status": "active" | "cleared" | "future",
-          "direction": "Both Ways",
-          "start_time": "ISO 8601 string or null (if known future start)",
-          "end_time": "ISO 8601 string or null (if known future end)",
+          "start": "Exact Station Name",
+          "end": "Exact Station Name",
+          "reason": "Brief reason (e.g., 'Track issues', 'Signal problems')",
+          "status": "active" | "future" | "cleared",
+          "direction": "Northbound" | "Southbound" | "Eastbound" | "Westbound" | "Both Ways",
+          "start_time": "ISO 8601 or null",
+          "end_time": "ISO 8601 or null",
           "severity": "Suspension" | "Delay" | "Minor"
         }
 
