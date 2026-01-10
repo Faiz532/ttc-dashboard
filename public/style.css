@@ -303,18 +303,13 @@ canvas.vanta-canvas {
     stroke-linecap: round;
     pointer-events: none;
     opacity: 0.9;
-    /* Filter removed - using geometry glow */
-
-    /* Glow Effect */
 }
 
 .alert-base.delay {
     stroke: var(--delay-color);
-    /* Filter removed */
-
-    /* Glow Effect */
 }
 
+/* Shuttle outline glow */
 .shuttle-outline {
     fill: none;
     stroke: var(--shuttle-color);
