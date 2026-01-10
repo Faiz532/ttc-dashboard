@@ -1,0 +1,14 @@
+/* Prevent blurry SVG when scaled */
+#map-root {
+    transform-origin: 0 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    shape-rendering: geometricPrecision;
+    overflow: visible;
+}
+
+#map-root * {
+    shape-rendering: geometricPrecision;
+}
