@@ -7,7 +7,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Toronto Transit Live</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=79">
+    <link rel="stylesheet" href="style.css?v=82">
 
     <style>
         /* Prevent blurry SVG when scaled */
@@ -168,6 +168,13 @@
             <div id="clock-display" class="header-clock">
                 <div class="clock-time">--:--</div>
                 <div class="clock-date">---, --- --</div>
+            </div>
+
+            <!-- Status Indicator -->
+            <div id="status-indicator" class="status-indicator loading">
+                <div class="status-spinner"></div>
+                <span class="status-text">Loading</span>
+                <div class="live-dot"></div>
             </div>
 
             <!-- Right Side FABs -->
@@ -952,6 +959,14 @@
 
         // --- Data Fetching ---
         async function fetchData() {
+            const statusIndicator = document.getElementById('status-indicator');
+            const statusText = statusIndicator.querySelector('.status-text');
+
+            // Set loading state
+            statusIndicator.classList.remove('live');
+            statusIndicator.classList.add('loading');
+            statusText.textContent = 'Loading';
+
             try {
                 const [res1, res2] = await Promise.all([
                     fetch('/api/alerts'),
@@ -963,7 +978,16 @@
                 renderAlertsOnMap();
                 renderLists();
                 updateBadges();
-            } catch (e) { console.warn("Fetch error", e); }
+
+                // Set live state after successful fetch
+                statusIndicator.classList.remove('loading');
+                statusIndicator.classList.add('live');
+                statusText.textContent = 'Live';
+            } catch (e) {
+                console.warn("Fetch error", e);
+                // Keep loading state on error, or could show an error state
+                statusText.textContent = 'Error';
+            }
         }
 
         // Theme & Vanta Logic
