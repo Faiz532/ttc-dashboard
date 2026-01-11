@@ -1,3 +1,6 @@
+// Desktop Map Application - Toronto Transit Live
+// Extracted from desktop.html
+
 lucide.createIcons();
 let activeAlerts = [];
 let upcomingAlerts = [];
@@ -54,14 +57,13 @@ function switchTab(tab) {
 
 const rawMapData = [
     {
-        // Line 1 Update: Vertical from Finch West up to VMC
         line: "1",
         stations: [
-            { name: "Vaughan Metropolitan Centre", x: 300, y: 50, accessible: true }, // x changed to 300
-            { name: "Highway 407", x: 300, y: 80, accessible: true }, // x changed to 300
-            { name: "Pioneer Village", x: 300, y: 110, accessible: true }, // x changed to 300
-            { name: "York University", x: 300, y: 140, accessible: true }, // x changed to 300
-            { name: "Finch West", x: 300, y: 170, accessible: true }, // x changed to 300
+            { name: "Vaughan Metropolitan Centre", x: 300, y: 50, accessible: true },
+            { name: "Highway 407", x: 300, y: 80, accessible: true },
+            { name: "Pioneer Village", x: 300, y: 110, accessible: true },
+            { name: "York University", x: 300, y: 140, accessible: true },
+            { name: "Finch West", x: 300, y: 170, accessible: true },
             { name: "Downsview Park", x: 320, y: 200, accessible: true },
             { name: "Sheppard West", x: 340, y: 230, accessible: true },
             { name: "Wilson", x: 360, y: 260, accessible: true },
@@ -127,8 +129,8 @@ const rawMapData = [
             { name: "Greenwood", x: 820, y: 492, accessible: false },
             { name: "Coxwell", x: 845, y: 492, accessible: true },
             { name: "Woodbine", x: 870, y: 492, accessible: true },
-            { name: "Main Street", x: 895, y: 492, accessible: true }, // Pivot point
-            { name: "Victoria Park", x: 920, y: 450, accessible: true }, // Diagonal start
+            { name: "Main Street", x: 895, y: 492, accessible: true },
+            { name: "Victoria Park", x: 920, y: 450, accessible: true },
             { name: "Warden", x: 945, y: 410, accessible: false },
             { name: "Kennedy", x: 970, y: 370, accessible: true }
         ]
@@ -195,15 +197,13 @@ function renderTracks() {
     rawMapData.forEach(lineData => {
         const d = getPathFromStations(lineData.stations, lineData.line);
 
-        // Base track
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("d", d); path.setAttribute("class", `track line-${lineData.line}`);
         tracksLayer.appendChild(path);
 
-        // Add line number bubble on the left for Line 4
         if (lineData.line === '4' && lineData.stations.length > 0) {
             const firstStation = lineData.stations[0];
-            const labelX = firstStation.x - 120; // 120px left of first station
+            const labelX = firstStation.x - 120;
             const labelY = firstStation.y;
 
             const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -225,10 +225,8 @@ function renderTracks() {
             tracksLayer.appendChild(g);
         }
 
-        // Line 5 Hollow Effect using SVG Mask for True Transparency
         if (lineData.line === '5') {
             const maskId = "line-5-mask";
-            // Create Defs/Mask if not exists
             let svg = tracksLayer.closest("svg");
             if (svg) {
                 let defs = svg.querySelector("defs");
@@ -240,10 +238,8 @@ function renderTracks() {
                 if (!document.getElementById(maskId)) {
                     const mask = document.createElementNS("http://www.w3.org/2000/svg", "mask");
                     mask.setAttribute("id", maskId);
-                    // Mask coordinate system
                     mask.setAttribute("maskUnits", "userSpaceOnUse");
 
-                    // Mask Base (White = Visible)
                     const maskBase = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     maskBase.setAttribute("d", d);
                     maskBase.setAttribute("stroke", "white");
@@ -251,11 +247,10 @@ function renderTracks() {
                     maskBase.setAttribute("fill", "none");
                     mask.appendChild(maskBase);
 
-                    // Mask Cutout (Black = Hidden/Transparent)
                     const maskCutout = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     maskCutout.setAttribute("d", d);
                     maskCutout.setAttribute("stroke", "black");
-                    maskCutout.setAttribute("stroke-width", "8"); // Width of the hole
+                    maskCutout.setAttribute("stroke-width", "8");
                     maskCutout.setAttribute("fill", "none");
                     mask.appendChild(maskCutout);
 
@@ -263,7 +258,6 @@ function renderTracks() {
                 }
             }
 
-            // Apply mask to the main orange path
             path.setAttribute("mask", `url(#${maskId})`);
         }
     });
@@ -289,7 +283,15 @@ function getPathFromStations(stations, lineId) {
     return d;
 }
 
-function getLineColor(lineId) { if (lineId === '1') return "#FFC425"; if (lineId === '2') return "#009639"; if (lineId === '4') return "#B5236B"; if (lineId === '5') return "#F37021"; if (lineId === '6') return "#9ca3af"; return "#ffffff"; }
+function getLineColor(lineId) {
+    if (lineId === '1') return "#FFC425";
+    if (lineId === '2') return "#009639";
+    if (lineId === '4') return "#B5236B";
+    if (lineId === '5') return "#F37021";
+    if (lineId === '6') return "#9ca3af";
+    return "#ffffff";
+}
+
 function getLineTextColor(lineId) { return (lineId === '1') ? "black" : "white"; }
 
 function renderStations() {
@@ -301,27 +303,21 @@ function renderStations() {
     });
 
     allStations.forEach(s => {
-        // Skip Spadina - handled by custom drawSpadinaTransfer
         if (s.name === 'Spadina') return;
-        // Skip St George - handled by custom drawStGeorge
         if (s.name === 'St George') return;
-        // Skip Line 2 Bloor-Yonge (Line 1 renders the icon)
         if (s.line === '2' && s.name === 'Bloor-Yonge') return;
 
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
         g.setAttribute("transform", `translate(${s.x}, ${s.y})`);
 
         if (s.interchange) {
-            // Interchange style takes priority over terminal
             const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g"); gIcon.setAttribute("class", "station-marker");
             const sticker = document.createElementNS("http://www.w3.org/2000/svg", "circle"); sticker.setAttribute("r", 10); sticker.setAttribute("fill", "white"); gIcon.appendChild(sticker);
             const blackRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); blackRing.setAttribute("r", 8); blackRing.setAttribute("fill", "black"); gIcon.appendChild(blackRing);
             const whiteGap = document.createElementNS("http://www.w3.org/2000/svg", "circle"); whiteGap.setAttribute("r", 5.8); whiteGap.setAttribute("fill", "white"); gIcon.appendChild(whiteGap);
             const blueBtn = document.createElementNS("http://www.w3.org/2000/svg", "circle"); blueBtn.setAttribute("r", 5); blueBtn.setAttribute("fill", "#528CCB"); gIcon.appendChild(blueBtn);
-            const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path"); iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z"); iconPath.setAttribute("fill", "white"); iconPath.setAttribute("transform", "translate(-2, -2) scale(0.25)"); gIcon.appendChild(iconPath);
+            const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path"); iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z"); iconPath.setAttribute("fill", "white"); iconPath.setAttribute("transform", "translate(-2.5, -2.5) scale(0.35)"); gIcon.appendChild(iconPath);
             g.appendChild(gIcon);
-
-            // Terminals that are accessible (e.g. Vaughan, Finch, Kipling) - will get detached badge below
         } else if (s.accessible) {
             const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g"); gIcon.setAttribute("class", "station-marker");
             const outerRing = document.createElementNS("http://www.w3.org/2000/svg", "circle"); outerRing.setAttribute("r", "4.5"); outerRing.setAttribute("fill", "black"); gIcon.appendChild(outerRing);
@@ -329,33 +325,28 @@ function renderStations() {
             const innerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle"); innerCircle.setAttribute("r", "3"); innerCircle.setAttribute("fill", "#528CCB"); gIcon.appendChild(innerCircle);
             const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path"); iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z"); iconPath.setAttribute("fill", "white"); iconPath.setAttribute("transform", "translate(-2, -2) scale(0.25)"); gIcon.appendChild(iconPath);
             g.appendChild(gIcon);
-
-            // Terminals that are accessible (e.g. Vaughan, Finch, Kipling) - will get detached badge below
         } else {
             const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle"); dot.setAttribute("r", 4); dot.setAttribute("class", "station-marker regular-station"); dot.setAttribute("fill", "white"); dot.setAttribute("stroke", "black"); dot.setAttribute("stroke-width", "1");
             g.appendChild(dot);
         }
 
-        // Detached Terminal Badges (Line Number to the side)
         if (s.isTerminal) {
             const badgeG = document.createElementNS("http://www.w3.org/2000/svg", "g");
             let bdx = 0, bdy = 0;
 
-            // Desktop specific positioning logic
-            if (s.name === "Vaughan Metropolitan Centre") { bdx = 0; bdy = -25; } // Top
-            else if (s.name === "Finch") { bdx = 0; bdy = -25; } // Top
-            else if (s.name === "Kipling") { bdx = -97; bdy = 0; } // Moved another 7px left per user request (was -90)
+            if (s.name === "Vaughan Metropolitan Centre") { bdx = 0; bdy = -25; }
+            else if (s.name === "Finch") { bdx = 0; bdy = -25; }
+            else if (s.name === "Kipling") { bdx = -97; bdy = 0; }
             else if (s.name === "Kennedy") {
-                if (s.line === '2') { bdx = 90; bdy = 0; } // Right (after text)
-                else if (s.line === '5') { bdx = 120; bdy = 0; } // Farther Right (after Line 2 badge)
+                if (s.line === '2') { bdx = 90; bdy = 0; }
+                else if (s.line === '5') { bdx = 120; bdy = 0; }
             }
-            else if (s.name === "Sheppard-Yonge" && s.line === '4') { bdx = -25; bdy = 0; } // Left of Line 4 start
-            else if (s.name === "Don Mills") { bdx = 25; bdy = 0; } // Right
-            else if (s.name === "Mount Dennis") { bdx = -25; bdy = 0; } // Left
-            else if (s.name === "Humber College") { bdx = 0; bdy = 25; } // Bottom
-            else if (s.name === "Finch West" && s.line === '6') { bdx = 25; bdy = 0; } // Right
+            else if (s.name === "Sheppard-Yonge" && s.line === '4') { bdx = -25; bdy = 0; }
+            else if (s.name === "Don Mills") { bdx = 25; bdy = 0; }
+            else if (s.name === "Mount Dennis") { bdx = -25; bdy = 0; }
+            else if (s.name === "Humber College") { bdx = 0; bdy = 25; }
+            else if (s.name === "Finch West" && s.line === '6') { bdx = 25; bdy = 0; }
 
-            // Only render badge if we set a position (filters out non-visible terminals like Line 1 Sheppard-Yonge)
             if (bdx !== 0 || bdy !== 0) {
                 badgeG.setAttribute("transform", `translate(${bdx}, ${bdy})`);
 
@@ -381,13 +372,12 @@ function renderStations() {
 
         const isDup = (s.line === '4' && s.name === "Sheppard-Yonge") ||
             (s.line === '1' && ["Spadina", "St George"].includes(s.name)) ||
-            (s.line === '2' && ["Spadina", "St George", "Bloor-Yonge"].includes(s.name)) ||  // Skip Line 2 duplicates
-            (s.line === '5' && s.name === "Kennedy") ||  // Kennedy is rendered by Line 2
-            (s.line === '1' && s.name === "Finch West");  // Finch West is on Line 6
+            (s.line === '2' && ["Spadina", "St George", "Bloor-Yonge"].includes(s.name)) ||
+            (s.line === '5' && s.name === "Kennedy") ||
+            (s.line === '1' && s.name === "Finch West");
 
         if (!isDup) {
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text"); text.textContent = s.name;
-            // Apply bold class for terminal stations
             if (s.isTerminal || s.name === "Spadina" || s.name === "St George" || s.name === "Bloor-Yonge" || s.name === "Union") {
                 text.setAttribute("class", "station-label terminal-label");
             } else {
@@ -396,14 +386,12 @@ function renderStations() {
 
             let tx = 12, ty = 4, rot = 0, anchor = "start";
 
-            // Line 6 label positioning (to avoid overlap with tracks)
             if (s.line === '6') {
                 if (s.name === "Humber College") {
-                    rot = 0; tx = 25; ty = 5; anchor = "start";  // Name on Right, Badge Bottom
+                    rot = 0; tx = 25; ty = 5; anchor = "start";
                 } else if (s.name === "Finch West") {
-                    rot = 0; tx = 20; ty = 5; anchor = "start"; // Name on Right
+                    rot = 0; tx = 20; ty = 5; anchor = "start";
                 } else {
-                    // Stations to show on TOP (above track)
                     const topStations = ["Westmore", "Martin Grove", "Albion", "Stevenson", "Mount Olive", "Rowntree Mills", "Pearldale", "Duncanwoods"];
                     if (topStations.includes(s.name)) {
                         rot = -45; tx = 5; ty = -10; anchor = "start";
@@ -412,10 +400,9 @@ function renderStations() {
                     }
                 }
             }
-            // Existing Line 1, 2, 4 positioning
             else if (s.line === '1' && (s.name === "Downsview Park" || s.name === "Sheppard West")) { tx = 15; ty = 4; anchor = "start"; }
             else if (s.line === '1' && (s.name === "Sheppard-Yonge" || s.name === "Wellesley" || s.name === "St Andrew")) { tx = -15; ty = 4; anchor = "end"; }
-            else if (s.line === '1' && s.name === "Bloor-Yonge") { tx = -15; ty = -15; anchor = "end"; }  // Above Line 2, left of Line 1
+            else if (s.line === '1' && s.name === "Bloor-Yonge") { tx = -15; ty = -15; anchor = "end"; }
             else if (s.line === '1' && s.name === "Union") { tx = 0; ty = 25; anchor = "middle"; }
             else if (s.line === '4' || s.y === 490) { rot = 45; tx = 10; ty = 10; anchor = "start"; }
             else if (s.line === '2') {
@@ -432,19 +419,18 @@ function renderStations() {
             else if (s.line === '1' && s.x < 360) { tx = -12; ty = 4; anchor = "end"; }
             else if (s.line === '1' && s.x >= 640 && s.y < 500) { tx = 12; ty = 4; anchor = "start"; }
 
-            // Custom overrides for specific stations
-            if (s.name === "Vaughan Metropolitan Centre") { tx = 15; ty = 5; rot = 0; anchor = "start"; } // Straight, Right of track
-            else if (s.name === "Finch") { tx = 15; ty = 5; rot = 0; anchor = "start"; } // Straight, Right of track
-            else if (s.name === "Kipling") { rot = 0; tx = -18; ty = 5; anchor = "end"; } // Moved 10px to the left per user request (was -8)
+            if (s.name === "Vaughan Metropolitan Centre") { tx = 15; ty = 5; rot = 0; anchor = "start"; }
+            else if (s.name === "Finch") { tx = 15; ty = 5; rot = 0; anchor = "start"; }
+            else if (s.name === "Kipling") { rot = 0; tx = -18; ty = 5; anchor = "end"; }
             else if (s.name === "Kennedy") {
-                if (s.line === '2') { rot = 0; tx = 25; ty = 5; anchor = "start"; } // Straight, Right of badge (Line 2)
+                if (s.line === '2') { rot = 0; tx = 25; ty = 5; anchor = "start"; }
             }
             else if (s.name === "Sheppard-Yonge" && s.line === '4') {
-                rot = 0; tx = 15; ty = -15; anchor = "start"; // Above line/badge
+                rot = 0; tx = 15; ty = -15; anchor = "start";
             }
-            else if (s.name === "Don Mills") { rot = 0; tx = 25; ty = 5; anchor = "start"; } // Straight, Right of badge
-            else if (s.name === "Mount Dennis") { rot = 0; tx = -25; ty = 5; anchor = "end"; } // Straight, Left of badge
-            else if (s.name === "Finch West" && s.line === '6') { rot = 0; tx = 25; ty = 5; anchor = "start"; } // Label right of badge (Line 6)
+            else if (s.name === "Don Mills") { rot = 0; tx = 25; ty = 5; anchor = "start"; }
+            else if (s.name === "Mount Dennis") { rot = 0; tx = -25; ty = 5; anchor = "end"; }
+            else if (s.name === "Finch West" && s.line === '6') { rot = 0; tx = 25; ty = 5; anchor = "start"; }
 
             text.setAttribute("transform", `translate(${tx}, ${ty}) rotate(${rot})`);
             text.setAttribute("text-anchor", anchor);
@@ -453,34 +439,27 @@ function renderStations() {
         stationsLayer.appendChild(g);
     });
 
-    // Custom station rendering
     drawSpadinaTransfer();
     drawStGeorge();
 }
 
 function drawSpadinaTransfer() {
-    // Spadina: Line 1 (Yellow) at y=480, Line 2 (Green) at y=500. x=360.
-    // Capsule design: white circle top, Bloor-Yonge style accessibility at bottom, connected by white line
     const x = 360;
-    const y1 = 480; // Line 1 (Yellow)
-    const y2 = 490; // Line 2 (Green)
-    const yCenter = (y1 + y2) / 2; // Center point for positioning
+    const y1 = 480;
+    const y2 = 490;
+    const yCenter = (y1 + y2) / 2;
 
-    // Outer group for positioning (uses SVG transform attribute)
     const outer = document.createElementNS("http://www.w3.org/2000/svg", "g");
     outer.setAttribute("transform", `translate(${x}, ${yCenter})`);
 
-    // Inner group for hover effect (uses CSS transform - won't conflict)
     const inner = document.createElementNS("http://www.w3.org/2000/svg", "g");
     inner.setAttribute("class", "station-marker spadina-inner");
 
-    // Relative coordinates (relative to center at yCenter=490)
-    const relY1 = y1 - yCenter; // -10
-    const relY2 = y2 - yCenter; // +10
+    const relY1 = y1 - yCenter;
+    const relY2 = y2 - yCenter;
 
-    // 1. The Capsule Container (White stroke, Black fill)
     const pill = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    const w = 22; // Narrower pill
+    const w = 22;
     const h = 42;
     pill.setAttribute("x", -w / 2);
     pill.setAttribute("y", relY1 - 10);
@@ -492,54 +471,45 @@ function drawSpadinaTransfer() {
     pill.setAttribute("stroke-width", "3");
     inner.appendChild(pill);
 
-    // 2. Vertical White Connector Line
     const connector = document.createElementNS("http://www.w3.org/2000/svg", "line");
     connector.setAttribute("x1", 0);
     connector.setAttribute("y1", relY1);
     connector.setAttribute("x2", 0);
-    connector.setAttribute("y2", relY2 + 5);  // Extend down further (moved bottom down 2px)
+    connector.setAttribute("y2", relY2 + 5);
     connector.setAttribute("stroke", "white");
     connector.setAttribute("stroke-width", "4");
     inner.appendChild(connector);
 
-    // 3. Top Circle (White filled - empty circle for Line 1 connection)
     const topCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     topCircle.setAttribute("cx", 0);
     topCircle.setAttribute("cy", relY1);
-    topCircle.setAttribute("r", 5.5); // Smaller top circle (reduced by 1px radius)
+    topCircle.setAttribute("r", 5.5);
     topCircle.setAttribute("fill", "white");
     inner.appendChild(topCircle);
 
-    // 4. Bottom Group (Bloor-Yonge style interchange + accessibility)
     const bottomGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    bottomGroup.setAttribute("transform", `translate(0, ${relY2 + 10})`);  // Moved down 2px (from 8 to 10)
+    bottomGroup.setAttribute("transform", `translate(0, ${relY2 + 10})`);
 
-    // White sticker (outer) - match size of top circle (r=6.5)
     const sticker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     sticker.setAttribute("r", 6.5);
     sticker.setAttribute("fill", "white");
     bottomGroup.appendChild(sticker);
 
-    // Black ring
     const blackRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     blackRing.setAttribute("r", 5.5);
     blackRing.setAttribute("fill", "black");
     bottomGroup.appendChild(blackRing);
 
-    // Using just a blue button inside black ring (simpler look for small size)
-    // or maintaining the rings but much smaller. Let's try rings first.
     const whiteGap = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     whiteGap.setAttribute("r", 4);
     whiteGap.setAttribute("fill", "white");
     bottomGroup.appendChild(whiteGap);
 
-    // Blue button
     const blueBtn = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     blueBtn.setAttribute("r", 3.2);
     blueBtn.setAttribute("fill", "#528CCB");
     bottomGroup.appendChild(blueBtn);
 
-    // Wheelchair Accessibility Icon (White) - scaled down even further
     const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z");
     iconPath.setAttribute("fill", "white");
@@ -550,7 +520,6 @@ function drawSpadinaTransfer() {
     outer.appendChild(inner);
     document.getElementById('stations-layer').appendChild(outer);
 
-    // Spadina Label (Top left - above Line 2, left of Line 1)
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.textContent = "Spadina";
     text.setAttribute("class", "station-label");
@@ -561,44 +530,35 @@ function drawSpadinaTransfer() {
 }
 
 function drawStGeorge() {
-    // St George: Line 1 (Yellow) at y=480, Line 2 (Green) at y=500. x=400.
-    // Use exact Bloor-Yonge style interchange design
     const x = 400;
-    const y = 492; // Positioned on Line 2 (intersection with Line 1)
+    const y = 492;
 
-    // Outer group for positioning (uses SVG transform attribute)
     const outer = document.createElementNS("http://www.w3.org/2000/svg", "g");
     outer.setAttribute("transform", `translate(${x}, ${y})`);
 
-    // Inner group for hover effect (uses CSS transform - won't conflict)
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     g.setAttribute("class", "station-marker st-george-inner");
 
-    // White sticker (outer) - match interchange style
     const sticker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     sticker.setAttribute("r", 10);
     sticker.setAttribute("fill", "white");
     g.appendChild(sticker);
 
-    // Black ring
     const blackRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     blackRing.setAttribute("r", 8);
     blackRing.setAttribute("fill", "black");
     g.appendChild(blackRing);
 
-    // White gap
     const whiteGap = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     whiteGap.setAttribute("r", 5.8);
     whiteGap.setAttribute("fill", "white");
     g.appendChild(whiteGap);
 
-    // Blue button
     const blueBtn = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     blueBtn.setAttribute("r", 5);
     blueBtn.setAttribute("fill", "#528CCB");
     g.appendChild(blueBtn);
 
-    // Wheelchair Accessibility Icon (White) - match interchange scale
     const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z");
     iconPath.setAttribute("fill", "white");
@@ -608,7 +568,6 @@ function drawStGeorge() {
     outer.appendChild(g);
     document.getElementById('stations-layer').appendChild(outer);
 
-    // St George Label (Top right - above Line 2, right of Line 1)
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.textContent = "St George";
     text.setAttribute("class", "station-label");
@@ -618,7 +577,6 @@ function drawStGeorge() {
     document.getElementById('stations-layer').appendChild(text);
 }
 
-
 function setupDragAndZoom() {
     if (typeof gsap === 'undefined' || typeof Draggable === 'undefined') return;
     gsap.set(mapRoot, { x: 0, y: 0, scale: 1 });
@@ -627,15 +585,13 @@ function setupDragAndZoom() {
         inertia: true,
         trigger: viewport,
         edgeResistance: 0.65,
-        onDragStart: () => updateMapBounds(), // Ensure bounds are fresh
+        onDragStart: () => updateMapBounds(),
     })[0];
 
-    // Initial bounds setup
     updateMapBounds();
 
     window.addEventListener('resize', updateMapBounds);
 
-    // Mouse wheel zoom
     viewport.addEventListener('wheel', (e) => {
         e.preventDefault();
         const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
@@ -660,9 +616,6 @@ function setupPinchZoom() {
             const currentDistance = getDistance(e.touches[0], e.touches[1]);
             const scale = (currentDistance / initialDistance) * initialScale;
             const clampedScale = Math.min(Math.max(0.4, scale), 8);
-
-            // Simple scale set. Ideally we should zoom towards the center of the pinch, 
-            // but for now let's just ensure bounds are respected.
             gsap.set(mapRoot, { scale: clampedScale });
             updateMapBounds();
         }
@@ -686,14 +639,11 @@ function zoomMapRelative(factor, clientX, clientY) {
     const currentX = gsap.getProperty(mapRoot, "x");
     const currentY = gsap.getProperty(mapRoot, "y");
 
-    // Calculate target position to keep mouse point stable
     let newX = mouseX - (mouseX - currentX) * (newScale / oldScale);
     let newY = mouseY - (mouseY - currentY) * (newScale / oldScale);
 
-    // Get valid bounds for the NEW scale
     const bounds = getMapBounds(newScale);
 
-    // Clamp target position to valid bounds
     newX = Math.min(Math.max(newX, bounds.minX), bounds.maxX);
     newY = Math.min(Math.max(newY, bounds.minY), bounds.maxY);
 
@@ -703,7 +653,7 @@ function zoomMapRelative(factor, clientX, clientY) {
         scale: newScale,
         duration: 0.3,
         ease: "power2.out",
-        onUpdate: () => updateMapBounds(), // Keep draggable bounds in sync during animation
+        onUpdate: () => updateMapBounds(),
         onComplete: () => updateMapBounds()
     });
 }
@@ -711,22 +661,14 @@ function zoomMapRelative(factor, clientX, clientY) {
 function getMapBounds(scale) {
     const mapWidth = 1000 * scale;
     const mapHeight = 800 * scale;
-
-    // Calculate the current visual scale of the SVG relative to the viewport
-    // The SVG uses preserveAspectRatio="xMidYMid meet"
     const svgScale = Math.min(viewport.clientWidth / 1000, viewport.clientHeight / 800);
-
-    // Convert viewport dimensions to SVG user units
     const scaledViewportWidth = viewport.clientWidth / svgScale;
     const scaledViewportHeight = viewport.clientHeight / svgScale;
 
     let minX, maxX, minY, maxY;
+    const WIGGLE_ROOM = 300;
 
-    const WIGGLE_ROOM = 300; // Pixels of wiggle room
-
-    // Horizontal Bounds (in SVG User Units)
     if (mapWidth < scaledViewportWidth) {
-        // Center map if smaller than viewport but allow wiggle
         const centerX = (scaledViewportWidth - mapWidth) / 2;
         minX = centerX - WIGGLE_ROOM;
         maxX = centerX + WIGGLE_ROOM;
@@ -735,9 +677,7 @@ function getMapBounds(scale) {
         maxX = WIGGLE_ROOM;
     }
 
-    // Vertical Bounds (in SVG User Units)
     if (mapHeight < scaledViewportHeight) {
-        // Center map vertically but allow wiggle
         const centerY = (scaledViewportHeight - mapHeight) / 2;
         minY = centerY - WIGGLE_ROOM;
         maxY = centerY + WIGGLE_ROOM;
@@ -759,10 +699,6 @@ function updateMapBounds(specificScale) {
 
     mapDraggable.applyBounds(bounds);
 
-    // If we are not currently animating (e.g. pinch zoom or window resize), 
-    // and the specificScale matches current (or wasn't provided), 
-    // enforce bounds on the element position immediately.
-    // This prevents "stuck out of bounds" state which causes rubber banding on next drag.
     if (!gsap.isTweening(mapRoot) && (!specificScale || Math.abs(specificScale - currentScale) < 0.001)) {
         const currX = gsap.getProperty(mapRoot, "x");
         const currY = gsap.getProperty(mapRoot, "y");
@@ -785,7 +721,6 @@ async function fetchAlerts() {
     const statusIndicator = document.getElementById('status-indicator');
     const statusText = statusIndicator.querySelector('.status-text');
 
-    // Set loading state
     statusIndicator.classList.remove('live');
     statusIndicator.classList.add('loading');
     statusText.textContent = 'Loading';
@@ -798,7 +733,6 @@ async function fetchAlerts() {
         renderAllAlerts();
         renderAlertsList();
 
-        // Set live state after successful fetch
         statusIndicator.classList.remove('loading');
         statusIndicator.classList.add('live');
         statusText.textContent = 'Live';
@@ -844,7 +778,6 @@ function renderUpcomingList() {
         return;
     }
 
-    // Sort by start time (soonest first)
     const sortedAlerts = [...upcomingAlerts].sort((a, b) => {
         return (a.activeStartTime || 0) - (b.activeStartTime || 0);
     });
@@ -914,11 +847,9 @@ function getTimeUntil(date) {
 }
 
 function renderAllAlerts() {
-    // Properly clear SVG children
     while (alertsLayer.firstChild) {
         alertsLayer.removeChild(alertsLayer.firstChild);
     }
-    // Only render active alerts on the map
     const mapActiveAlerts = activeAlerts.filter(alert => alert.status === 'active');
     mapActiveAlerts.forEach(alert => {
         const isDelay = alert.effect === 'SIGNIFICANT_DELAYS' || alert.effect === 'REDUCED_SPEED';
@@ -937,7 +868,6 @@ function renderAlertsList() {
         return;
     }
 
-    // Sort: active alerts first, then cleared
     const sortedAlerts = [...activeAlerts].sort((a, b) => {
         if (a.status === 'active' && b.status !== 'active') return -1;
         if (a.status !== 'active' && b.status === 'active') return 1;
@@ -985,8 +915,6 @@ function calculateFlow(line, startName, endName, direction) {
     }
     if (idx1 < idx2) return 'forward'; return 'reverse';
 }
-
-
 
 function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay) {
     const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
