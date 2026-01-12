@@ -29,7 +29,7 @@ const TTC_LIVE_ALERTS_API = 'https://alerts.ttc.ca/api/alerts/live-alerts';
 let cachedAlerts = [];
 let cachedUpcomingAlerts = [];
 let lastFetchTime = 0;
-const CACHE_DURATION = 60 * 1000;
+const CACHE_DURATION = 60 * 1000; // 1 minute for fast updates
 
 // Master list of valid stations to validate against
 const VALID_STATIONS = [
@@ -120,6 +120,42 @@ function normalizeStation(name) {
     return null; // Could not identify station
 }
 
+// === RATE LIMITING UTILITIES ===
+// Delay helper
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Rate limiter: ensures minimum delay between API calls
+let lastApiCallTime = 0;
+const MIN_API_DELAY = 500; // 500ms between calls
+
+async function rateLimitedApiCall(fn) {
+    const now = Date.now();
+    const timeSinceLastCall = now - lastApiCallTime;
+    if (timeSinceLastCall < MIN_API_DELAY) {
+        await delay(MIN_API_DELAY - timeSinceLastCall);
+    }
+    lastApiCallTime = Date.now();
+    return fn();
+}
+
+// Retry with exponential backoff
+async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            return await fn();
+        } catch (error) {
+            const isRateLimit = error.message?.includes('429') || error.message?.includes('Resource exhausted');
+            if (isRateLimit && attempt < maxRetries - 1) {
+                const waitTime = baseDelay * Math.pow(2, attempt);
+                console.log(`⏳ Rate limited, waiting ${waitTime}ms before retry (${attempt + 1}/${maxRetries})...`);
+                await delay(waitTime);
+            } else {
+                throw error;
+            }
+        }
+    }
+}
+
 const processedAlertsCache = new Map(); // Cache for AI results to save tokens
 
 async function parseAlertWithAI(text) {
@@ -177,7 +213,10 @@ async function parseAlertWithAI(text) {
         Input: "${text}"
         `;
 
-        const result = await model.generateContent(prompt);
+        // Wrap API call with rate limiting and retry logic
+        const result = await retryWithBackoff(() =>
+            rateLimitedApiCall(() => model.generateContent(prompt))
+        );
         const response = await result.response;
         let textResponse = response.text();
 

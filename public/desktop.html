@@ -12,153 +12,175 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
     <link rel="stylesheet" href="desktop.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanta/0.5.24/vanta.net.min.js"></script>
 </head>
 
 <body>
-    <div id="app-container">
-        <!-- Overlay for mobile sidebar -->
-        <div id="sidebar-overlay"></div>
+    <!-- Vanta.js Animated Background -->
+    <div id="vanta-bg"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0.25;">
+    </div>
 
-        <!-- Sidebar -->
-        <div id="sidebar">
-            <div id="sidebar-header">
-                <i class="fas fa-subway" style="color: var(--l1-color); font-size: 24px;"></i>
-                <div id="sidebar-logo">TORONTO TRANSIT LIVE</div>
+    <!-- MAP VIEWPORT (Full Screen) -->
+    <div id="viewport">
+        <svg id="ttc-svg" viewBox="-200 0 1400 800" preserveAspectRatio="xMidYMid meet">
+            <g id="map-root">
+                <g id="tracks-layer"></g>
+                <g id="alerts-layer"></g>
+                <g id="stations-layer"></g>
+            </g>
+        </svg>
+    </div>
+
+    <!-- FLOATING UI LAYER -->
+    <div class="ui-layer">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <!-- Left Side FABs -->
+            <div class="fab-stack left">
+                <!-- Hamburger Menu Button -->
+                <div class="fab" id="btn-menu">
+                    <i class="fas fa-bars"></i>
+                </div>
+                <!-- Theme Toggle Button -->
+                <div class="fab" id="btn-theme">
+                    <i class="fas fa-moon"></i>
+                </div>
             </div>
 
-            <div id="sidebar-nav">
-                <div class="nav-item active" data-tab="lines">
-                    <i class="fas fa-route"></i>
-                    <span>Lines</span>
-                </div>
-                <div class="nav-item" data-tab="alerts">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Alerts</span>
-                </div>
-                <div class="nav-item" data-tab="upcoming">
-                    <i class="fas fa-clock"></i>
-                    <span>Upcoming</span>
-                    <span id="upcoming-badge" class="nav-badge hidden">0</span>
-                </div>
-                <div class="nav-item expandable" data-tab="about">
-                    <i class="fas fa-info-circle"></i>
-                    <span>About</span>
-                </div>
-            </div>
-
-            <div id="sidebar-footer">
-                <div><a href="#">About TTC</a><a href="#">Privacy Policy</a><a href="#">Contact</a></div>
-                <div class="social-icons">
-                    <a href="#"><i class="fab fa-facebook"></i></a>
-                    <a href="#"><i class="fab fa-twitter"></i></a>
-                    <a href="#"><i class="fab fa-discord"></i></a>
-                    <a href="#"><i class="fab fa-instagram"></i></a>
+            <!-- Right Side FABs -->
+            <div class="fab-stack">
+                <div class="fab" id="btn-recenter"><i class="fas fa-crosshairs"></i></div>
+                <div class="fab" id="btn-legend">
+                    <i class="fas fa-layer-group"></i>
                 </div>
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div id="main-content">
-            <div id="header">
-                <button id="hamburger-btn" aria-label="Toggle menu">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div id="search-container">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="search-input" placeholder="Search...">
-                </div>
-                <!-- Status Indicator -->
-                <div id="status-indicator" class="status-indicator loading">
-                    <div class="status-spinner"></div>
-                    <span class="status-text">Loading</span>
-                    <div class="live-dot"></div>
-                </div>
-                <div id="user-avatar"></div>
+        <!-- Top Center Clock & Status -->
+        <div class="top-center-info">
+            <!-- Clock Display -->
+            <div id="clock-display" class="header-clock">
+                <div class="clock-time">--:--</div>
+                <div class="clock-date">---, --- --</div>
             </div>
+            <!-- Status Indicator -->
+            <div id="status-indicator" class="status-indicator loading">
+                <div class="status-spinner"></div>
+                <span class="status-text">Loading</span>
+                <div class="live-dot"></div>
+            </div>
+        </div>
+    </div>
 
-            <div id="content-area" style="position: relative; flex: 1; overflow: hidden;">
-                <div id="viewport">
-                    <svg id="ttc-svg" viewBox="0 0 1000 800" preserveAspectRatio="xMidYMid meet">
-                        <g id="map-root">
-                            <g id="tracks-layer"></g>
-                            <g id="alerts-layer"></g>
-                            <g id="stations-layer"></g>
-                        </g>
-                    </svg>
-                </div>
+    <!-- Slide-out Menu Panel (Outside ui-layer for proper pointer-events) -->
+    <div id="menu-panel" class="menu-panel hidden">
+        <div class="menu-header">
+            <i class="fas fa-subway" style="color: var(--l1-color); font-size: 20px;"></i>
+            <span>TORONTO TRANSIT LIVE</span>
+        </div>
+        <div class="menu-nav">
+            <div class="menu-item active" data-tab="lines">
+                <i class="fas fa-route"></i>
+                <span>Map</span>
+            </div>
+            <div class="menu-item" data-tab="alerts">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Alerts</span>
+                <span id="alerts-badge" class="menu-badge hidden">0</span>
+            </div>
+            <div class="menu-item" data-tab="upcoming">
+                <i class="fas fa-clock"></i>
+                <span>Upcoming</span>
+                <span id="upcoming-badge" class="menu-badge hidden">0</span>
+            </div>
+            <div class="menu-item" data-tab="about">
+                <i class="fas fa-info-circle"></i>
+                <span>About</span>
+            </div>
+        </div>
+        <div class="menu-footer">
+            v1.2.0 Alpha • Made by Faiz P
+        </div>
+    </div>
 
-                <!-- Legend -->
-                <div id="map-legend">
-                    <div style="font-weight: 700; color: white; margin-bottom: 8px; font-size: 13px;">Legend</div>
-                    <div class="legend-item">
-                        <svg width="32" height="8" style="overflow: visible;">
-                            <path d="M 0 4 L 32 4" class="alert-base pulse-solid"
-                                style="stroke-width: 6; opacity: 1; stroke-linecap: round;"></path>
-                        </svg>
-                        <span>No Service / Suspension</span>
-                    </div>
-                    <div class="legend-item">
-                        <svg width="32" height="8" style="overflow: visible; position: relative; top: 1px;">
-                            <path d="M 0 4 L 32 4" class="alert-base delay pulse-solid"
-                                style="stroke-width: 6; opacity: 1; stroke-linecap: round;"></path>
-                        </svg>
-                        <span style="position: relative; top: -1px;">Major Delays / Slow</span>
-                    </div>
-                    <div class="legend-item">
-                        <svg width="32" height="8" style="overflow: visible;">
-                            <path d="M 0 4 L 32 4" class="shuttle-outline"
-                                style="stroke-width: 3; opacity: 0.9; stroke-linecap: round;"></path>
-                        </svg>
-                        <span style="position: relative; top: -4px;">Shuttle Buses</span>
-                    </div>
-                </div>
+    <!-- Legend Popup -->
+    <div id="legend-popup" class="legend-popup hidden">
+        <div class="legend-popup-title">Legend</div>
+        <div class="legend-item">
+            <svg width="32" height="8" style="overflow: visible;">
+                <path d="M 0 4 L 32 4" class="alert-base pulse-solid"
+                    style="stroke-width: 6; opacity: 1; stroke-linecap: round;"></path>
+            </svg>
+            <span>No Service / Suspension</span>
+        </div>
+        <div class="legend-item">
+            <svg width="32" height="8" style="overflow: visible;">
+                <path d="M 0 4 L 32 4" class="alert-base delay pulse-solid"
+                    style="stroke-width: 6; opacity: 1; stroke-linecap: round;"></path>
+            </svg>
+            <span>Major Delays / Slow</span>
+        </div>
+        <div class="legend-item">
+            <svg width="32" height="8" style="overflow: visible;">
+                <path d="M 0 4 L 32 4" class="shuttle-outline"
+                    style="stroke-width: 3; opacity: 0.9; stroke-linecap: round;"></path>
+            </svg>
+            <span>Shuttle Buses</span>
+        </div>
+    </div>
 
-                <!-- Alerts Panel -->
-                <div id="alerts-panel">
-                    <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px;">Active Service Alerts</h2>
-                    <div id="alerts-list"></div>
-                </div>
+    <!-- Alerts Panel -->
+    <div id="alerts-panel" class="content-panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-exclamation-triangle"></i> Active Service Alerts</h2>
+            <button class="close-panel-btn" data-close="alerts"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="alerts-list" class="panel-content"></div>
+    </div>
 
-                <!-- Upcoming Outages Panel -->
-                <div id="upcoming-panel" class="placeholder-panel">
-                    <div style="width: 100%; max-width: 800px; padding: 20px; overflow-y: auto; max-height: 100%;">
-                        <h2
-                            style="font-size: 24px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
-                            <i class="fas fa-clock" style="color: var(--delay-color);"></i>
-                            Upcoming Service Changes
-                        </h2>
-                        <div id="upcoming-list"></div>
-                    </div>
-                </div>
+    <!-- Upcoming Outages Panel -->
+    <div id="upcoming-panel" class="content-panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-clock"></i> Upcoming Service Changes</h2>
+            <button class="close-panel-btn" data-close="upcoming"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="upcoming-list" class="panel-content"></div>
+    </div>
 
-                <!-- About Panel -->
-                <div id="about-panel" class="placeholder-panel">
-                    <div
-                        style="background:var(--sidebar-bg); border:1px solid var(--border-color); padding:40px; border-radius:12px; max-width:600px; color:white; text-align: left;">
-                        <h2
-                            style="margin-bottom:20px; font-weight:700; font-size:24px; color: var(--l1-color); display:flex; align-items:center; gap:12px;">
-                            <i class="fas fa-exclamation-triangle"></i>Disclaimer
-                        </h2>
-                        <p style="font-size:16px; line-height:1.6; color:#d1d5db; margin-bottom:16px;">
-                            This is a <strong>personal project</strong> and not an official TTC map. There could be
-                            mistakes in the data or representation. This app is not affiliated with the Toronto Transit
-                            Commission (TTC).
-                        </p>
-                        <p style="font-size:16px; line-height:1.6; color:#d1d5db; margin-bottom:24px;">
-                            <strong>Why I made this:</strong><br>
-                            I made this dashboard because I was not able to easily know if a subway outage would affect
-                            my commute. I always had to look up a map to cross-reference alerts. This tool makes it
-                            easier to verify if I am affected.
-                        </p>
-                        <div
-                            style="margin-top:30px; padding-top:20px; border-top:1px solid var(--border-color); font-size:14px; color:var(--text-muted);">
-                            Data provided by TTC Open Data.
-                        </div>
-                    </div>
+    <!-- About Panel -->
+    <div id="about-panel" class="content-panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-info-circle"></i> About</h2>
+            <button class="close-panel-btn" data-close="about"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="panel-content">
+            <div class="about-content">
+                <h3 style="color: var(--l1-color); margin-bottom: 16px;">
+                    <i class="fas fa-exclamation-triangle"></i> Disclaimer
+                </h3>
+                <p>
+                    This is a <strong>personal project</strong> and not an official TTC map. There could be
+                    mistakes in the data or representation. This app is not affiliated with the Toronto Transit
+                    Commission (TTC).
+                </p>
+                <p style="margin-top: 16px;">
+                    <strong>Why I made this:</strong><br>
+                    I made this dashboard because I was not able to easily know if a subway outage would affect
+                    my commute. I always had to look up a map to cross-reference alerts. This tool makes it
+                    easier to verify if I am affected.
+                </p>
+                <div
+                    style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); font-size: 13px; color: var(--text-muted);">
+                    Data provided by TTC Open Data.
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay" class="menu-overlay hidden"></div>
 
     <script src="desktop.js"></script>
 </body>

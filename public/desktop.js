@@ -1,5 +1,5 @@
 // Desktop Map Application - Toronto Transit Live
-// Extracted from desktop.html
+// Floating UI Version
 
 lucide.createIcons();
 let activeAlerts = [];
@@ -13,29 +13,33 @@ const stationsLayer = document.getElementById('stations-layer');
 const alertsLayer = document.getElementById('alerts-layer');
 let mapDraggable = null;
 
-// Navigation
-const sidebar = document.getElementById('sidebar');
-const sidebarOverlay = document.getElementById('sidebar-overlay');
-const hamburgerBtn = document.getElementById('hamburger-btn');
+// ==========================================
+// MENU PANEL TOGGLE
+// ==========================================
+const menuBtn = document.getElementById('btn-menu');
+const menuPanel = document.getElementById('menu-panel');
+const menuOverlay = document.getElementById('menu-overlay');
+const leftFabStack = document.querySelector('.fab-stack.left');
 
-// Toggle sidebar on mobile
-function toggleSidebar() {
-    sidebar.classList.toggle('open');
-    sidebarOverlay.classList.toggle('active');
+function toggleMenu() {
+    menuPanel.classList.toggle('hidden');
+    menuOverlay.classList.toggle('hidden');
+    // Shift left FAB buttons when menu opens
+    if (leftFabStack) {
+        leftFabStack.classList.toggle('menu-open');
+    }
 }
 
-hamburgerBtn.addEventListener('click', toggleSidebar);
-sidebarOverlay.addEventListener('click', toggleSidebar);
+if (menuBtn) menuBtn.addEventListener('click', toggleMenu);
+if (menuOverlay) menuOverlay.addEventListener('click', toggleMenu);
 
-document.querySelectorAll('.nav-item').forEach(item => {
+// Menu item navigation
+document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {
         const tab = item.dataset.tab;
         if (tab) {
             switchTab(tab);
-            // Close sidebar on mobile after selecting a tab
-            if (window.innerWidth <= 768) {
-                toggleSidebar();
-            }
+            toggleMenu();
         }
     });
 });
@@ -43,17 +47,81 @@ document.querySelectorAll('.nav-item').forEach(item => {
 function switchTab(tab) {
     currentTab = tab;
 
-    // Update active nav item
-    document.querySelectorAll('.nav-item').forEach(item => {
+    // Update active menu item
+    document.querySelectorAll('.menu-item').forEach(item => {
         item.classList.toggle('active', item.dataset.tab === tab);
     });
 
     // Show/hide panels
-    document.getElementById('viewport').style.display = (tab === 'lines') ? 'block' : 'none';
     document.getElementById('alerts-panel').classList.toggle('active', tab === 'alerts');
     document.getElementById('upcoming-panel').classList.toggle('active', tab === 'upcoming');
     document.getElementById('about-panel').classList.toggle('active', tab === 'about');
 }
+
+// Close panel buttons
+document.querySelectorAll('.close-panel-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        switchTab('lines');
+    });
+});
+
+// ==========================================
+// LEGEND POPUP TOGGLE
+// ==========================================
+const legendBtn = document.getElementById('btn-legend');
+const legendPopup = document.getElementById('legend-popup');
+
+if (legendBtn) {
+    legendBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        legendPopup.classList.toggle('hidden');
+    });
+}
+
+// Close legend when clicking outside
+document.addEventListener('click', (e) => {
+    if (legendPopup && !legendPopup.classList.contains('hidden') &&
+        !legendPopup.contains(e.target) && !legendBtn.contains(e.target)) {
+        legendPopup.classList.add('hidden');
+    }
+});
+
+// ==========================================
+// RECENTER BUTTON
+// ==========================================
+const recenterBtn = document.getElementById('btn-recenter');
+if (recenterBtn) {
+    recenterBtn.addEventListener('click', () => {
+        if (mapRoot && typeof gsap !== 'undefined') {
+            gsap.to(mapRoot, {
+                x: 0,
+                y: 0,
+                scale: 1,
+                duration: 0.5,
+                ease: "power2.out",
+                onComplete: () => updateMapBounds()
+            });
+        }
+    });
+}
+
+// ==========================================
+// CLOCK
+// ==========================================
+function updateClock() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+    const clockTime = document.querySelector('.clock-time');
+    const clockDate = document.querySelector('.clock-date');
+    if (clockTime) clockTime.textContent = timeStr;
+    if (clockDate) clockDate.textContent = dateStr;
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
 
 const rawMapData = [
     {
@@ -130,9 +198,9 @@ const rawMapData = [
             { name: "Coxwell", x: 845, y: 492, accessible: true },
             { name: "Woodbine", x: 870, y: 492, accessible: true },
             { name: "Main Street", x: 895, y: 492, accessible: true },
-            { name: "Victoria Park", x: 920, y: 450, accessible: true },
-            { name: "Warden", x: 945, y: 410, accessible: false },
-            { name: "Kennedy", x: 970, y: 370, accessible: true }
+            { name: "Victoria Park", x: 915, y: 455, accessible: true },
+            { name: "Warden", x: 935, y: 418, accessible: false },
+            { name: "Kennedy", x: 955, y: 380, accessible: true }
         ]
     },
     {
@@ -148,8 +216,8 @@ const rawMapData = [
     {
         line: "5",
         stations: [
-            { name: "Mount Dennis", x: 220, y: 380, accessible: true },
-            { name: "Kennedy", x: 970, y: 380, interchange: true, accessible: true }
+            { name: "Mount Dennis", x: 220, y: 380, interchange: true, accessible: true },
+            { name: "Kennedy", x: 955, y: 380, interchange: true, accessible: true }
         ]
     },
     {
@@ -201,29 +269,7 @@ function renderTracks() {
         path.setAttribute("d", d); path.setAttribute("class", `track line-${lineData.line}`);
         tracksLayer.appendChild(path);
 
-        if (lineData.line === '4' && lineData.stations.length > 0) {
-            const firstStation = lineData.stations[0];
-            const labelX = firstStation.x - 120;
-            const labelY = firstStation.y;
-
-            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            g.setAttribute("transform", `translate(${labelX}, ${labelY})`);
-
-            const bubble = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            bubble.setAttribute("r", 14);
-            bubble.setAttribute("fill", getLineColor('4'));
-            bubble.setAttribute("stroke", "white");
-            bubble.setAttribute("stroke-width", "3");
-            g.appendChild(bubble);
-
-            const num = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            num.textContent = "4";
-            num.setAttribute("class", "terminal-text");
-            num.setAttribute("fill", "white");
-            g.appendChild(num);
-
-            tracksLayer.appendChild(g);
-        }
+        // Line 4 label is rendered with the Don Mills terminal badge instead
 
         if (lineData.line === '5') {
             const maskId = "line-5-mask";
@@ -306,6 +352,7 @@ function renderStations() {
         if (s.name === 'Spadina') return;
         if (s.name === 'St George') return;
         if (s.line === '2' && s.name === 'Bloor-Yonge') return;
+        if (s.name === 'Kennedy') return; // Skip - handled by drawKennedy()
 
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
         g.setAttribute("transform", `translate(${s.x}, ${s.y})`);
@@ -338,14 +385,14 @@ function renderStations() {
             else if (s.name === "Finch") { bdx = 0; bdy = -25; }
             else if (s.name === "Kipling") { bdx = -97; bdy = 0; }
             else if (s.name === "Kennedy") {
-                if (s.line === '2') { bdx = 90; bdy = 0; }
-                else if (s.line === '5') { bdx = 120; bdy = 0; }
+                // Skip - handled by drawKennedy()
+                bdx = 0; bdy = 0;
             }
-            else if (s.name === "Sheppard-Yonge" && s.line === '4') { bdx = -25; bdy = 0; }
-            else if (s.name === "Don Mills") { bdx = 25; bdy = 0; }
-            else if (s.name === "Mount Dennis") { bdx = -25; bdy = 0; }
-            else if (s.name === "Humber College") { bdx = 0; bdy = 25; }
-            else if (s.name === "Finch West" && s.line === '6') { bdx = 25; bdy = 0; }
+            else if (s.name === "Sheppard-Yonge" && s.line === '4') { bdx = -175; bdy = -2; } // 10px left, 2px up
+            else if (s.name === "Don Mills") { bdx = 120; bdy = -2; } // Badge far right
+            else if (s.name === "Mount Dennis") { bdx = -160; bdy = 0; } // Badge far left
+            else if (s.name === "Humber College") { bdx = 0; bdy = 30; } // Badge below station
+            else if (s.name === "Finch West" && s.line === '6') { bdx = 135; bdy = 0; } // 10px left
 
             if (bdx !== 0 || bdy !== 0) {
                 badgeG.setAttribute("transform", `translate(${bdx}, ${bdy})`);
@@ -374,11 +421,13 @@ function renderStations() {
             (s.line === '1' && ["Spadina", "St George"].includes(s.name)) ||
             (s.line === '2' && ["Spadina", "St George", "Bloor-Yonge"].includes(s.name)) ||
             (s.line === '5' && s.name === "Kennedy") ||
+            (s.line === '2' && s.name === "Kennedy") ||
+            (s.line === '5' && s.name === "Finch West") ||
             (s.line === '1' && s.name === "Finch West");
 
         if (!isDup) {
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text"); text.textContent = s.name;
-            if (s.isTerminal || s.name === "Spadina" || s.name === "St George" || s.name === "Bloor-Yonge" || s.name === "Union") {
+            if (s.isTerminal || s.name === "Spadina" || s.name === "St George" || s.name === "Bloor-Yonge" || s.name === "Union" || s.name === "Sheppard-Yonge") {
                 text.setAttribute("class", "station-label terminal-label");
             } else {
                 text.setAttribute("class", "station-label");
@@ -388,9 +437,9 @@ function renderStations() {
 
             if (s.line === '6') {
                 if (s.name === "Humber College") {
-                    rot = 0; tx = 25; ty = 5; anchor = "start";
+                    rot = 0; tx = 15; ty = 5; anchor = "start"; // Label to the right
                 } else if (s.name === "Finch West") {
-                    rot = 0; tx = 20; ty = 5; anchor = "start";
+                    rot = 0; tx = 15; ty = 5; anchor = "start"; // Label to the right
                 } else {
                     const topStations = ["Westmore", "Martin Grove", "Albion", "Stevenson", "Mount Olive", "Rowntree Mills", "Pearldale", "Duncanwoods"];
                     if (topStations.includes(s.name)) {
@@ -423,16 +472,21 @@ function renderStations() {
             else if (s.name === "Finch") { tx = 15; ty = 5; rot = 0; anchor = "start"; }
             else if (s.name === "Kipling") { rot = 0; tx = -18; ty = 5; anchor = "end"; }
             else if (s.name === "Kennedy") {
-                if (s.line === '2') { rot = 0; tx = 25; ty = 5; anchor = "start"; }
+                // Skip - handled by drawKennedy()
             }
             else if (s.name === "Sheppard-Yonge" && s.line === '4') {
                 rot = 0; tx = 15; ty = -15; anchor = "start";
             }
-            else if (s.name === "Don Mills") { rot = 0; tx = 25; ty = 5; anchor = "start"; }
-            else if (s.name === "Mount Dennis") { rot = 0; tx = -25; ty = 5; anchor = "end"; }
-            else if (s.name === "Finch West" && s.line === '6') { rot = 0; tx = 25; ty = 5; anchor = "start"; }
+            else if (s.name === "Don Mills") { rot = 0; tx = 18; ty = 5; anchor = "start"; } // Label close to track
+            else if (s.name === "Mount Dennis") { rot = 0; tx = -20; ty = 5; anchor = "end"; } // Label between badge and station
+            else if (s.name === "Finch West" && s.line === '6') { rot = 0; tx = 15; ty = 5; anchor = "start"; } // Label to the right
 
-            text.setAttribute("transform", `translate(${tx}, ${ty}) rotate(${rot})`);
+            // Apply transform - rotate first for proper alignment
+            if (rot !== 0) {
+                text.setAttribute("transform", `rotate(${rot}) translate(${tx}, ${ty})`);
+            } else {
+                text.setAttribute("transform", `translate(${tx}, ${ty})`);
+            }
             text.setAttribute("text-anchor", anchor);
             g.appendChild(text);
         }
@@ -441,6 +495,7 @@ function renderStations() {
 
     drawSpadinaTransfer();
     drawStGeorge();
+    drawKennedy();
 }
 
 function drawSpadinaTransfer() {
@@ -577,6 +632,90 @@ function drawStGeorge() {
     document.getElementById('stations-layer').appendChild(text);
 }
 
+function drawKennedy() {
+    // Kennedy Custom Rendering - positioned at Line 5's position (y=380)
+    const x = 955;
+    const y = 380; // Line 5 Kennedy position (intersects both lines)
+
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute("transform", `translate(${x}, ${y})`);
+
+    // Large interchange icon (matching Bloor-Yonge style)
+    const gIcon = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    gIcon.setAttribute("class", "station-marker");
+    const sticker = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    sticker.setAttribute("r", 10);
+    sticker.setAttribute("fill", "white");
+    gIcon.appendChild(sticker);
+    const blackRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    blackRing.setAttribute("r", 8);
+    blackRing.setAttribute("fill", "black");
+    gIcon.appendChild(blackRing);
+    const whiteGap = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    whiteGap.setAttribute("r", 5.8);
+    whiteGap.setAttribute("fill", "white");
+    gIcon.appendChild(whiteGap);
+    const blueBtn = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    blueBtn.setAttribute("r", 5);
+    blueBtn.setAttribute("fill", "#528CCB");
+    gIcon.appendChild(blueBtn);
+    const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    iconPath.setAttribute("d", "M12 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m-.663 2.146a1.5 1.5 0 0 0-.47-2.115l-2.5-1.508a1.5 1.5 0 0 0-1.676.086l-2.329 1.75a.866.866 0 0 0 1.051 1.375L7.361 3.37l.922.71-2.038 2.445A4.73 4.73 0 0 0 2.628 7.67l1.064 1.065a3.25 3.25 0 0 1 4.574 4.574l1.064 1.063a4.73 4.73 0 0 0 1.09-3.998l1.043-.292-.187 2.991a.872.872 0 1 0 1.741.098l.206-4.121A1 1 0 0 0 12.224 8h-2.79zM3.023 9.48a3.25 3.25 0 0 0 4.496 4.496l1.077 1.077a4.75 4.75 0 0 1-6.65-6.65z");
+    iconPath.setAttribute("fill", "white");
+    iconPath.setAttribute("transform", "translate(-2.5, -2.5) scale(0.35)");
+    gIcon.appendChild(iconPath);
+    g.appendChild(gIcon);
+
+    // Label "Kennedy" (to the right of station, close to track)
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.textContent = "Kennedy";
+    text.setAttribute("class", "station-label terminal-label");
+    text.setAttribute("text-anchor", "start");
+    text.setAttribute("x", 12);
+    text.setAttribute("y", 4);
+    g.appendChild(text);
+
+    // Line 2 Badge (Green) - far right
+    const g2 = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g2.setAttribute("transform", "translate(105, 0)");
+    const bubble2 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    bubble2.setAttribute("r", 12);
+    bubble2.setAttribute("fill", getLineColor('2'));
+    bubble2.setAttribute("stroke", "white");
+    bubble2.setAttribute("stroke-width", "2");
+    g2.appendChild(bubble2);
+    const num2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    num2.textContent = "2";
+    num2.setAttribute("class", "terminal-text");
+    num2.setAttribute("fill", "white");
+    num2.setAttribute("dy", 1);
+    num2.setAttribute("text-anchor", "middle");
+    num2.setAttribute("dominant-baseline", "middle");
+    g2.appendChild(num2);
+    g.appendChild(g2);
+
+    // Line 5 Badge (Orange) - even more right
+    const g5 = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g5.setAttribute("transform", "translate(135, 0)");
+    const bubble5 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    bubble5.setAttribute("r", 12);
+    bubble5.setAttribute("fill", getLineColor('5'));
+    bubble5.setAttribute("stroke", "white");
+    bubble5.setAttribute("stroke-width", "2");
+    g5.appendChild(bubble5);
+    const num5 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    num5.textContent = "5";
+    num5.setAttribute("class", "terminal-text");
+    num5.setAttribute("fill", "white");
+    num5.setAttribute("dy", 1);
+    num5.setAttribute("text-anchor", "middle");
+    num5.setAttribute("dominant-baseline", "middle");
+    g5.appendChild(num5);
+    g.appendChild(g5);
+
+    document.getElementById('stations-layer').appendChild(g);
+}
+
 function setupDragAndZoom() {
     if (typeof gsap === 'undefined' || typeof Draggable === 'undefined') return;
     gsap.set(mapRoot, { x: 0, y: 0, scale: 1 });
@@ -659,9 +798,9 @@ function zoomMapRelative(factor, clientX, clientY) {
 }
 
 function getMapBounds(scale) {
-    const mapWidth = 1000 * scale;
+    const mapWidth = 1400 * scale;  // Matches viewBox width
     const mapHeight = 800 * scale;
-    const svgScale = Math.min(viewport.clientWidth / 1000, viewport.clientHeight / 800);
+    const svgScale = Math.min(viewport.clientWidth / 1400, viewport.clientHeight / 800);
     const scaledViewportWidth = viewport.clientWidth / svgScale;
     const scaledViewportHeight = viewport.clientHeight / svgScale;
 
@@ -846,12 +985,55 @@ function getTimeUntil(date) {
     }
 }
 
+function mergeOverlappingAlerts(alerts) {
+    // Group alerts by line and station range
+    const alertsByKey = {};
+
+    alerts.forEach(alert => {
+        if (alert.singleStation) {
+            // Keep single station alerts as-is
+            const key = `${alert.line}-single-${alert.start}`;
+            if (!alertsByKey[key]) alertsByKey[key] = [];
+            alertsByKey[key].push(alert);
+        } else {
+            // Group path alerts by line and normalized station range
+            const stations = [alert.start, alert.end].sort();
+            const key = `${alert.line}-${stations[0]}-${stations[1]}`;
+            if (!alertsByKey[key]) alertsByKey[key] = [];
+            alertsByKey[key].push(alert);
+        }
+    });
+
+    // Merge alerts with same key but different directions
+    const mergedAlerts = [];
+    Object.values(alertsByKey).forEach(group => {
+        if (group.length === 1) {
+            mergedAlerts.push(group[0]);
+        } else {
+            // Check if we have different directions
+            const directions = new Set(group.map(a => a.direction));
+            if (directions.size > 1 || directions.has('Northbound') && directions.has('Southbound')) {
+                // Merge into Both Ways
+                const merged = { ...group[0], direction: 'Both Ways' };
+                mergedAlerts.push(merged);
+            } else {
+                // Same direction, just take first
+                mergedAlerts.push(group[0]);
+            }
+        }
+    });
+
+    return mergedAlerts;
+}
+
 function renderAllAlerts() {
     while (alertsLayer.firstChild) {
         alertsLayer.removeChild(alertsLayer.firstChild);
     }
     const mapActiveAlerts = activeAlerts.filter(alert => alert.status === 'active');
-    mapActiveAlerts.forEach(alert => {
+    const mergedAlerts = mergeOverlappingAlerts(mapActiveAlerts);
+
+    mergedAlerts.forEach(alert => {
         const isDelay = alert.effect === 'SIGNIFICANT_DELAYS' || alert.effect === 'REDUCED_SPEED';
         if (alert.singleStation) drawStationAlert(alert.line, alert.start, isDelay);
         else {
@@ -944,4 +1126,89 @@ function drawStationAlert(line, stationName, isDelay) {
     alertsLayer.appendChild(circle);
 }
 
+// ==========================================
+// VANTA.JS ANIMATED BACKGROUND
+// ==========================================
+let vantaEffect = null;
+
+function initVanta(theme) {
+    const isLight = theme === 'light';
+    const bg = isLight ? 0xe5e7eb : 0x0f1115;
+    const color = isLight ? 0x374151 : 0xffffff;
+
+    if (!vantaEffect) {
+        if (typeof VANTA !== 'undefined') {
+            vantaEffect = VANTA.NET({
+                el: "#vanta-bg",
+                mouseControls: true,
+                touchControls: true,
+                gyroControls: false,
+                minHeight: 200.00,
+                minWidth: 200.00,
+                scale: 1.00,
+                scaleMobile: 1.00,
+                color: color,
+                backgroundColor: bg,
+                maxDistance: 25.00,
+                spacing: 30.00,
+                points: 8.0
+            });
+        }
+    } else {
+        vantaEffect.setOptions({
+            color: color,
+            backgroundColor: bg
+        });
+    }
+}
+
+// ==========================================
+// THEME TOGGLE
+// ==========================================
+const themeBtn = document.getElementById('btn-theme');
+const themeIcon = themeBtn ? themeBtn.querySelector('i') : null;
+
+function updateThemeIcon(theme) {
+    if (!themeIcon) return;
+    if (theme === 'light') {
+        themeIcon.className = 'fas fa-sun';
+    } else {
+        themeIcon.className = 'fas fa-moon';
+    }
+}
+
+function setTheme(theme) {
+    if (theme === 'light') {
+        document.body.classList.add('light-mode');
+    } else {
+        document.body.classList.remove('light-mode');
+    }
+    updateThemeIcon(theme);
+    initVanta(theme);
+    localStorage.setItem('theme', theme);
+}
+
+// Initialize theme from localStorage or default to dark
+let currentTheme = localStorage.getItem('theme') || 'dark';
+setTheme(currentTheme);
+
+// Theme toggle button click handler
+if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+        // Rotate icon animation
+        if (themeIcon) {
+            themeIcon.style.transform = 'rotate(360deg)';
+            setTimeout(() => { themeIcon.style.transform = 'none'; }, 500);
+        }
+
+        // Toggle theme
+        if (document.body.classList.contains('light-mode')) {
+            setTheme('dark');
+        } else {
+            setTheme('light');
+        }
+    });
+}
+
 window.onload = initMap;
+
