@@ -80,6 +80,12 @@ async function parseAlertWithAI(text) {
         const currentTime = new Date().toLocaleString('en-US', { timeZone: 'America/Toronto' });
         const prompt = `
         You are a TTC Subway Alert Parser. Current Time: "${currentTime}".
+        
+        ## VALID STATION NAMES
+        Line 1: Vaughan Metropolitan Centre, Highway 407, Pioneer Village, York University, Finch West, Downsview Park, Sheppard West, Wilson, Yorkdale, Lawrence West, Glencairn, Cedarvale, St Clair West, Dupont, Spadina, St George, Museum, Queen's Park, St Patrick, Osgoode, St Andrew, Union, King, Queen, Dundas, College, Wellesley, Bloor-Yonge, Rosedale, Summerhill, St Clair, Davisville, Eglinton, Lawrence, York Mills, Sheppard-Yonge, North York Centre, Finch
+        Line 2: Kipling, Islington, Royal York, Old Mill, Jane, Runnymede, High Park, Keele, Dundas West, Lansdowne, Dufferin, Ossington, Christie, Bathurst, Spadina, St George, Bay, Bloor-Yonge, Sherbourne, Castle Frank, Broadview, Chester, Pape, Donlands, Greenwood, Coxwell, Woodbine, Main Street, Victoria Park, Warden, Kennedy
+        Line 4: Sheppard-Yonge, Bayview, Bessarion, Leslie, Don Mills
+
         Identify Line (1,2,4,5,6), Start/End Stations, Status (active/future/cleared), Direction, Severity.
         Format: JSON. keys: line, start, end, reason, status, direction, start_time, end_time, severity.
         Input: "${text}"
