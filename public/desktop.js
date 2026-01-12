@@ -252,11 +252,9 @@ function initMap() {
     renderStations();
     setupDragAndZoom();
     setupPinchZoom();
-    fetchAlerts();
-    fetchUpcomingAlerts();
+    fetchData();
     pollingInterval = setInterval(() => {
-        fetchAlerts();
-        fetchUpcomingAlerts();
+        fetchData();
     }, 60000);
 }
 
@@ -767,6 +765,57 @@ function setupPinchZoom() {
     }
 }
 
+function focusOnAlert(alert) {
+    // Find the affected station(s) coordinates
+    const lineObj = rawMapData.find(l => l.line === alert.line);
+    if (!lineObj) return;
+
+    const startStation = lineObj.stations.find(s => s.name === alert.start);
+    const endStation = alert.end ? lineObj.stations.find(s => s.name === alert.end) : null;
+
+    if (!startStation) return;
+
+    let centerX, centerY;
+    if (endStation) {
+        // Center between start and end
+        centerX = (startStation.x + endStation.x) / 2;
+        centerY = (startStation.y + endStation.y) / 2;
+    } else {
+        // Single station
+        centerX = startStation.x;
+        centerY = startStation.y;
+    }
+
+    // Calculate the target pan position to center the alert
+    const viewportRect = viewport.getBoundingClientRect();
+    const svgScale = Math.min(viewportRect.width / 1400, viewportRect.height / 800);
+
+    // Zoom level (1.3x relative to "fit whole map")
+    const ZOOM = 1.3;
+    const finalScale = svgScale * ZOOM;
+
+    // We want to center the alert at the ViewBox center (500, 400)
+    // ViewBox Center X = -200 + (1400/2) = 500
+    // ViewBox Center Y = 0 + (800/2) = 400
+    // Tx = Target - (Point * ZOOM)
+
+    const targetX = 500 - (centerX * ZOOM);
+    const targetY = 400 - (centerY * ZOOM);
+
+    // Animate pan and zoom
+    if (typeof gsap !== 'undefined' && mapRoot) {
+        gsap.to(mapRoot, {
+            x: targetX,
+            y: targetY,
+            scale: finalScale,
+            duration: 0.8,
+            ease: "power2.out",
+            onComplete: () => {
+                updateMapBounds();
+            }
+        });
+    }
+}
 function zoomMapRelative(factor, clientX, clientY) {
     const oldScale = gsap.getProperty(mapRoot, "scale");
     const newScale = Math.min(Math.max(0.4, oldScale * factor), 8);
@@ -809,10 +858,10 @@ function getMapBounds(scale) {
 
     if (mapWidth < scaledViewportWidth) {
         const centerX = (scaledViewportWidth - mapWidth) / 2;
-        minX = centerX - WIGGLE_ROOM;
+        minX = centerX - WIGGLE_ROOM - 200; // Extra 200px right padding
         maxX = centerX + WIGGLE_ROOM;
     } else {
-        minX = scaledViewportWidth - mapWidth - WIGGLE_ROOM;
+        minX = scaledViewportWidth - mapWidth - WIGGLE_ROOM - 200; // Extra 200px right padding
         maxX = WIGGLE_ROOM;
     }
 
@@ -856,42 +905,66 @@ function updateMapBounds(specificScale) {
     }
 }
 
-async function fetchAlerts() {
+
+async function fetchData() {
     const statusIndicator = document.getElementById('status-indicator');
     const statusText = statusIndicator.querySelector('.status-text');
 
-    statusIndicator.classList.remove('live');
-    statusIndicator.classList.add('loading');
-    statusText.textContent = 'Loading';
+    // Only show loading state if it's taking a perceptible amount of time
+    // Show loading state if we don't have data yet
+    if (!activeAlerts || activeAlerts.length === 0) {
+        statusIndicator.classList.remove('live', 'error');
+        statusIndicator.classList.add('loading');
+        statusText.textContent = 'Loading';
+    }
 
     try {
-        const res = await fetch('/api/alerts');
+        const res = await fetch(`/api/data?t=${Date.now()}`);
+
         if (!res.ok) throw new Error("Server Error");
-        const alerts = await res.json();
-        activeAlerts = alerts;
+
+        const data = await res.json();
+
+        // If server returns null (initializing), keep loading and retry
+        if (data.alerts === null) {
+            console.log("Server initializing... retrying in 1s");
+            setTimeout(fetchData, 1000);
+            return;
+        }
+
+        console.log("DEBUG: Raw API Data:", data);
+
+        // Update Active Alerts
+        activeAlerts = data.alerts || [];
+        console.log("DEBUG: Active Alerts on Client:", activeAlerts);
+
+        // If previewing, don't interrupt UI
+        if (previewTimeout) {
+            console.log("Skipping render due to active preview");
+            return;
+        }
+
         renderAllAlerts();
         renderAlertsList();
 
-        statusIndicator.classList.remove('loading');
-        statusIndicator.classList.add('live');
-        statusText.textContent = 'Live';
-    } catch (err) {
-        console.warn("Backend unavailable.");
-        statusText.textContent = 'Error';
-        if (pollingInterval) clearInterval(pollingInterval);
-    }
-}
-
-async function fetchUpcomingAlerts() {
-    try {
-        const res = await fetch('/api/upcoming-alerts');
-        if (!res.ok) throw new Error("Server Error");
-        const alerts = await res.json();
-        upcomingAlerts = alerts;
+        // Update Upcoming Alerts
+        upcomingAlerts = data.upcoming || [];
         updateUpcomingBadge();
         renderUpcomingList();
+
+        // Update Status - ONLY NOW do we show Live
+        statusIndicator.classList.remove('loading', 'error');
+        statusIndicator.classList.add('live');
+        statusText.textContent = 'Live';
+
     } catch (err) {
-        console.warn("Could not fetch upcoming alerts.");
+        console.warn("Backend unavailable.");
+
+        statusIndicator.classList.remove('loading', 'live');
+        statusIndicator.classList.add('error');
+        statusText.textContent = 'Error';
+        // Retry in 5s if error
+        setTimeout(fetchData, 5000);
     }
 }
 
@@ -921,7 +994,7 @@ function renderUpcomingList() {
         return (a.activeStartTime || 0) - (b.activeStartTime || 0);
     });
 
-    listContainer.innerHTML = sortedAlerts.map(alert => {
+    listContainer.innerHTML = sortedAlerts.map((alert, index) => {
         const startTime = alert.activeStartTime ? new Date(alert.activeStartTime) : null;
         const endTime = alert.activeEndTime ? new Date(alert.activeEndTime) : null;
 
@@ -934,7 +1007,7 @@ function renderUpcomingList() {
         const timeUntil = startTime ? getTimeUntil(startTime) : '';
 
         return `
-        <div class="alert-card" style="border-left-color: var(--delay-color);">
+        <div class="alert-card upcoming-alert-card" data-alert-index="${index}" style="border-left-color: var(--delay-color); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
             <div class="alert-card-header">
                 <div class="alert-line-badge line-${alert.line}">${alert.line}</div>
                 <div class="alert-title">${alert.reason}</div>
@@ -961,9 +1034,102 @@ function renderUpcomingList() {
             ` : ''}
             <div class="alert-description" style="margin-top: 8px;">${alert.originalText || ''}</div>
             ${alert.shuttle ? '<div class="shuttle-badge"><i class="fas fa-bus"></i> Shuttle buses will run</div>' : ''}
+            <button class="preview-btn" onclick="event.stopPropagation(); previewUpcomingAlert('${alert.id}');" style="margin-top: 12px; padding: 8px 16px; background: linear-gradient(135deg, var(--delay-color), #d97706); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; transition: transform 0.2s, opacity 0.2s;">
+                <i class="fas fa-eye"></i> Preview on Map
+            </button>
         </div>
     `;
     }).join('');
+
+    // Add hover effects
+    document.querySelectorAll('.upcoming-alert-card').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-2px)';
+            card.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)';
+        });
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = '';
+            card.style.boxShadow = '';
+        });
+    });
+}
+
+// Preview state
+let previewTimeout = null;
+let previewInterval = null;
+
+function previewUpcomingAlert(alertId) {
+    const alert = upcomingAlerts.find(a => a.id == alertId); // loose equality for string/number mix
+    if (!alert) return;
+
+    // Close all panels to show map
+    document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
+
+    // Clear any existing preview
+    if (previewTimeout) {
+        clearTimeout(previewTimeout);
+        clearInterval(previewInterval);
+    }
+
+    // 1. Update Map
+    while (alertsLayer.firstChild) {
+        alertsLayer.removeChild(alertsLayer.firstChild);
+    }
+
+    // Draw the preview alert
+    const isDelay = alert.effect === 'SIGNIFICANT_DELAYS' || alert.effect === 'REDUCED_SPEED';
+    if (alert.singleStation) {
+        drawStationAlert(alert.line, alert.start, isDelay, true);
+    } else {
+        const flow = calculateFlow(alert.line, alert.start, alert.end, alert.direction);
+        drawAlertPath(alert.line, alert.start, alert.end, flow, alert.shuttle, isDelay, true);
+    }
+
+    // 2. Visual Feedback (Status Indicator)
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = statusIndicator.querySelector('.status-text');
+
+    statusIndicator.className = 'status-indicator preview';
+    statusText.textContent = 'Previewing (8s)';
+
+    // Start Countdown
+    let timeLeft = 8;
+    previewInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft > 0) {
+            statusText.textContent = `Previewing (${timeLeft}s)`;
+        } else {
+            clearInterval(previewInterval);
+        }
+    }, 1000);
+
+    // 3. Auto-clear after 8 seconds
+    previewTimeout = setTimeout(() => {
+        endPreview();
+    }, 8000);
+
+    // Zoom to fit
+    focusOnAlert(alert);
+}
+
+function endPreview() {
+    if (previewTimeout) clearTimeout(previewTimeout);
+    if (previewInterval) clearInterval(previewInterval);
+    previewTimeout = null;
+    previewInterval = null;
+
+    // Restore Status
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = statusIndicator.querySelector('.status-text');
+
+    statusIndicator.classList.remove('preview');
+    statusIndicator.classList.add('live');
+    statusText.textContent = 'Live';
+
+    // Restore Map
+    renderAllAlerts();
+
+    // Update map bounds/zoom if needed, but usually leaving it zoomed in is fine or user resets
 }
 
 function getTimeUntil(date) {
@@ -1098,7 +1264,7 @@ function calculateFlow(line, startName, endName, direction) {
     if (idx1 < idx2) return 'forward'; return 'reverse';
 }
 
-function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay) {
+function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay, isPreview = false) {
     const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
     const idx1 = lineObj.stations.findIndex(s => s.name === startName); const idx2 = lineObj.stations.findIndex(s => s.name === endName);
     if (idx1 === -1 || idx2 === -1) return;
@@ -1106,23 +1272,27 @@ function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay) {
     const d = getPathFromStations(segment, line);
     if (isShuttle) {
         const shuttlePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        shuttlePath.setAttribute("d", d); shuttlePath.setAttribute("class", "shuttle-outline"); alertsLayer.appendChild(shuttlePath);
+        shuttlePath.setAttribute("d", d); shuttlePath.setAttribute("class", "shuttle-outline");
+        if (isPreview) shuttlePath.classList.add("alert-preview");
+        alertsLayer.appendChild(shuttlePath);
     }
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", d); path.setAttribute("class", "alert-base");
     if (isDelay) path.classList.add("delay");
+    if (isPreview) path.classList.add("alert-preview");
 
     if (flow === 'both') path.classList.add("pulse-solid"); else if (flow === 'reverse') path.classList.add("flow-reverse"); else path.classList.add("flow-forward");
     alertsLayer.appendChild(path);
 }
 
-function drawStationAlert(line, stationName, isDelay) {
+function drawStationAlert(line, stationName, isDelay, isPreview = false) {
     const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
     const s = lineObj.stations.find(st => st.name === stationName); if (!s) return;
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle.setAttribute("cx", s.x); circle.setAttribute("cy", s.y); circle.setAttribute("r", 10); circle.setAttribute("class", "station-alert-glow");
     if (isDelay) circle.style.stroke = "var(--delay-color)";
     if (isDelay) circle.style.fill = "var(--delay-color)";
+    if (isPreview) circle.classList.add("alert-preview");
     alertsLayer.appendChild(circle);
 }
 

@@ -26,8 +26,8 @@ const BLUESKY_API_URL = 'https://public.api.bsky.app/xrpc/app.bsky.feed.getAutho
 const TTC_SUBWAY_URL = 'https://www.ttc.ca/service-advisories/subway-service';
 const TTC_LIVE_ALERTS_API = 'https://alerts.ttc.ca/api/alerts/live-alerts';
 
-let cachedAlerts = [];
-let cachedUpcomingAlerts = [];
+let cachedAlerts = null;
+let cachedUpcomingAlerts = null;
 let lastFetchTime = 0;
 const CACHE_DURATION = 60 * 1000; // 1 minute for fast updates
 
@@ -420,10 +420,26 @@ async function fetchTTCLiveAlerts() {
     }
 }
 
+// Polling function to keep cache fresh per minute
+function startPolling() {
+    console.log("⏰ Starting background polling service (1 min interval)...");
+
+    // Initial fetch immediately
+    fetchTTCAlerts().catch(e => console.error("Initial fetch failed:", e.message));
+
+    // Poll every 60 seconds regardless of user traffic
+    setInterval(async () => {
+        try {
+            await fetchTTCAlerts();
+        } catch (error) {
+            console.error("Polling error:", error.message);
+        }
+    }, 60 * 1000);
+}
+
 async function fetchTTCAlerts() {
-    if (Date.now() - lastFetchTime < CACHE_DURATION) {
-        return { current: cachedAlerts, upcoming: cachedUpcomingAlerts };
-    }
+    // No cache check here - this function is now ONLY called by the poller
+    // or manually if needed, but it always fetches fresh data.
 
     console.log("🔄 Fetching live data from all sources...");
 
@@ -431,6 +447,21 @@ async function fetchTTCAlerts() {
     const liveApiResult = await fetchTTCLiveAlerts();
     const liveApiAlerts = liveApiResult.current || [];
     const upcomingAlerts = liveApiResult.upcoming || [];
+
+    // FAKE ALERT FOR TESTING
+    upcomingAlerts.push({
+        id: "fake-union-king",
+        line: "1",
+        start: "Union",
+        end: "King",
+        title: "Subway Closure - Union to King",
+        description: "Early nightly closure from Union to King Station for track maintenance.",
+        type: "Scheduled Work",
+        activePeriod: {
+            start: new Date(Date.now() + 3600000).toISOString(), // Starts in 1 hour
+            end: new Date(Date.now() + 18000000).toISOString()   // Ends in 5 hours
+        }
+    });
 
     // Combine and deduplicate based on start/end/line
     // Prioritize Live API alerts (official & detailed) > Web Alerts > BlueSky
@@ -487,6 +518,7 @@ async function fetchTTCAlerts() {
             if (inner === outer) return false; // Don't compare with self
             if (outer.line !== inner.line) return false;
             if (outer.effect !== "NO_SERVICE") return false; // Only closures shadow other alerts
+            if (outer.status !== 'active') return false; // Only active closures shadow other alerts
 
             return isSubsetRange(inner.line, inner.start, inner.end, outer.start, outer.end);
         });
@@ -504,14 +536,33 @@ async function fetchTTCAlerts() {
     return { current: finalAlerts, upcoming: upcomingAlerts };
 }
 
-app.get('/api/alerts', async (req, res) => {
-    const result = await fetchTTCAlerts();
-    res.json(result.current);
+// Unified endpoint - returns all data in one call
+app.get('/api/data', (req, res) => {
+    // Return cached data immediately from memory
+    res.json({
+        alerts: cachedAlerts,
+        upcoming: cachedUpcomingAlerts,
+        lastUpdated: lastFetchTime
+    });
 });
 
-app.get('/api/upcoming-alerts', async (req, res) => {
-    const result = await fetchTTCAlerts();
-    res.json(result.upcoming);
+// Legacy endpoints (kept for backwards compatibility)
+app.get('/api/alerts', (req, res) => {
+    res.json(cachedAlerts);
+});
+
+app.get('/api/upcoming-alerts', (req, res) => {
+    res.json(cachedUpcomingAlerts);
+});
+
+// Debug endpoint to check internal state
+app.get('/debug/cache', (req, res) => {
+    res.json({
+        cachedAlerts,
+        cachedUpcomingAlerts,
+        lastFetchTime,
+        serverTime: Date.now()
+    });
 });
 
 app.get('*', (req, res) => {
@@ -520,4 +571,6 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
+    // Start background polling when server starts
+    startPolling();
 });

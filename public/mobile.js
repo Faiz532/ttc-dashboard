@@ -655,31 +655,48 @@ async function fetchData() {
     const statusIndicator = document.getElementById('status-indicator');
     const statusText = statusIndicator.querySelector('.status-text');
 
-    // Set loading state
-    statusIndicator.classList.remove('live');
-    statusIndicator.classList.add('loading');
-    statusText.textContent = 'Loading';
+    // Show loading state if we don't have data yet
+    if (!activeAlerts || activeAlerts.length === 0) {
+        statusIndicator.classList.remove('live', 'error');
+        statusIndicator.classList.add('loading');
+        statusText.textContent = 'Loading...';
+    }
 
     try {
-        const [res1, res2] = await Promise.all([
-            fetch('/api/alerts'),
-            fetch('/api/upcoming-alerts')
-        ]);
-        activeAlerts = await res1.json();
-        upcomingAlerts = await res2.json();
+        const res = await fetch(`/api/data?t=${Date.now()}`);
 
+        const data = await res.json();
+
+        // If server returns null (initializing), keep loading and retry
+        if (data.alerts === null) {
+            console.log("Server initializing... retrying in 1s");
+            setTimeout(fetchData, 1000);
+            return;
+        }
+
+        // Update Active Alerts
+        activeAlerts = data.alerts || [];
+
+        // Update Upcoming Alerts
+        upcomingAlerts = data.upcoming || [];
+
+        // Render everything
         renderAlertsOnMap();
         renderLists();
         updateBadges();
 
         // Set live state after successful fetch
-        statusIndicator.classList.remove('loading');
+        statusIndicator.classList.remove('loading', 'error');
         statusIndicator.classList.add('live');
         statusText.textContent = 'Live';
     } catch (e) {
         console.warn("Fetch error", e);
-        // Keep loading state on error, or could show an error state
+
+        statusIndicator.classList.remove('loading', 'live');
+        statusIndicator.classList.add('error');
         statusText.textContent = 'Error';
+        // Retry in 5s
+        setTimeout(fetchData, 5000);
     }
 }
 
