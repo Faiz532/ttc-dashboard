@@ -102,7 +102,8 @@ async function parseAlertWithAI(text) {
             originalText: text,
             activeStartTime: json.start_time ? new Date(json.start_time).getTime() : null,
             activeEndTime: json.end_time ? new Date(json.end_time).getTime() : null,
-            effect: (json.severity === 'Delay' || json.severity === 'Minor') ? 'SIGNIFICANT_DELAYS' : 'NO_SERVICE'
+            // DEFAULT TO DELAY (Yellow) unless explicitly Suspension (Red). Safer fallback.
+            effect: (json.severity === 'Suspension' || json.severity === 'No Service') ? 'NO_SERVICE' : 'SIGNIFICANT_DELAYS'
         };
 
         if (resultObj.line && resultObj.start) {
