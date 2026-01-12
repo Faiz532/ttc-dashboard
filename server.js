@@ -448,20 +448,7 @@ async function fetchTTCAlerts() {
     const liveApiAlerts = liveApiResult.current || [];
     const upcomingAlerts = liveApiResult.upcoming || [];
 
-    // FAKE ALERT FOR TESTING
-    upcomingAlerts.push({
-        id: "fake-union-king",
-        line: "1",
-        start: "Union",
-        end: "King",
-        title: "Subway Closure - Union to King",
-        description: "Early nightly closure from Union to King Station for track maintenance.",
-        type: "Scheduled Work",
-        activePeriod: {
-            start: new Date(Date.now() + 3600000).toISOString(), // Starts in 1 hour
-            end: new Date(Date.now() + 18000000).toISOString()   // Ends in 5 hours
-        }
-    });
+
 
     // Combine and deduplicate based on start/end/line
     // Prioritize Live API alerts (official & detailed) > Web Alerts > BlueSky
