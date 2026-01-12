@@ -967,7 +967,7 @@ function calculateFlow(line, startName, endName, direction) {
     if (idx1 < idx2) return 'forward'; return 'reverse';
 }
 
-function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay) {
+function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay, isPreview = false) {
     const layer = document.getElementById('alerts-layer');
     const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
     const idx1 = findStationIndex(lineObj, startName); const idx2 = findStationIndex(lineObj, endName);
@@ -976,19 +976,22 @@ function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay) {
     const d = getPathFromStations(segment, line);
     if (isShuttle) {
         const shuttlePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        shuttlePath.setAttribute("d", d); shuttlePath.setAttribute("class", "shuttle-outline"); layer.appendChild(shuttlePath);
+        shuttlePath.setAttribute("d", d); shuttlePath.setAttribute("class", "shuttle-outline");
+        if (isPreview) shuttlePath.classList.add("alert-preview");
+        layer.appendChild(shuttlePath);
     }
 
     // Create Main Path (Foreground)
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", d); path.setAttribute("class", "alert-base");
     if (isDelay) path.classList.add("delay");
+    if (isPreview) path.classList.add("alert-preview");
 
     if (flow === 'both') path.classList.add("pulse-solid"); else if (flow === 'reverse') path.classList.add("flow-reverse"); else path.classList.add("flow-forward");
     layer.appendChild(path);
 }
 
-function drawStationAlert(line, stationName, isDelay) {
+function drawStationAlert(line, stationName, isDelay, isPreview = false) {
     const layer = document.getElementById('alerts-layer');
     const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
     const idx = findStationIndex(lineObj, stationName);
@@ -999,6 +1002,7 @@ function drawStationAlert(line, stationName, isDelay) {
     circle.setAttribute("cx", s.x); circle.setAttribute("cy", s.y); circle.setAttribute("r", 10); circle.setAttribute("class", "station-alert-glow");
     if (isDelay) circle.style.stroke = "var(--delay-color)";
     if (isDelay) circle.style.fill = "var(--delay-color)";
+    if (isPreview) circle.classList.add("alert-preview");
     layer.appendChild(circle);
 }
 
@@ -1064,6 +1068,12 @@ function createAlertCard(a, isUpcoming = false) {
                     </div>
                     ${a.originalText}
                     ${a.shuttle ? '<div class="shuttle-tag"><i class="fas fa-bus"></i> Shuttle Bus</div>' : ''}
+                    
+                    ${isUpcoming ? `
+                    <button class="preview-btn" onclick="previewUpcomingAlert('${a.id}')">
+                        <i class="fas fa-eye"></i> Preview on Map
+                    </button>
+                    ` : ''}
                 </div>
             </div>`;
 }
@@ -1290,6 +1300,122 @@ function updateMapBounds(specificScale) {
         if (fixX !== currX || fixY !== currY) {
             gsap.set(mapRoot, { x: fixX, y: fixY });
         }
+    }
+}
+
+// --- Preview Logic (Mobile) ---
+let previewTimeout = null;
+let previewInterval = null;
+
+function previewUpcomingAlert(alertId) {
+    const alert = upcomingAlerts.find(a => a.id == alertId);
+    if (!alert) return;
+
+    // 1. Close Panels (Switch to Map)
+    switchTab('map');
+
+    // 2. Clear Previous Preview
+    if (previewTimeout) clearTimeout(previewTimeout);
+    if (previewInterval) clearInterval(previewInterval);
+
+    // 3. Draw Preview on Map
+    const layer = document.getElementById('alerts-layer');
+    while (layer.firstChild) layer.removeChild(layer.firstChild);
+
+    const isDelay = alert.effect === 'SIGNIFICANT_DELAYS' || alert.effect === 'REDUCED_SPEED';
+    if (alert.singleStation) {
+        drawStationAlert(alert.line, alert.start, isDelay, true);
+    } else {
+        const flow = calculateFlow(alert.line, alert.start, alert.end, alert.direction);
+        drawAlertPath(alert.line, alert.start, alert.end, flow, alert.shuttle, isDelay, true);
+    }
+
+    // 4. Update Status Indicator to Amber Preview
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = statusIndicator.querySelector('.status-text');
+    statusIndicator.className = 'status-indicator preview';
+    statusText.textContent = 'Previewing (8s)';
+
+    // Start Countdown
+    let timeLeft = 8;
+    previewInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft > 0) statusText.textContent = `Previewing (${timeLeft}s)`;
+        else clearInterval(previewInterval);
+    }, 1000);
+
+    // 5. Auto-Revert after 8s
+    previewTimeout = setTimeout(endPreview, 8000);
+
+    // 6. Focus Map
+    // focusOnAlert(alert); // Disabled by user request
+}
+
+function endPreview() {
+    if (previewTimeout) clearTimeout(previewTimeout);
+    if (previewInterval) clearInterval(previewInterval);
+    previewTimeout = null;
+    previewInterval = null;
+
+    const statusIndicator = document.getElementById('status-indicator');
+    statusIndicator.className = 'status-indicator live';
+    statusIndicator.querySelector('.status-text').textContent = 'Live';
+
+    // Redraw LIVE alerts
+    fetchData();
+}
+
+function focusOnAlert(alert) {
+    // Find coords
+    const lineObj = rawMapData.find(l => l.line === alert.line);
+    if (!lineObj) return;
+
+    const startStation = lineObj.stations.find(s => s.name === alert.start);
+    const endStation = alert.end ? lineObj.stations.find(s => s.name === alert.end) : null;
+    if (!startStation) return;
+
+    let centerX, centerY;
+    if (endStation) {
+        centerX = (startStation.x + endStation.x) / 2;
+        centerY = (startStation.y + endStation.y) / 2;
+    } else {
+        centerX = startStation.x;
+        centerY = startStation.y;
+    }
+
+    // Viewport dimensions
+    const viewWidth = viewport.clientWidth;
+    const viewHeight = viewport.clientHeight;
+
+    // Calculate Base Scale (how the 1300x800 map fits in the view)
+    // Preserves aspect ratio (xMidYMid meet)
+    const scaleX = viewWidth / 1300;
+    const scaleY = viewHeight / 800;
+    const baseScale = Math.min(scaleX, scaleY);
+
+    const ZOOM = 1.3;
+
+    // We want to translate the map such that 'centerX' moves to the Screen Center.
+    // Shift = (MapCenter - AlertPoint) * Scale * Zoom.
+
+    // Note: This assumes map starts at x=0 when not zoomed.
+    const targetX = (500 - centerX) * baseScale * ZOOM;
+    const targetY = (400 - centerY) * baseScale * ZOOM;
+
+    if (typeof gsap !== 'undefined') {
+        gsap.to(mapRoot, {
+            x: targetX,
+            y: targetY,
+            scale: ZOOM,
+            duration: 0.8,
+            ease: "power2.out",
+            onUpdate: () => {
+                if (typeof updateMapBounds === 'function') updateMapBounds(null);
+            },
+            onComplete: () => {
+                if (typeof updateMapBounds === 'function') updateMapBounds(null);
+            }
+        });
     }
 }
 

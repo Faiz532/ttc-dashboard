@@ -1,3 +1,80 @@
 /* Mobile-specific CSS overrides */
-/* All core mobile styles are in style.css */
-/* This file is for any additional mobile-only customizations */
+
+/* PREVIEW MODE STYLES */
+.status-indicator.preview {
+    border-color: #d97706;
+    /* Amber-600 */
+    background: rgba(217, 119, 6, 0.1);
+}
+
+.status-indicator.preview .status-text {
+    color: #d97706;
+    font-weight: 700;
+}
+
+.status-indicator.preview .live-dot,
+.status-indicator.preview .status-spinner {
+    display: none;
+}
+
+/* Eye Icon */
+.status-eye {
+    display: none;
+    color: #d97706;
+    margin-right: 6px;
+    font-size: 14px;
+}
+
+.status-indicator.preview .status-eye {
+    display: block;
+    animation: blinkEye 1s infinite;
+}
+
+@keyframes blinkEye {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Map Elements Preview Glow */
+/* Map Elements Preview Glow */
+.alert-preview {
+    /* Restore native color, just add shadow/opacity */
+    filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.5));
+}
+
+.shuttle-outline {
+    stroke: white !important;
+    stroke-width: 8px;
+    stroke-dasharray: 10, 5;
+    fill: none;
+    opacity: 0.8;
+}
+
+.path.alert-preview {
+    /* fill: none !important; */
+}
+
+/* Preview Button in Card */
+.preview-btn {
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, var(--delay-color), #d97706);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    width: 100%;
+    justify-content: center;
+}
