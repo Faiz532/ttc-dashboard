@@ -782,29 +782,42 @@ svg {
 .shuttle-outline {
     fill: none;
     stroke: var(--shuttle-color);
-    stroke-width: 22px;
+    stroke-width: 26px;
+    /* Slightly wider than alert-base (14px) for visible blue border */
     stroke-linecap: round;
     stroke-linejoin: round;
-    opacity: 0.9;
+    opacity: 1;
     filter: drop-shadow(0 0 8px var(--shuttle-color));
 }
 
-/* Shuttle outline with directional flow - same dash pattern as alert, wider stroke for border effect */
-.shuttle-outline.flow-forward {
-    stroke-width: 24px;
-    stroke-dasharray: 20, 20;
-    animation: dash-fwd 1s linear infinite;
-}
-
+/* Shuttle outline - SOLID stroke behind dashed red alerts */
+.shuttle-outline.flow-forward,
 .shuttle-outline.flow-reverse {
     stroke-width: 24px;
-    stroke-dasharray: 20, 20;
-    animation: dash-rev 1s linear infinite;
+    stroke-dasharray: none;
+    /* Solid blue outline behind dashed red */
 }
 
+/* Solid alerts (both ways) - subtle pulsing blue outline */
 .shuttle-outline.pulse-solid {
     stroke-dasharray: none;
-    animation: pulse-alert 1.5s ease-in-out infinite;
+    animation: shuttlePulseDesktop 2s ease-in-out infinite;
+}
+
+@keyframes shuttlePulseDesktop {
+
+    0%,
+    100% {
+        stroke-opacity: 0.7;
+        stroke-width: 24px;
+        filter: drop-shadow(0 0 6px var(--shuttle-color));
+    }
+
+    50% {
+        stroke-opacity: 1;
+        stroke-width: 28px;
+        filter: drop-shadow(0 0 10px var(--shuttle-color));
+    }
 }
 
 .flow-forward {
