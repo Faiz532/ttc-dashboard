@@ -798,24 +798,24 @@ svg {
     /* Solid blue outline behind dashed red */
 }
 
-/* Solid alerts (both ways) - subtle pulsing blue outline */
+/* Solid alerts (both ways) - pulsing blue outline SYNCED with red alert (1.5s) */
 .shuttle-outline.pulse-solid {
     stroke-dasharray: none;
-    animation: shuttlePulseDesktop 2s ease-in-out infinite;
+    animation: shuttlePulseDesktop 1.5s ease-in-out infinite;
 }
 
 @keyframes shuttlePulseDesktop {
 
     0%,
     100% {
-        stroke-opacity: 0.7;
-        stroke-width: 24px;
+        stroke-opacity: 0.8;
+        stroke-width: 22px;
         filter: drop-shadow(0 0 6px var(--shuttle-color));
     }
 
     50% {
         stroke-opacity: 1;
-        stroke-width: 28px;
+        stroke-width: 26px;
         filter: drop-shadow(0 0 10px var(--shuttle-color));
     }
 }
