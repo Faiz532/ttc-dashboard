@@ -98,8 +98,8 @@ document.querySelectorAll('.legend-item[data-filter]').forEach(item => {
         // Update icon
         const icon = item.querySelector('.toggle-icon');
         if (icon) {
-            icon.classList.toggle('fa-check-square', alertFilters[filterType]);
-            icon.classList.toggle('fa-square', !alertFilters[filterType]);
+            icon.classList.toggle('fa-eye', alertFilters[filterType]);
+            icon.classList.toggle('fa-eye-slash', !alertFilters[filterType]);
         }
 
         // Apply filter to map
