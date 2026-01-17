@@ -4,6 +4,42 @@ let activeAlerts = [];
 let upcomingAlerts = [];
 let mapDraggable = null;
 let pollingInterval = null;
+let isSubwayCurrentlyClosed = false;
+
+// ==========================================
+// SUBWAY OPERATING HOURS (Toronto time)
+// ==========================================
+// Mon-Sat: 6:00 AM - 2:00 AM (next day)
+// Sunday: 8:00 AM - 2:00 AM (next day)
+
+function isSubwayClosed() {
+    const now = new Date();
+    // Convert to Toronto time
+    const torontoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
+    const hour = torontoTime.getHours();
+    const day = torontoTime.getDay(); // 0 = Sunday
+
+    // Closed hours: 2:00 AM - 6:00 AM (Mon-Sat), 2:00 AM - 8:00 AM (Sunday)
+    if (day === 0) {
+        // Sunday: closed from 2 AM to 8 AM
+        return hour >= 2 && hour < 8;
+    } else {
+        // Monday-Saturday: closed from 2 AM to 6 AM
+        return hour >= 2 && hour < 6;
+    }
+}
+
+function getNextOpenTime() {
+    const now = new Date();
+    const torontoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
+    const day = torontoTime.getDay();
+
+    if (day === 0) {
+        return '8:00 AM';
+    } else {
+        return '6:00 AM';
+    }
+}
 
 // --- Map Configuration (Easy to adjust) ---
 const MAP_CONFIG = {
@@ -166,45 +202,79 @@ function init() {
     setupDragAndZoom(); // Now handles all dragging setup including initial positioning
     setupPinchZoom();
     setupSheetGestures();
-    fetchData();
-    pollingInterval = setInterval(fetchData, 60000);
+
+    // Check subway status and start polling
+    checkSubwayStatusAndFetch();
+    pollingInterval = setInterval(checkSubwayStatusAndFetch, 60000);
 
     console.log("MOBILE INIT FINISHED");
+}
 
-    // Disclaimer Logic - REMOVED to use new Info Popup
-    // const modal = document.getElementById('disclaimer-modal');
-    // ... logic removed
+function checkSubwayStatusAndFetch() {
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = statusIndicator ? statusIndicator.querySelector('.status-text') : null;
 
-    // Recenter Button - animate back to initial fit
-    document.getElementById('btn-recenter').addEventListener('click', () => {
-        const viewWidth = viewport.clientWidth;
-        const viewHeight = viewport.clientHeight;
+    if (isSubwayClosed()) {
+        // Subway is closed - don't make API calls
+        isSubwayCurrentlyClosed = true;
+        if (statusIndicator) {
+            statusIndicator.classList.remove('live', 'loading');
+            statusIndicator.classList.add('closed');
+        }
+        if (statusText) {
+            statusText.textContent = `Closed until ${getNextOpenTime()}`;
+        }
 
-        const availableHeight = viewHeight - MAP_CONFIG.bottomNavHeight;
-        const newScale = (viewWidth / 1000) * MAP_CONFIG.zoomMultiplier;
+        // Clear any existing alerts from the map
+        const alertsLayer = document.getElementById('alerts-layer');
+        if (alertsLayer) alertsLayer.innerHTML = '';
+        activeAlerts = [];
+        upcomingAlerts = [];
+        updateAlertsList([]);
+        updateUpcomingList([]);
 
-        const screenCenterX = viewWidth / 2;
-        const screenCenterY = availableHeight / 2;
+        console.log('Subway closed - skipping API call');
+    } else {
+        // Subway is open - fetch data
+        if (isSubwayCurrentlyClosed) {
+            // Just reopened - reset status
+            isSubwayCurrentlyClosed = false;
+            console.log('Subway reopened - resuming API calls');
+        }
+        fetchData();
+    }
+}
 
-        const newX = screenCenterX - (MAP_CONFIG.centerX * newScale) + MAP_CONFIG.offsetX;
-        const newY = screenCenterY - (MAP_CONFIG.centerY * newScale) + MAP_CONFIG.offsetY;
+// Recenter Button - animate back to initial fit
+document.getElementById('btn-recenter').addEventListener('click', () => {
+    const viewWidth = viewport.clientWidth;
+    const viewHeight = viewport.clientHeight;
 
-        gsap.to(mapRoot, {
-            x: newX,
-            y: newY,
-            scale: newScale,
-            duration: 0.6,
-            ease: "power2.out",
-            force3D: false,
-            onComplete: () => {
-                currentScale = newScale;
-                currentX = newX;
-                currentY = newY;
-                updateMapBounds();
-            }
-        });
+    const availableHeight = viewHeight - MAP_CONFIG.bottomNavHeight;
+    const newScale = (viewWidth / 1000) * MAP_CONFIG.zoomMultiplier;
+
+    const screenCenterX = viewWidth / 2;
+    const screenCenterY = availableHeight / 2;
+
+    const newX = screenCenterX - (MAP_CONFIG.centerX * newScale) + MAP_CONFIG.offsetX;
+    const newY = screenCenterY - (MAP_CONFIG.centerY * newScale) + MAP_CONFIG.offsetY;
+
+    gsap.to(mapRoot, {
+        x: newX,
+        y: newY,
+        scale: newScale,
+        duration: 0.6,
+        ease: "power2.out",
+        force3D: false,
+        onComplete: () => {
+            currentScale = newScale;
+            currentX = newX;
+            currentY = newY;
+            updateMapBounds();
+        }
     });
-    console.log("Events Attached");
+});
+console.log("Events Attached");
 }
 
 // --- Navigation Logic ---

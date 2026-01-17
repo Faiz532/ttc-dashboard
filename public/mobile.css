@@ -111,3 +111,26 @@
     width: 100%;
     justify-content: center;
 }
+
+/* Closed State (Subway not operating) */
+.status-indicator.closed .status-spinner,
+.status-indicator.closed .live-dot {
+    display: none;
+}
+
+.status-indicator.closed .status-text {
+    color: #9ca3af;
+}
+
+.status-indicator.closed {
+    border-color: rgba(156, 163, 175, 0.3);
+}
+
+.status-indicator.closed::before {
+    content: '\f186';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 10px;
+    color: #9ca3af;
+    margin-right: 4px;
+}

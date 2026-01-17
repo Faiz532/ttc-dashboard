@@ -6,12 +6,49 @@ let activeAlerts = [];
 let upcomingAlerts = [];
 let pollingInterval = null;
 let currentTab = 'lines';
+let isSubwayCurrentlyClosed = false;
+
 const mapRoot = document.getElementById('map-root');
 const viewport = document.getElementById('viewport');
 const tracksLayer = document.getElementById('tracks-layer');
 const stationsLayer = document.getElementById('stations-layer');
 const alertsLayer = document.getElementById('alerts-layer');
 let mapDraggable = null;
+
+// ==========================================
+// SUBWAY OPERATING HOURS (Toronto time)
+// ==========================================
+// Mon-Sat: 6:00 AM - 2:00 AM (next day)
+// Sunday: 8:00 AM - 2:00 AM (next day)
+
+function isSubwayClosed() {
+    const now = new Date();
+    // Convert to Toronto time
+    const torontoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
+    const hour = torontoTime.getHours();
+    const day = torontoTime.getDay(); // 0 = Sunday
+
+    // Closed hours: 2:00 AM - 6:00 AM (Mon-Sat), 2:00 AM - 8:00 AM (Sunday)
+    if (day === 0) {
+        // Sunday: closed from 2 AM to 8 AM
+        return hour >= 2 && hour < 8;
+    } else {
+        // Monday-Saturday: closed from 2 AM to 6 AM
+        return hour >= 2 && hour < 6;
+    }
+}
+
+function getNextOpenTime() {
+    const now = new Date();
+    const torontoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
+    const day = torontoTime.getDay();
+
+    if (day === 0) {
+        return '8:00 AM';
+    } else {
+        return '6:00 AM';
+    }
+}
 
 // ==========================================
 // MENU PANEL TOGGLE
@@ -298,10 +335,44 @@ function initMap() {
     renderStations();
     setupDragAndZoom();
     setupPinchZoom();
-    fetchData();
+
+    // Check subway status and start polling
+    checkSubwayStatusAndFetch();
+
+    // Check every minute
     pollingInterval = setInterval(() => {
-        fetchData();
+        checkSubwayStatusAndFetch();
     }, 60000);
+}
+
+function checkSubwayStatusAndFetch() {
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = statusIndicator.querySelector('.status-text');
+
+    if (isSubwayClosed()) {
+        // Subway is closed - don't make API calls
+        isSubwayCurrentlyClosed = true;
+        statusIndicator.classList.remove('live', 'loading');
+        statusIndicator.classList.add('closed');
+        statusText.textContent = `Closed until ${getNextOpenTime()}`;
+
+        // Clear any existing alerts from the map
+        alertsLayer.innerHTML = '';
+        activeAlerts = [];
+        upcomingAlerts = [];
+        renderAlertsList([], 'alerts-list');
+        renderAlertsList([], 'upcoming-list');
+
+        console.log('Subway closed - skipping API call');
+    } else {
+        // Subway is open - fetch data
+        if (isSubwayCurrentlyClosed) {
+            // Just reopened - reset status
+            isSubwayCurrentlyClosed = false;
+            console.log('Subway reopened - resuming API calls');
+        }
+        fetchData();
+    }
 }
 
 function renderTracks() {
@@ -1280,10 +1351,20 @@ function renderAlertsList() {
         return;
     }
 
+    // Sort alerts: 1) Active before Cleared, 2) Suspensions before Delays, 3) By line number
     const sortedAlerts = [...activeAlerts].sort((a, b) => {
+        // Active alerts first
         if (a.status === 'active' && b.status !== 'active') return -1;
         if (a.status !== 'active' && b.status === 'active') return 1;
-        return 0;
+
+        // Suspensions (NO_SERVICE) before delays
+        const aIsSuspension = a.effect === 'NO_SERVICE';
+        const bIsSuspension = b.effect === 'NO_SERVICE';
+        if (aIsSuspension && !bIsSuspension) return -1;
+        if (!aIsSuspension && bIsSuspension) return 1;
+
+        // Sort by line number
+        return parseInt(a.line) - parseInt(b.line);
     });
 
     listContainer.innerHTML = sortedAlerts.map(alert => {

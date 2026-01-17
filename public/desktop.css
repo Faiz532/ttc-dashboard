@@ -326,6 +326,31 @@ svg {
     margin-right: 6px;
 }
 
+/* Closed State (Subway not operating) */
+.status-indicator.closed .status-spinner,
+.status-indicator.closed .live-dot {
+    display: none;
+}
+
+.status-indicator.closed .status-text {
+    color: #9ca3af;
+    /* Gray-400 */
+}
+
+.status-indicator.closed {
+    border-color: rgba(156, 163, 175, 0.3);
+}
+
+.status-indicator.closed::before {
+    content: '\f186';
+    /* fa-moon */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 12px;
+    color: #9ca3af;
+    margin-right: 6px;
+}
+
 /* ==========================================
    SLIDE-OUT MENU PANEL
    ========================================== */
@@ -475,15 +500,15 @@ svg {
 .legend-popup {
     position: fixed;
     top: 60px;
-    right: 70px;
-    /* Position to the left of the layers button */
-    width: 250px;
+    right: 85px;
+    /* Position to the left of the layers button with gap */
+    width: 195px;
     background: var(--surface-glass);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--surface-glass-border);
     border-radius: 16px;
-    padding: 16px;
+    padding: 14px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     z-index: 500;
     pointer-events: auto;
@@ -506,8 +531,9 @@ svg {
 
 .legend-item {
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     padding: 10px 8px;
     color: rgba(255, 255, 255, 0.9);
     font-size: 13px;
@@ -520,17 +546,21 @@ svg {
     background: rgba(255, 255, 255, 0.1);
 }
 
-.legend-item span {
-    white-space: nowrap;
-    flex: 1;
-}
-
 .legend-item .toggle-icon {
     font-size: 14px;
     color: var(--l1-color);
     flex-shrink: 0;
-    width: 18px;
-    text-align: center;
+    width: 16px;
+}
+
+.legend-item svg {
+    flex-shrink: 0;
+    width: 32px;
+    height: 8px;
+}
+
+.legend-item span {
+    white-space: nowrap;
 }
 
 .legend-item:not(.active) {
