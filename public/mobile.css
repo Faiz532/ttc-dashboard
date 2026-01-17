@@ -50,11 +50,26 @@
 }
 
 .shuttle-outline {
-    stroke: white !important;
-    stroke-width: 8px;
-    stroke-dasharray: 10, 5;
+    stroke: var(--shuttle-color) !important;
+    stroke-width: 28px;
+    /* Wider than alert-base (22px) so it shows behind as a border */
+    stroke-linecap: round;
+    stroke-linejoin: round;
     fill: none;
-    opacity: 0.8;
+    opacity: 0.9;
+    filter: drop-shadow(0 0 8px var(--shuttle-color));
+    /* No separate animation - inherits from flow-forward/flow-reverse/pulse-solid classes */
+}
+
+/* Shuttle outline with directional flow - same dash pattern as alert, wider stroke for border effect */
+.shuttle-outline.flow-forward,
+.shuttle-outline.flow-reverse {
+    stroke-width: 28px;
+    stroke-dasharray: 20, 45;
+}
+
+.shuttle-outline.pulse-solid {
+    stroke-dasharray: none;
 }
 
 .path.alert-preview {

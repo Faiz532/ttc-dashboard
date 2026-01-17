@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TTC Dashboard - Admin Testing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=91">
+    <link rel="stylesheet" href="admin.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
+</head>
+
+<body>
+    <div id="vanta-bg"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0.25;">
+    </div>
+
+    <!-- MAP CONTAINER (Background) -->
+    <div id="map-viewport">
+        <svg id="map-root" viewBox="-150 0 1300 800" preserveAspectRatio="xMidYMid meet"
+            xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- Line 1 Glow -->
+                <filter id="glow-l1" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                    <feFlood flood-color="#FFC425" flood-opacity="0.5" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Line 2 Glow -->
+                <filter id="glow-l2" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                    <feFlood flood-color="#009639" flood-opacity="0.5" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Line 4 Glow -->
+                <filter id="glow-l4" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                    <feFlood flood-color="#B11D8C" flood-opacity="0.5" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Line 5 Glow -->
+                <filter id="glow-l5" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                    <feFlood flood-color="#F37021" flood-opacity="0.5" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Line 6 Glow -->
+                <filter id="glow-l6" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
+                    <feFlood flood-color="#9ca3af" flood-opacity="0.4" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Alert Glow (Strong Red) -->
+                <filter id="glow-alert" x="-500%" y="-500%" width="1000%" height="1000%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="15" result="blur" />
+                    <feFlood flood-color="#ef4444" flood-opacity="1" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Delay Glow (Strong Orange) -->
+                <filter id="glow-delay" x="-500%" y="-500%" width="1000%" height="1000%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="15" result="blur" />
+                    <feFlood flood-color="#f59e0b" flood-opacity="1" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+            <g id="tracks-layer"></g>
+            <g id="alerts-layer"></g>
+            <g id="stations-layer"></g>
+        </svg>
+    </div>
+
+    <!-- UI OVERLAY LAYER -->
+    <div class="ui-layer">
+
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <!-- Left Side -->
+            <div class="fab-stack" style="margin-left: 0; margin-right: auto; pointer-events: auto;">
+                <div class="admin-badge">
+                    <i class="fas fa-flask"></i>
+                    <span>ADMIN TEST MODE</span>
+                </div>
+            </div>
+
+            <!-- Clock Display -->
+            <div id="clock-display" class="header-clock">
+                <div class="clock-time">--:--</div>
+                <div class="clock-date">---, --- --</div>
+            </div>
+
+            <!-- Right Side FABs -->
+            <div class="fab-stack">
+                <div class="fab" id="btn-recenter"><i class="fas fa-crosshairs"></i></div>
+                <div class="fab" id="btn-clear-all"><i class="fas fa-trash"></i></div>
+            </div>
+        </div>
+
+        <!-- Bottom UI (Sheets + Nav) -->
+        <div class="bottom-ui">
+
+            <!-- ALERTS SHEET -->
+            <div id="sheet-alerts" class="sheet-container">
+                <div class="sheet-handle-area">
+                    <div class="sheet-handle"></div>
+                </div>
+                <div class="sheet-header">
+                    <div class="sheet-title">Test Alerts</div>
+                    <div class="sheet-subtitle">Manually created alerts</div>
+                </div>
+                <div class="sheet-content" id="alerts-list">
+                    <div style="text-align:center; padding:20px; color:gray">No test alerts created yet</div>
+                </div>
+            </div>
+
+            <!-- CREATE ALERT SHEET -->
+            <div id="sheet-create" class="sheet-container">
+                <div class="sheet-handle-area">
+                    <div class="sheet-handle"></div>
+                </div>
+                <div class="sheet-header">
+                    <div class="sheet-title">Create Alert</div>
+                    <div class="sheet-subtitle">Add a test alert to the map</div>
+                </div>
+                <div class="sheet-content">
+                    <form id="alert-form" class="alert-form">
+                        <div class="form-group">
+                            <label for="line-select">Line</label>
+                            <select id="line-select" required>
+                                <option value="">Select Line</option>
+                                <option value="1">Line 1 - Yonge-University</option>
+                                <option value="2">Line 2 - Bloor-Danforth</option>
+                                <option value="4">Line 4 - Sheppard</option>
+                                <option value="6">Line 6 - Finch West</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="start-select">Start Station</label>
+                                <select id="start-select" required disabled>
+                                    <option value="">Select Line First</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="end-select">End Station</label>
+                                <select id="end-select" required disabled>
+                                    <option value="">Select Line First</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="direction-select">Direction</label>
+                                <select id="direction-select" required>
+                                    <option value="Both Ways">Both Ways</option>
+                                    <option value="Northbound">Northbound</option>
+                                    <option value="Southbound">Southbound</option>
+                                    <option value="Eastbound">Eastbound</option>
+                                    <option value="Westbound">Westbound</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="effect-select">Effect</label>
+                                <select id="effect-select" required>
+                                    <option value="NO_SERVICE">No Service (Suspension)</option>
+                                    <option value="SIGNIFICANT_DELAYS">Delay (Reduced Speed)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="reason-input">Reason</label>
+                            <input type="text" id="reason-input" placeholder="e.g., Track issues" value="Test Alert">
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="shuttle-check">
+                                <span>Shuttle Bus Active</span>
+                            </label>
+                        </div>
+                        <button type="submit" class="submit-btn">
+                            <i class="fas fa-plus"></i> Add Alert
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- BOTTOM NAVIGATION -->
+            <div class="bottom-nav">
+                <div class="nav-item active" data-tab="map">
+                    <i class="fas fa-map"></i>
+                    <span>Map</span>
+                </div>
+                <div class="nav-item" data-tab="alerts">
+                    <div style="position: relative;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span id="badge-active" class="nav-badge hidden">0</span>
+                    </div>
+                    <span>Alerts</span>
+                </div>
+                <div class="nav-item" data-tab="create">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Create</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- DESKTOP SIDEBAR (shown on larger screens) -->
+    <div id="desktop-sidebar" class="desktop-sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-flask" style="color: var(--l4-color);"></i>
+            <span>ADMIN TEST MODE</span>
+        </div>
+        <div class="sidebar-nav">
+            <div class="sidebar-item active" data-panel="map">
+                <i class="fas fa-map"></i>
+                <span>Map</span>
+            </div>
+            <div class="sidebar-item" data-panel="alerts">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Alerts</span>
+                <span id="sidebar-badge-active" class="sidebar-badge hidden">0</span>
+            </div>
+            <div class="sidebar-item" data-panel="create">
+                <i class="fas fa-plus-circle"></i>
+                <span>Create Alert</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- DESKTOP ALERTS PANEL -->
+    <div id="desktop-alerts-panel" class="desktop-panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-exclamation-triangle"></i> Test Alerts</h2>
+            <button class="close-panel-btn" data-close="alerts"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="desktop-alerts-list" class="panel-content">
+            <div style="text-align:center; padding:20px; color:gray">No test alerts created yet</div>
+        </div>
+    </div>
+
+    <!-- DESKTOP CREATE PANEL -->
+    <div id="desktop-create-panel" class="desktop-panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-plus-circle"></i> Create Alert</h2>
+            <button class="close-panel-btn" data-close="create"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="panel-content">
+            <form id="desktop-alert-form" class="alert-form">
+                <div class="form-group">
+                    <label for="desktop-line-select">Line</label>
+                    <select id="desktop-line-select" required>
+                        <option value="">Select Line</option>
+                        <option value="1">Line 1 - Yonge-University</option>
+                        <option value="2">Line 2 - Bloor-Danforth</option>
+                        <option value="4">Line 4 - Sheppard</option>
+                        <option value="6">Line 6 - Finch West</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="desktop-start-select">Start Station</label>
+                        <select id="desktop-start-select" required disabled>
+                            <option value="">Select Line First</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="desktop-end-select">End Station</label>
+                        <select id="desktop-end-select" required disabled>
+                            <option value="">Select Line First</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="desktop-direction-select">Direction</label>
+                        <select id="desktop-direction-select" required>
+                            <option value="Both Ways">Both Ways</option>
+                            <option value="Northbound">Northbound</option>
+                            <option value="Southbound">Southbound</option>
+                            <option value="Eastbound">Eastbound</option>
+                            <option value="Westbound">Westbound</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="desktop-effect-select">Effect</label>
+                        <select id="desktop-effect-select" required>
+                            <option value="NO_SERVICE">No Service (Suspension)</option>
+                            <option value="SIGNIFICANT_DELAYS">Delay (Reduced Speed)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="desktop-reason-input">Reason</label>
+                    <input type="text" id="desktop-reason-input" placeholder="e.g., Track issues" value="Test Alert">
+                </div>
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="desktop-shuttle-check">
+                        <span>Shuttle Bus Active</span>
+                    </label>
+                </div>
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-plus"></i> Add Alert
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCRIPT -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanta/0.5.24/vanta.net.min.js"></script>
+    <script src="admin.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>TTC Dashboard - Testing Mode</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
+    <link rel="stylesheet" href="desktop.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanta/0.5.24/vanta.net.min.js"></script>
+    <script type="module">
+        import { inject } from 'https://cdn.jsdelivr.net/npm/@vercel/analytics/+esm';
+        inject();
+    </script>
+</head>
+
+<body>
+    <!-- Vanta.js Animated Background -->
+    <div id="vanta-bg"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0.25;">
+    </div>
+
+    <!-- MAP VIEWPORT (Full Screen) -->
+    <div id="viewport">
+        <svg id="ttc-svg" viewBox="-200 0 1400 800" preserveAspectRatio="xMidYMid meet">
+            <g id="map-root">
+                <g id="tracks-layer"></g>
+                <g id="alerts-layer"></g>
+                <g id="stations-layer"></g>
+            </g>
+        </svg>
+    </div>
+
+    <!-- FLOATING UI LAYER -->
+    <div class="ui-layer">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <!-- Left Side FABs -->
+            <div class="fab-stack left">
+                <!-- Hamburger Menu Button -->
+                <div class="fab" id="btn-menu">
+                    <i class="fas fa-bars"></i>
+                </div>
+                <!-- Theme Toggle Button -->
+                <div class="fab" id="btn-theme">
+                    <i class="fas fa-moon"></i>
+                </div>
+            </div>
+
+            <!-- Right Side FABs -->
+            <div class="fab-stack">
+                <div class="fab" id="btn-recenter"><i class="fas fa-crosshairs"></i></div>
+                <div class="fab" id="btn-legend">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Center Clock & Status -->
+        <div class="top-center-info">
+            <!-- Clock Display -->
+            <div id="clock-display" class="header-clock">
+                <div class="clock-time">--:--</div>
+                <div class="clock-date">---, --- --</div>
+            </div>
+            <!-- Status Indicator - TESTING MODE -->
+            <div id="status-indicator" class="status-indicator"
+                style="background: rgba(177, 29, 140, 0.2); border-color: var(--l4-color);">
+                <i class="fas fa-flask" style="color: var(--l4-color);"></i>
+                <span class="status-text" style="color: var(--l4-color);">Testing</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide-out Menu Panel (Outside ui-layer for proper pointer-events) -->
+    <div id="menu-panel" class="menu-panel hidden">
+        <div class="menu-header" style="border-bottom-color: var(--l4-color);">
+            <i class="fas fa-flask" style="color: var(--l4-color); font-size: 20px;"></i>
+            <span style="color: var(--l4-color);">TESTING MODE</span>
+        </div>
+        <div class="menu-nav">
+            <div class="menu-item active" data-tab="lines">
+                <i class="fas fa-route"></i>
+                <span>Map</span>
+            </div>
+            <div class="menu-item" data-tab="alerts">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Alerts</span>
+                <span id="alerts-badge" class="menu-badge hidden">0</span>
+            </div>
+            <div class="menu-item" data-tab="upcoming">
+                <i class="fas fa-clock"></i>
+                <span>Upcoming</span>
+                <span id="upcoming-badge" class="menu-badge hidden">0</span>
+            </div>
+            <div class="menu-item" data-tab="about">
+                <i class="fas fa-info-circle"></i>
+                <span>About</span>
+            </div>
+            <div class="menu-item" data-tab="create"
+                style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 16px;">
+                <i class="fas fa-plus-circle" style="color: var(--l4-color);"></i>
+                <span style="color: var(--l4-color);">Create Alert</span>
+            </div>
+        </div>
+        <div class="menu-footer">
+            v1.2.0 Alpha • Made by Faiz P
+        </div>
+    </div>
+
+    <!-- Legend Popup -->
+    <div id="legend-popup" class="legend-popup hidden">
+        <div class="legend-popup-title">Legend</div>
+        <div class="legend-item">
+            <svg width="32" height="8" style="overflow: visible;">
+                <path d="M 0 4 L 32 4" class="alert-base pulse-solid"
+                    style="stroke-width: 6; opacity: 1; stroke-linecap: round;"></path>
+            </svg>
+            <span>No Service / Suspension</span>
+        </div>
+        <div class="legend-item">
+            <svg width="32" height="8" style="overflow: visible;">
+                <path d="M 0 4 L 32 4" class="alert-base delay pulse-solid"
+                    style="stroke-width: 6; opacity: 1; stroke-linecap: round;"></path>
+            </svg>
+            <span>Major Delays / Slow</span>
+        </div>
+        <div class="legend-item">
+            <svg width="32" height="8" style="overflow: visible;">
+                <path d="M 0 4 L 32 4" class="shuttle-outline"
+                    style="stroke-width: 3; opacity: 0.9; stroke-linecap: round;"></path>
+            </svg>
+            <span>Shuttle Buses</span>
+        </div>
+    </div>
+
+    <!-- Alerts Panel -->
+    <div id="alerts-panel" class="content-panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-exclamation-triangle"></i> Active Service Alerts</h2>
+            <button class="close-panel-btn" data-close="alerts"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="alerts-list" class="panel-content"></div>
+    </div>
+
+    <!-- Upcoming Outages Panel -->
+    <div id="upcoming-panel" class="content-panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-clock"></i> Upcoming Service Changes</h2>
+            <button class="close-panel-btn" data-close="upcoming"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="upcoming-list" class="panel-content"></div>
+    </div>
+
+    <!-- About Panel -->
+    <div id="about-panel" class="content-panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-info-circle"></i> About</h2>
+            <button class="close-panel-btn" data-close="about"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="panel-content">
+            <div class="about-content">
+                <h3 style="color: var(--l1-color); margin-bottom: 16px;">
+                    <i class="fas fa-exclamation-triangle"></i> Disclaimer
+                </h3>
+                <p>
+                    This is a <strong>personal project</strong> and not an official TTC map. There could be
+                    mistakes in the data or representation. This app is not affiliated with the Toronto Transit
+                    Commission (TTC).
+                </p>
+                <p style="margin-top: 16px;">
+                    <strong>Why I made this:</strong><br>
+                    I made this dashboard because I was not able to easily know if a subway outage would affect
+                    my commute. I always had to look up a map to cross-reference alerts. This tool makes it
+                    easier to verify if I am affected.
+                </p>
+                <div
+                    style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); font-size: 13px; color: var(--text-muted);">
+                    Data provided by TTC Open Data.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay" class="menu-overlay hidden"></div>
+
+    <!-- Create Alert Panel -->
+    <div id="create-panel" class="content-panel">
+        <div class="panel-header">
+            <h2><i class="fas fa-plus-circle" style="color: var(--l4-color);"></i> Create Test Alert</h2>
+            <button class="close-panel-btn" data-close="create"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="panel-content" style="padding: 20px;">
+            <form id="alert-form" style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label
+                        style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; display: block;">Line</label>
+                    <select id="line-select" required
+                        style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 14px;">
+                        <option value="">Select Line</option>
+                        <option value="1">Line 1 - Yonge-University</option>
+                        <option value="2">Line 2 - Bloor-Danforth</option>
+                        <option value="4">Line 4 - Sheppard</option>
+                        <option value="6">Line 6 - Finch West</option>
+                    </select>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label
+                            style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; display: block;">Start
+                            Station</label>
+                        <select id="start-select" required disabled
+                            style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 14px;">
+                            <option value="">Select Line First</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label
+                            style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; display: block;">End
+                            Station</label>
+                        <select id="end-select" required disabled
+                            style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 14px;">
+                            <option value="">Select Line First</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label
+                            style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; display: block;">Direction</label>
+                        <select id="direction-select" required
+                            style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 14px;">
+                            <option value="Both Ways">Both Ways</option>
+                            <option value="Northbound">Northbound</option>
+                            <option value="Southbound">Southbound</option>
+                            <option value="Eastbound">Eastbound</option>
+                            <option value="Westbound">Westbound</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label
+                            style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; display: block;">Effect</label>
+                        <select id="effect-select" required
+                            style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 14px;">
+                            <option value="NO_SERVICE">No Service (Suspension)</option>
+                            <option value="SIGNIFICANT_DELAYS">Delay (Reduced Speed)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label
+                        style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; display: block;">Reason</label>
+                    <input type="text" id="reason-input" placeholder="e.g., Track issues" value="Test Alert"
+                        style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <label style="display: flex; align-items: center; gap: 10px; color: white; font-size: 14px;">
+                    <input type="checkbox" id="shuttle-check"
+                        style="width: 18px; height: 18px; accent-color: var(--l4-color);">
+                    <span>Shuttle Bus Active</span>
+                </label>
+                <button type="submit"
+                    style="width: 100%; padding: 14px; background: var(--l4-color); border: none; border-radius: 10px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;">
+                    <i class="fas fa-plus"></i> Add Alert
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin-desktop.js"></script>
+</body>
+
+</html>

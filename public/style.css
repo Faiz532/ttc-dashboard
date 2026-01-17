@@ -319,6 +319,24 @@ canvas.vanta-canvas {
     opacity: 1;
 }
 
+/* Shuttle outline with directional flow - same dash pattern as alert, wider stroke for border effect */
+.shuttle-outline.flow-forward {
+    stroke-width: 28px;
+    stroke-dasharray: 20, 45;
+    animation: flowDash 1s linear infinite;
+}
+
+.shuttle-outline.flow-reverse {
+    stroke-width: 28px;
+    stroke-dasharray: 20, 45;
+    animation: flowDashReverse 1s linear infinite;
+}
+
+.shuttle-outline.pulse-solid {
+    stroke-dasharray: none;
+    animation: pulseSolid 2s ease-in-out infinite;
+}
+
 
 
 .shuttle-mask {

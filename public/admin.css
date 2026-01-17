@@ -1,0 +1,405 @@
+/* Admin Testing Page Styles */
+
+/* Admin Badge */
+.admin-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(177, 29, 140, 0.2);
+    border: 1px solid var(--l4-color);
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: var(--l4-color);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.admin-badge i {
+    font-size: 14px;
+}
+
+/* Form Styles */
+.alert-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group select,
+.form-group input[type="text"] {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    color: white;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.form-group select:focus,
+.form-group input[type="text"]:focus {
+    outline: none;
+    border-color: var(--l4-color);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.form-group select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.form-group select option {
+    background: #1a1a2e;
+    color: white;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.checkbox-group {
+    flex-direction: row;
+    align-items: center;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: white;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--l4-color);
+    cursor: pointer;
+}
+
+.submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--l4-color);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+    margin-top: 8px;
+}
+
+.submit-btn:hover {
+    opacity: 0.9;
+}
+
+.submit-btn:active {
+    transform: scale(0.98);
+}
+
+/* Alert Card in Admin */
+.admin-alert-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.admin-alert-card .line-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: white;
+    flex-shrink: 0;
+}
+
+.admin-alert-card .alert-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-alert-card .alert-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: white;
+    margin-bottom: 4px;
+}
+
+.admin-alert-card .alert-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.admin-alert-card .alert-tags {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.admin-alert-card .tag {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+}
+
+.admin-alert-card .tag.shuttle {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+}
+
+.admin-alert-card .tag.delay {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.admin-alert-card .tag.suspension {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.admin-alert-card .delete-btn {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.admin-alert-card .delete-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Desktop Sidebar */
+.desktop-sidebar {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 220px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    z-index: 100;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--l4-color);
+    letter-spacing: 0.5px;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 16px 0;
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    position: relative;
+}
+
+.sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.sidebar-item.active {
+    background: rgba(177, 29, 140, 0.1);
+    color: var(--l4-color);
+    border-left: 3px solid var(--l4-color);
+}
+
+.sidebar-item i {
+    width: 20px;
+    text-align: center;
+}
+
+.sidebar-badge {
+    position: absolute;
+    right: 16px;
+    background: var(--alert-color);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Desktop Panels */
+.desktop-panel {
+    display: none;
+    position: fixed;
+    left: 220px;
+    top: 0;
+    bottom: 0;
+    width: 380px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    z-index: 99;
+    flex-direction: column;
+}
+
+.desktop-panel .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.desktop-panel .panel-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+}
+
+.desktop-panel .panel-header h2 i {
+    color: var(--l4-color);
+}
+
+.desktop-panel .panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.close-panel-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+
+.close-panel-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* Responsive: Desktop */
+@media (min-width: 900px) {
+
+    /* Show desktop sidebar */
+    .desktop-sidebar {
+        display: flex;
+    }
+
+    /* Shift map viewport */
+    #map-viewport {
+        left: 220px;
+        width: calc(100% - 220px);
+    }
+
+    /* Hide mobile UI */
+    .bottom-ui {
+        display: none !important;
+    }
+
+    .top-bar {
+        left: 220px;
+        width: calc(100% - 220px);
+    }
+
+    /* Show active panel */
+    .desktop-panel.active {
+        display: flex;
+    }
+}
+
+/* Clear All Button */
+#btn-clear-all {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+#btn-clear-all i {
+    color: #f87171;
+}
+
+#btn-clear-all:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Line Colors for Badges */
+.line-badge.bg-l1 {
+    background: var(--l1-color);
+}
+
+.line-badge.bg-l2 {
+    background: var(--l2-color);
+}
+
+.line-badge.bg-l4 {
+    background: var(--l4-color);
+}
+
+.line-badge.bg-l6 {
+    background: var(--l6-color);
+}

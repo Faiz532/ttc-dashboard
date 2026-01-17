@@ -4,6 +4,7 @@ let activeAlerts = [];
 let upcomingAlerts = [];
 let mapDraggable = null;
 let pollingInterval = null;
+let manualAlertCounter = 1; // For generating unique IDs
 
 // --- Map Configuration (Easy to adjust) ---
 const MAP_CONFIG = {
@@ -26,7 +27,8 @@ const mapRoot = document.getElementById('map-root');
 const viewport = document.getElementById('map-viewport');
 const sheets = {
     alerts: document.getElementById('sheet-alerts'),
-    upcoming: document.getElementById('sheet-upcoming')
+    upcoming: document.getElementById('sheet-upcoming'),
+    create: document.getElementById('sheet-create')
 };
 const badges = {
     active: document.getElementById('badge-active'),
@@ -166,10 +168,15 @@ function init() {
     setupDragAndZoom(); // Now handles all dragging setup including initial positioning
     setupPinchZoom();
     setupSheetGestures();
-    fetchData();
-    pollingInterval = setInterval(fetchData, 60000);
+    setupAdminForm(); // Admin: Setup form handling instead of API
+    // ADMIN MODE: No API fetching
+    // fetchData();
+    // pollingInterval = setInterval(fetchData, 60000);
+    renderAlertsOnMap(); // Initial render with empty alerts
+    renderLists();
+    updateBadges();
 
-    console.log("MOBILE INIT FINISHED");
+    console.log("ADMIN MOBILE INIT FINISHED");
 
     // Disclaimer Logic - REMOVED to use new Info Popup
     // const modal = document.getElementById('disclaimer-modal');
@@ -222,8 +229,8 @@ function switchTab(tab) {
     if (activeNav) activeNav.classList.add('active');
 
     // Handle Sheets
-    Object.values(sheets).forEach(s => s.classList.remove('active'));
-    if (tab === 'alerts' || tab === 'upcoming') {
+    Object.values(sheets).forEach(s => { if (s) s.classList.remove('active'); });
+    if (tab === 'alerts' || tab === 'upcoming' || tab === 'create') {
         if (sheets[tab]) {
             sheets[tab].classList.add('active');
             // Reset any random drag position
@@ -955,8 +962,11 @@ function mergeOverlappingAlerts(alerts) {
 function calculateFlow(line, startName, endName, direction) {
     if (direction === 'Both Ways') return 'both';
     const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return 'forward';
-    const idx1 = findStationIndex(lineObj, startName); const idx2 = findStationIndex(lineObj, endName);
-    if (direction && line === '1') {
+    const idx1 = findStationIndex(lineObj, startName);
+    const idx2 = findStationIndex(lineObj, endName);
+
+    // Line 1 is North-South
+    if (line === '1') {
         const unionIdx = 21; const midIdx = (idx1 + idx2) / 2;
         if (midIdx < unionIdx) {
             if (direction === 'Northbound') return 'reverse'; if (direction === 'Southbound') return 'forward';
@@ -964,7 +974,17 @@ function calculateFlow(line, startName, endName, direction) {
             if (direction === 'Northbound') return 'forward'; if (direction === 'Southbound') return 'reverse';
         }
     }
-    if (idx1 < idx2) return 'forward'; return 'reverse';
+
+    // Lines 2, 4, 5, 6 are East-West
+    // For horizontal lines: lower index = west, higher index = east
+    // Eastbound = going from west to east = forward
+    // Westbound = going from east to west = reverse
+    if (direction === 'Eastbound') return 'forward';
+    if (direction === 'Westbound') return 'reverse';
+
+    // Default fallback based on station order
+    if (idx1 < idx2) return 'forward';
+    return 'reverse';
 }
 
 function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay, isPreview = false) {
@@ -1061,12 +1081,18 @@ function createAlertCard(a, isUpcoming = false) {
     const color = (a.effect === 'SIGNIFICANT_DELAYS') ? 'bg-l1' : 'bg-alert';
     // Simplified logic for demo color mapping
     const badgeClass = a.line === '1' ? 'bg-l1' : a.line === '2' ? 'bg-l2' : 'bg-l4';
+    // Check if this is a manual alert (ADMIN MODE)
+    const isManualAlert = a.id && a.id.toString().startsWith('manual-');
 
     return `
-            <div class="alert-card">
+            <div class="alert-card" style="position: relative;">
                 <div class="alert-header">
                     <div class="line-badge ${badgeClass}">${a.line}</div>
-                    <div style="font-weight:600; font-size:15px;">${a.reason}</div>
+                    <div style="font-weight:600; font-size:15px; flex: 1;">${a.reason}</div>
+                    ${isManualAlert ? `
+                    <button onclick="deleteManualAlert('${a.id}')" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #ef4444; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                        <i class="fas fa-trash"></i>
+                    </button>` : ''}
                 </div>
                 <div class="alert-body">
                     <div style="margin-bottom:6px; color:white; font-size:13px;">
@@ -1417,6 +1443,172 @@ function focusOnAlert(alert) {
             }
         });
     }
+}
+
+// === ADMIN MODE: Form Handling ===
+function setupAdminForm() {
+    const lineSelect = document.getElementById('line-select');
+    const startSelect = document.getElementById('start-select');
+    const endSelect = document.getElementById('end-select');
+    const directionSelect = document.getElementById('direction-select');
+    const form = document.getElementById('alert-form');
+
+    if (!lineSelect || !form) {
+        console.warn('Admin form elements not found');
+        return;
+    }
+
+    // Direction options based on line orientation
+    const northSouthOptions = `
+        <option value="Both Ways">Both Ways</option>
+        <option value="Northbound">Northbound</option>
+        <option value="Southbound">Southbound</option>
+    `;
+    const eastWestOptions = `
+        <option value="Both Ways">Both Ways</option>
+        <option value="Eastbound">Eastbound</option>
+        <option value="Westbound">Westbound</option>
+    `;
+
+    // Populate stations and update direction options when line changes
+    lineSelect.addEventListener('change', () => {
+        const lineId = lineSelect.value;
+        const lineData = rawMapData.find(l => l.line === lineId);
+
+        if (!lineData) {
+            startSelect.innerHTML = '<option value="">Select Line First</option>';
+            endSelect.innerHTML = '<option value="">Select Line First</option>';
+            startSelect.disabled = true;
+            endSelect.disabled = true;
+            return;
+        }
+
+        const options = lineData.stations.map(s =>
+            `<option value="${s.name}">${s.name}</option>`
+        ).join('');
+
+        startSelect.innerHTML = '<option value="">Select Station</option>' + options;
+        endSelect.innerHTML = '<option value="">Select Station</option>' + options;
+        startSelect.disabled = false;
+        endSelect.disabled = false;
+
+        // Update direction options based on line
+        // Line 1 is North-South, Lines 2/4/5/6 are East-West
+        if (lineId === '1') {
+            directionSelect.innerHTML = northSouthOptions;
+        } else {
+            directionSelect.innerHTML = eastWestOptions;
+        }
+    });
+
+    // Form submission
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const alert = {
+            id: 'manual-' + manualAlertCounter++,
+            line: lineSelect.value,
+            start: startSelect.value,
+            end: endSelect.value,
+            direction: directionSelect.value,
+            effect: document.getElementById('effect-select').value,
+            reason: document.getElementById('reason-input').value || 'Test Alert',
+            shuttle: document.getElementById('shuttle-check').checked,
+            singleStation: startSelect.value === endSelect.value,
+            status: 'active',
+            originalText: 'Manual test alert'
+        };
+
+        activeAlerts.push(alert);
+        renderAlertsOnMap();
+        renderLists();
+        updateBadges();
+
+        // Reset form
+        form.reset();
+        startSelect.disabled = true;
+        endSelect.disabled = true;
+
+        // Switch to map tab
+        switchTab('map');
+
+        // Zoom disabled for testing
+        // zoomToAlert(alert);
+    });
+}
+
+// Function to zoom to an alert on the map
+function zoomToAlert(alert) {
+    const lineObj = rawMapData.find(l => l.line === alert.line);
+    if (!lineObj) return;
+
+    const startStation = lineObj.stations.find(s => s.name === alert.start);
+    const endStation = alert.end ? lineObj.stations.find(s => s.name === alert.end) : null;
+
+    if (!startStation) return;
+
+    let centerX, centerY;
+    if (endStation && endStation.name !== startStation.name) {
+        centerX = (startStation.x + endStation.x) / 2;
+        centerY = (startStation.y + endStation.y) / 2;
+    } else {
+        centerX = startStation.x;
+        centerY = startStation.y;
+    }
+
+    // Get viewport dimensions
+    const viewportEl = document.getElementById('map-viewport');
+    if (!viewportEl) return;
+
+    const viewportRect = viewportEl.getBoundingClientRect();
+    const viewWidth = viewportRect.width;
+    const viewHeight = viewportRect.height;
+
+    // SVG viewBox is "-150 0 1300 800" for mobile
+    const viewBoxX = -150;
+    const viewBoxWidth = 1300;
+    const viewBoxHeight = 800;
+
+    // Scale to zoom in on the alert
+    const targetScale = 2;
+
+    // Calculate pixel position relative to SVG coordinate system
+    const scaleX = viewWidth / viewBoxWidth;
+    const scaleY = viewHeight / viewBoxHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Center of viewport in SVG coordinates
+    const svgCenterX = viewBoxX + viewBoxWidth / 2;
+    const svgCenterY = viewBoxHeight / 2;
+
+    // Offset to center the alert
+    const targetX = (svgCenterX - centerX) * scale * targetScale;
+    const targetY = (svgCenterY - centerY) * scale * targetScale;
+
+    const mapRoot = document.getElementById('map-root');
+    if (typeof gsap !== 'undefined' && mapRoot) {
+        gsap.to(mapRoot, {
+            x: targetX,
+            y: targetY,
+            scale: targetScale,
+            duration: 0.8,
+            ease: "power2.out",
+            onComplete: () => {
+                currentScale = targetScale;
+                currentX = targetX;
+                currentY = targetY;
+                if (typeof updateMapBounds === 'function') updateMapBounds(null);
+            }
+        });
+    }
+}
+
+// Function to delete a manual alert
+function deleteManualAlert(id) {
+    activeAlerts = activeAlerts.filter(a => a.id !== id);
+    renderAlertsOnMap();
+    renderLists();
+    updateBadges();
 }
 
 window.onload = init;

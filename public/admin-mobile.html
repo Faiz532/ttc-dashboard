@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TTC Dashboard - Testing Mode</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=91">
+
+    <link rel="stylesheet" href="mobile.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
+    <script type="module">
+        import { inject } from 'https://cdn.jsdelivr.net/npm/@vercel/analytics/+esm';
+        inject();
+    </script>
+</head>
+
+<body>
+    <div id="vanta-bg"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0.25;">
+    </div>
+
+    <!-- MAP CONTAINER (Background) -->
+    <div id="map-viewport">
+        <!-- SVG Map Container - viewBox extended to 1020 to include Kennedy Line 5 terminal -->
+        <svg id="map-root" viewBox="-150 0 1300 800" preserveAspectRatio="xMidYMid meet"
+            xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- Line 1 Glow -->
+                <filter id="glow-l1" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                    <feFlood flood-color="#FFC425" flood-opacity="0.5" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Line 2 Glow -->
+                <filter id="glow-l2" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                    <feFlood flood-color="#009639" flood-opacity="0.5" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Line 4 Glow -->
+                <filter id="glow-l4" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                    <feFlood flood-color="#B11D8C" flood-opacity="0.5" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Line 5 Glow -->
+                <filter id="glow-l5" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+                    <feFlood flood-color="#F37021" flood-opacity="0.5" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Line 6 Glow -->
+                <filter id="glow-l6" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
+                    <feFlood flood-color="#9ca3af" flood-opacity="0.4" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Alert Glow (Strong Red) -->
+                <filter id="glow-alert" x="-500%" y="-500%" width="1000%" height="1000%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="15" result="blur" />
+                    <feFlood flood-color="#ef4444" flood-opacity="1" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <!-- Delay Glow (Strong Orange) -->
+                <filter id="glow-delay" x="-500%" y="-500%" width="1000%" height="1000%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="15" result="blur" />
+                    <feFlood flood-color="#f59e0b" flood-opacity="1" result="color" />
+                    <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                    <feMerge>
+                        <feMergeNode in="shadow" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+            <g id="tracks-layer"></g>
+            <g id="alerts-layer"></g>
+            <g id="stations-layer"></g>
+            <!-- Line 5 Opening Soon Label -->
+            <g id="line5-label" transform="translate(830, 420)">
+                <rect x="-75" y="-18" width="150" height="36" rx="6" fill="#0F1014" stroke="var(--l5-color)"
+                    stroke-width="2" />
+                <circle cx="-55" cy="0" r="12" fill="var(--l5-color)" />
+                <text x="-55" y="4" fill="white" font-size="11" font-weight="700" text-anchor="middle">5</text>
+                <text x="10" y="5" fill="white" font-size="11" font-weight="600" text-anchor="middle">Opening
+                    Soon</text>
+            </g>
+        </svg>
+    </div>
+
+    <!-- UI OVERLAY LAYER -->
+    <div class="ui-layer">
+
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <!-- Search Pill -->
+
+            <!-- Info Button to replace Search -->
+            <div class="fab-stack" style="margin-left: 0; margin-right: auto; pointer-events: auto;">
+                <div class="fab" id="btn-info" style="margin-bottom:0;">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span class="fab-icon"><i class="fas fa-info-circle"></i></span>
+                </div>
+                <!-- Theme Toggle Button -->
+                <div class="fab" id="btn-theme">
+                    <i class="fas fa-moon"></i>
+                </div>
+
+                <!-- Info Popup -->
+                <div id="info-popup" class="layer-popup hidden" style="left: 60px; right: auto; top: 0;">
+                    <div class="layer-popup-title">Toronto Transit Live <span
+                            style="font-size: 10px; opacity: 0.6; font-weight: 400; margin-left: 4px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">ALPHA</span>
+                    </div>
+                    <div class="info-popup-content">
+                        Real-time tracking of TTC subway alerts, outages, and delays.
+                        <br><br>
+                        v1.2.0 Alpha • 2026
+                    </div>
+                    <div class="info-popup-footer">
+                        Made by Faiz P
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clock Display -->
+            <div id="clock-display" class="header-clock">
+                <div class="clock-time">--:--</div>
+                <div class="clock-date">---, --- --</div>
+            </div>
+
+            <!-- Status Indicator - TESTING MODE -->
+            <div id="status-indicator" class="status-indicator"
+                style="background: rgba(177, 29, 140, 0.2); border-color: var(--l4-color);">
+                <i class="fas fa-flask" style="color: var(--l4-color);"></i>
+                <span class="status-text" style="color: var(--l4-color);">Testing</span>
+            </div>
+
+            <!-- Right Side FABs -->
+            <div class="fab-stack">
+                <div class="fab" id="btn-recenter"><i class="fas fa-crosshairs"></i></div>
+                <div class="fab" id="btn-legend">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span class="fab-icon"><i class="fas fa-layer-group"></i></span>
+                </div>
+                <!-- Layer Toggle Popup -->
+                <div id="layer-popup" class="layer-popup hidden">
+                    <div class="layer-popup-title">Map Layers</div>
+                    <label class="layer-toggle">
+                        <input type="checkbox" id="toggle-outages" checked>
+                        <span class="toggle-indicator outage"></span>
+                        <span>Outages (Service Suspension)</span>
+                    </label>
+                    <label class="layer-toggle">
+                        <input type="checkbox" id="toggle-delays" checked>
+                        <span class="toggle-indicator delay"></span>
+                        <span>Delays (Reduced Speed)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom UI (Sheets + Nav) -->
+        <div class="bottom-ui">
+
+            <!-- ALERTS SHEET -->
+            <div id="sheet-alerts" class="sheet-container">
+                <div class="sheet-handle-area">
+                    <div class="sheet-handle"></div>
+                </div>
+                <div class="sheet-header">
+                    <div class="sheet-title">Active Alerts</div>
+                    <div class="sheet-subtitle">Real-time service disruptions</div>
+                    <div class="line-filter" id="alerts-filter">
+                        <button class="filter-btn active" data-line="all">All</button>
+                        <button class="filter-btn bg-l1" data-line="1">1</button>
+                        <button class="filter-btn bg-l2" data-line="2">2</button>
+                        <button class="filter-btn bg-l4" data-line="4">4</button>
+                        <button class="filter-btn bg-l5" data-line="5">5</button>
+                        <button class="filter-btn bg-l6" data-line="6">6</button>
+                    </div>
+                </div>
+                <div class="sheet-content" id="alerts-list">
+                    <!-- Line 5 Coming Soon Notice -->
+                    <div class="alert-card" style="border-left: 4px solid var(--l5-color); opacity: 0.9;">
+                        <div class="alert-badge" style="background: var(--l5-color);">5</div>
+                        <div class="alert-info">
+                            <div class="alert-title"><i class="fas fa-hard-hat" style="margin-right: 6px;"></i>Line 5
+                                Eglinton - Coming Soon</div>
+                            <div class="alert-desc">This line is not yet in service. Real-time tracking will be
+                                available once the line opens.</div>
+                        </div>
+                    </div>
+                    <!-- Dynamic Alert Cards Here -->
+                </div>
+            </div>
+
+            <!-- UPCOMING SHEET -->
+            <div id="sheet-upcoming" class="sheet-container">
+                <div class="sheet-handle-area">
+                    <div class="sheet-handle"></div>
+                </div>
+                <div class="sheet-header">
+                    <div class="sheet-title">Upcoming</div>
+                    <div class="sheet-subtitle">Planned closures & maintenance</div>
+                </div>
+                <div class="sheet-content" id="upcoming-list">
+                    <!-- Upcoming Cards Here -->
+                </div>
+            </div>
+
+            <!-- CREATE ALERT SHEET -->
+            <div id="sheet-create" class="sheet-container">
+                <div class="sheet-handle-area">
+                    <div class="sheet-handle"></div>
+                </div>
+                <div class="sheet-header">
+                    <div class="sheet-title">Create Alert</div>
+                    <div class="sheet-subtitle">Add a test alert to the map</div>
+                </div>
+                <div class="sheet-content">
+                    <form id="alert-form" class="alert-form" style="padding: 8px;">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div>
+                                <label
+                                    style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;">Line</label>
+                                <select id="line-select" required
+                                    style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 14px;">
+                                    <option value="">Select Line</option>
+                                    <option value="1">Line 1 - Yonge-University</option>
+                                    <option value="2">Line 2 - Bloor-Danforth</option>
+                                    <option value="4">Line 4 - Sheppard</option>
+                                    <option value="6">Line 6 - Finch West</option>
+                                </select>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <label
+                                        style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;">Start
+                                        Station</label>
+                                    <select id="start-select" required disabled
+                                        style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 14px;">
+                                        <option value="">Select Line First</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label
+                                        style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;">End
+                                        Station</label>
+                                    <select id="end-select" required disabled
+                                        style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 14px;">
+                                        <option value="">Select Line First</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <label
+                                        style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;">Direction</label>
+                                    <select id="direction-select" required
+                                        style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 14px;">
+                                        <option value="Both Ways">Both Ways</option>
+                                        <option value="Northbound">Northbound</option>
+                                        <option value="Southbound">Southbound</option>
+                                        <option value="Eastbound">Eastbound</option>
+                                        <option value="Westbound">Westbound</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label
+                                        style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;">Effect</label>
+                                    <select id="effect-select" required
+                                        style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 14px;">
+                                        <option value="NO_SERVICE">No Service</option>
+                                        <option value="SIGNIFICANT_DELAYS">Delay</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label
+                                    style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;">Reason</label>
+                                <input type="text" id="reason-input" placeholder="e.g., Track issues" value="Test Alert"
+                                    style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 14px; box-sizing: border-box;">
+                            </div>
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; color: white; font-size: 14px;">
+                                <input type="checkbox" id="shuttle-check"
+                                    style="width: 18px; height: 18px; accent-color: var(--l4-color);">
+                                <span>Shuttle Bus Active</span>
+                            </label>
+                            <button type="submit"
+                                style="width: 100%; padding: 14px; background: var(--l4-color); border: none; border-radius: 10px; color: white; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <i class="fas fa-plus"></i> Add Alert
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="bottom-nav">
+                <div class="nav-item active" data-tab="map">
+                    <i class="fas fa-map"></i>
+                    <span>Map</span>
+                </div>
+                <div class="nav-item" data-tab="alerts">
+                    <div style="position: relative;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span id="badge-active" class="nav-badge hidden">0</span>
+                    </div>
+                    <span>Alerts</span>
+                </div>
+                <div class="nav-item" data-tab="upcoming">
+                    <div style="position: relative;">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span id="badge-upcoming" class="nav-badge hidden">0</span>
+                    </div>
+                    <span>Upcoming</span>
+                </div>
+                <div class="nav-item" data-tab="create">
+                    <i class="fas fa-plus-circle" style="color: var(--l4-color);"></i>
+                    <span style="color: var(--l4-color);">Create</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- DISCLAIMER MODAL -->
+    <div id="disclaimer-modal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; padding:20px;">
+        <div
+            style="background:var(--sidebar-bg); border:1px solid var(--border-color); padding:20px; border-radius:12px; max-width:400px; width:100%; color:white; font-family:'Inter', sans-serif;">
+            <h2 style="margin-bottom:12px; font-weight:700; font-size:18px; color: var(--l1-color);">
+                <i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>Disclaimer
+            </h2>
+            <p style="font-size:14px; line-height:1.5; color:#d1d5db; margin-bottom:12px;">
+                This is a <strong>personal project</strong> and not an official TTC map. There could be mistakes. This
+                app is not affiliated with the Toronto Transit Commission (TTC).
+            </p>
+            <p style="font-size:14px; line-height:1.5; color:#d1d5db; margin-bottom:20px;">
+                I made this because I was not able to easily know if an outage would affect me. I had to always look up
+                a map to know, and this makes it easier to verify.
+            </p>
+            <button id="close-disclaimer"
+                style="width:100%; padding:12px; background:var(--l4-color); border:none; border-radius:8px; color:white; font-weight:600; font-size:14px; cursor:pointer;">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCRIPT -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanta/0.5.24/vanta.net.min.js"></script>
+    <script src="admin-mobile.js"></script>
+    <!-- Disclaimer Banner -->
+    <div id="disclaimer-banner" class="disclaimer-banner">
+        <div class="disclaimer-content">
+            <i class="fas fa-exclamation-triangle" style="color: #FFB700; margin-right: 12px; font-size: 16px;"></i>
+            <span>This is a personal project. Data and alerts may be inaccurate or delayed. This app is not affiliated
+                with the Toronto Transit Commission (TTC).</span>
+        </div>
+        <button id="btn-accept-disclaimer">I Understand</button>
+    </div>
+
+</body>
+
+</html>

@@ -33,9 +33,14 @@ const CACHE_DURATION = 60 * 1000; // 1 minute for fast updates
 
 // Master list of valid stations to validate against
 const VALID_STATIONS = [
+    // Line 1
     "Vaughan Metropolitan Centre", "Highway 407", "Pioneer Village", "York University", "Finch West", "Downsview Park", "Sheppard West", "Wilson", "Yorkdale", "Lawrence West", "Glencairn", "Eglinton West", "St Clair West", "Dupont", "Spadina", "St George", "Museum", "Queen's Park", "St Patrick", "Osgoode", "St Andrew", "Union", "King", "Queen", "Dundas", "College", "Wellesley", "Bloor-Yonge", "Rosedale", "Summerhill", "St Clair", "Davisville", "Eglinton", "Lawrence", "York Mills", "Sheppard-Yonge", "North York Centre", "Finch",
+    // Line 2
     "Kipling", "Islington", "Royal York", "Old Mill", "Jane", "Runnymede", "High Park", "Keele", "Dundas West", "Lansdowne", "Dufferin", "Ossington", "Christie", "Bathurst", "Bay", "Sherbourne", "Castle Frank", "Broadview", "Chester", "Pape", "Donlands", "Greenwood", "Coxwell", "Woodbine", "Main Street", "Victoria Park", "Warden", "Kennedy",
-    "Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills"
+    // Line 4
+    "Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills",
+    // Line 6 (Finch West LRT) - IMPORTANT: "Humber College" must be distinct from "College"
+    "Humber College", "Westmore", "Martin Grove", "Albion", "Stevenson", "Mount Olive", "Rowntree Mills", "Pearldale", "Duncanwoods", "Milvan Rumike", "Emery", "Signet Arrow", "Norfinch Oakdale", "Jane and Finch", "Driftwood", "Tobermory", "Sentinel"
 ];
 
 // Map common variations/typos to official names
@@ -72,10 +77,17 @@ const LINE_4_STATIONS = [
     "Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills"
 ];
 
+const LINE_6_STATIONS = [
+    "Humber College", "Westmore", "Martin Grove", "Albion", "Stevenson", "Mount Olive", "Rowntree Mills",
+    "Pearldale", "Duncanwoods", "Milvan Rumike", "Emery", "Signet Arrow", "Norfinch Oakdale",
+    "Jane and Finch", "Driftwood", "Tobermory", "Sentinel", "Finch West"
+];
+
 const STATIONS_BY_LINE = {
     "1": LINE_1_STATIONS,
     "2": LINE_2_STATIONS,
-    "4": LINE_4_STATIONS
+    "4": LINE_4_STATIONS,
+    "6": LINE_6_STATIONS
 };
 
 // Helper to check if range A is fully contained within range B
@@ -109,13 +121,17 @@ function normalizeStation(name) {
     if (STATION_MAP[clean]) return STATION_MAP[clean];
     if (STATION_MAP[clean.replace(/\./g, '')]) return STATION_MAP[clean.replace(/\./g, '')]; // Handle St. vs St
 
-    // 3. Check direct match in valid list
+    // 3. Check direct match in valid list (case-insensitive)
     const directMatch = VALID_STATIONS.find(s => s.toLowerCase() === clean.toLowerCase());
     if (directMatch) return directMatch;
 
-    // 4. Fuzzy check (e.g. "Spadina Ave" -> "Spadina")
-    const partialMatch = VALID_STATIONS.find(s => clean.toLowerCase().includes(s.toLowerCase()));
-    if (partialMatch) return partialMatch;
+    // 4. Fuzzy check - but prefer LONGER matches first to avoid "Humber College" -> "College"
+    // Sort valid stations by length descending so longer names match first
+    const sortedStations = [...VALID_STATIONS].sort((a, b) => b.length - a.length);
+
+    // Check if the input contains a station name (e.g., "Spadina Ave" contains "Spadina")
+    const containsMatch = sortedStations.find(s => clean.toLowerCase().includes(s.toLowerCase()));
+    if (containsMatch) return containsMatch;
 
     return null; // Could not identify station
 }
@@ -172,20 +188,23 @@ async function parseAlertWithAI(text) {
         
         ## APP CONTEXT
         This app displays a visual subway map with animated alerts:
-        - Line 1 (Yellow): Vaughan MC to Finch via Union (U-shaped)
-        - Line 2 (Green): Kipling to Kennedy (horizontal)
-        - Line 4 (Purple): Sheppard-Yonge to Don Mills (short horizontal)
+        - Line 1 (Yellow): Vaughan MC to Finch via Union (U-shaped subway)
+        - Line 2 (Green): Kipling to Kennedy (horizontal subway)
+        - Line 4 (Purple): Sheppard-Yonge to Don Mills (short horizontal subway)
         - Line 5 (Orange): Eglinton - NOT YET IN SERVICE (coming soon)
-        - Line 6 (Grey): Finch West LRT
+        - Line 6 (Grey): Finch West LRT from Humber College to Finch West station
         
-        ## VALID STATION NAMES (use exactly these names)
+        ## VALID STATION NAMES (use exactly these names - be VERY careful with similar names!)
+        IMPORTANT: "Humber College" (Line 6) is DIFFERENT from "College" (Line 1). Use the EXACT name.
+        
         Line 1: Vaughan Metropolitan Centre, Highway 407, Pioneer Village, York University, Finch West, Downsview Park, Sheppard West, Wilson, Yorkdale, Lawrence West, Glencairn, Eglinton West, St Clair West, Dupont, Spadina, St George, Museum, Queen's Park, St Patrick, Osgoode, St Andrew, Union, King, Queen, Dundas, College, Wellesley, Bloor-Yonge, Rosedale, Summerhill, St Clair, Davisville, Eglinton, Lawrence, York Mills, Sheppard-Yonge, North York Centre, Finch
         Line 2: Kipling, Islington, Royal York, Old Mill, Jane, Runnymede, High Park, Keele, Dundas West, Lansdowne, Dufferin, Ossington, Christie, Bathurst, Spadina, St George, Bay, Bloor-Yonge, Sherbourne, Castle Frank, Broadview, Chester, Pape, Donlands, Greenwood, Coxwell, Woodbine, Main Street, Victoria Park, Warden, Kennedy
         Line 4: Sheppard-Yonge, Bayview, Bessarion, Leslie, Don Mills
+        Line 6 (Finch West LRT): Humber College, Westmore, Martin Grove, Albion, Stevenson, Mount Olive, Rowntree Mills, Pearldale, Duncanwoods, Milvan Rumike, Emery, Signet Arrow, Norfinch Oakdale, Jane and Finch, Driftwood, Tobermory, Sentinel, Finch West
         
         ## TASK
         Parse the alert text below. Determine:
-        1. Which LINE is affected (1, 2, or 4)
+        1. Which LINE is affected (1, 2, 4, or 6)
         2. START and END stations of the affected segment
         3. Is it ACTIVE now or scheduled for FUTURE?
         4. Direction affected ("Northbound", "Southbound", "Eastbound", "Westbound", or "Both Ways")
@@ -199,7 +218,7 @@ async function parseAlertWithAI(text) {
         
         ## OUTPUT FORMAT (JSON only, no markdown)
         {
-          "line": "1" | "2" | "4",
+          "line": "1" | "2" | "4" | "6",
           "start": "Exact Station Name",
           "end": "Exact Station Name",
           "reason": "Brief reason (e.g., 'Track issues', 'Signal problems')",

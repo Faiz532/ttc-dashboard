@@ -176,6 +176,23 @@ module.exports = async (req, res) => {
         const allAlerts = [...(liveApiResult.current || [])];
         const upcoming = liveApiResult.upcoming || [];
 
+        // TEST ALERT: Add a fake alert from Union to King for testing preview
+        upcoming.push({
+            id: 'test-union-king',
+            line: '1',
+            start: 'Union',
+            end: 'King',
+            reason: 'TEST ALERT - Testing preview centering',
+            status: 'future',
+            direction: 'Northbound',
+            singleStation: false,
+            shuttle: false,
+            originalText: 'TEST: No service between Union and King stations',
+            activeStartTime: Date.now() + 3600000, // 1 hour from now
+            activeEndTime: Date.now() + 7200000,   // 2 hours from now
+            effect: 'NO_SERVICE'
+        });
+
         // Deduplicate & Process (Simplified Logic from Server.js)
         const uniqueAlerts = [];
         const seen = new Set();
