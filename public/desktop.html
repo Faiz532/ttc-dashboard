@@ -112,22 +112,25 @@
 
     <!-- Legend Popup -->
     <div id="legend-popup" class="legend-popup hidden">
-        <div class="legend-popup-title">Legend</div>
-        <div class="legend-item">
+        <div class="legend-popup-title">Layers</div>
+        <div class="legend-item active" data-filter="suspension">
+            <i class="fas fa-check-square toggle-icon"></i>
             <svg width="32" height="8" style="overflow: visible;">
                 <path d="M 0 4 L 32 4" class="alert-base pulse-solid"
                     style="stroke-width: 6; opacity: 1; stroke-linecap: round;"></path>
             </svg>
-            <span>No Service / Suspension</span>
+            <span>No Service</span>
         </div>
-        <div class="legend-item">
+        <div class="legend-item active" data-filter="delay">
+            <i class="fas fa-check-square toggle-icon"></i>
             <svg width="32" height="8" style="overflow: visible;">
                 <path d="M 0 4 L 32 4" class="alert-base delay pulse-solid"
                     style="stroke-width: 6; opacity: 1; stroke-linecap: round;"></path>
             </svg>
-            <span>Major Delays / Slow</span>
+            <span>Delays / Slow</span>
         </div>
-        <div class="legend-item">
+        <div class="legend-item active" data-filter="shuttle">
+            <i class="fas fa-check-square toggle-icon"></i>
             <svg width="32" height="8" style="overflow: visible;">
                 <path d="M 0 4 L 32 4" class="shuttle-outline"
                     style="stroke-width: 3; opacity: 0.9; stroke-linecap: round;"></path>

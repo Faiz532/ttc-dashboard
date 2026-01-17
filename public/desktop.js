@@ -71,10 +71,56 @@ document.querySelectorAll('.close-panel-btn').forEach(btn => {
 const legendBtn = document.getElementById('btn-legend');
 const legendPopup = document.getElementById('legend-popup');
 
+// Filter state - which alert types are visible
+const alertFilters = {
+    suspension: true,
+    delay: true,
+    shuttle: true
+};
+
 if (legendBtn) {
     legendBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         legendPopup.classList.toggle('hidden');
+    });
+}
+
+// Legend item click - toggle alert type visibility
+document.querySelectorAll('.legend-item[data-filter]').forEach(item => {
+    item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const filterType = item.dataset.filter;
+
+        // Toggle active state
+        item.classList.toggle('active');
+        alertFilters[filterType] = item.classList.contains('active');
+
+        // Update icon
+        const icon = item.querySelector('.toggle-icon');
+        if (icon) {
+            icon.classList.toggle('fa-check-square', alertFilters[filterType]);
+            icon.classList.toggle('fa-square', !alertFilters[filterType]);
+        }
+
+        // Apply filter to map
+        applyAlertFilters();
+    });
+});
+
+function applyAlertFilters() {
+    // Filter suspension (NO_SERVICE) alerts
+    document.querySelectorAll('#alerts-layer .alert-base:not(.delay)').forEach(el => {
+        el.style.display = alertFilters.suspension ? '' : 'none';
+    });
+
+    // Filter delay (SIGNIFICANT_DELAYS) alerts
+    document.querySelectorAll('#alerts-layer .alert-base.delay').forEach(el => {
+        el.style.display = alertFilters.delay ? '' : 'none';
+    });
+
+    // Filter shuttle outlines
+    document.querySelectorAll('#alerts-layer .shuttle-outline').forEach(el => {
+        el.style.display = alertFilters.shuttle ? '' : 'none';
     });
 }
 

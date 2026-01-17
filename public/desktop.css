@@ -474,9 +474,10 @@ svg {
    ========================================== */
 .legend-popup {
     position: fixed;
-    top: 90px;
-    right: 20px;
-    width: 240px;
+    top: 60px;
+    right: 70px;
+    /* Position to the left of the layers button */
+    width: 200px;
     background: var(--surface-glass);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -506,10 +507,32 @@ svg {
 .legend-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 8px 0;
+    gap: 10px;
+    padding: 10px 8px;
     color: rgba(255, 255, 255, 0.9);
     font-size: 13px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s, opacity 0.2s;
+}
+
+.legend-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.legend-item .toggle-icon {
+    font-size: 14px;
+    color: var(--l1-color);
+    flex-shrink: 0;
+}
+
+.legend-item:not(.active) {
+    opacity: 0.5;
+}
+
+.legend-item:not(.active) .toggle-icon::before {
+    content: "\f0c8";
+    /* fa-square (empty) instead of fa-check-square */
 }
 
 /* ==========================================
