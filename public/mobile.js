@@ -275,7 +275,6 @@ document.getElementById('btn-recenter').addEventListener('click', () => {
     });
 });
 console.log("Events Attached");
-}
 
 // --- Navigation Logic ---
 document.querySelectorAll('.nav-item').forEach(item => {
