@@ -119,9 +119,17 @@ body.light-mode .alert-body div {
     color: #374151 !important;
 }
 
-/* Remove text shadows in light mode for cleaner text */
-body.light-mode .station-label,
-body.light-mode .terminal-label,
+/* Light mode station label styling */
+body.light-mode .station-label {
+    fill: #4b5563;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+body.light-mode .terminal-label {
+    fill: #1f2937;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
 body.light-mode .header-clock {
     text-shadow: none;
 }
@@ -1031,10 +1039,41 @@ canvas.vanta-canvas {
     opacity: 1;
 }
 
-/* Light Mode Icon Color matches Footer Text */
-.light-mode .nav-item.active i {
-    color: #000000;
+/* Light Mode - Navigation and UI Elements */
+.light-mode .nav-item {
+    color: #4b5563;
 }
+
+.light-mode .nav-item.active {
+    color: #1f2937;
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.light-mode .nav-item.active i {
+    color: #1f2937;
+}
+
+.light-mode .layer-toggle {
+    color: #4b5563;
+}
+
+.light-mode .layer-toggle span {
+    color: #374151;
+}
+
+.light-mode .clock-time,
+.light-mode .clock-date {
+    color: #1f2937;
+}
+
+.light-mode .nav-badge {
+    border-color: #d4d4d8;
+}
+
+.light-mode .layer-popup {
+    background: rgba(230, 230, 235, 0.95);
+}
+
 
 /* Badges */
 .nav-badge {
