@@ -1366,21 +1366,33 @@ function previewUpcomingAlert(alertId) {
     const statusIndicator = document.getElementById('status-indicator');
     const statusText = statusIndicator.querySelector('.status-text');
     statusIndicator.className = 'status-indicator preview';
-    statusText.textContent = 'Previewing (8s)';
+
+    // Add cancel button if not already present
+    let cancelBtn = statusIndicator.querySelector('.preview-cancel-btn');
+    if (!cancelBtn) {
+        cancelBtn = document.createElement('button');
+        cancelBtn.className = 'preview-cancel-btn';
+        cancelBtn.innerHTML = '<i class="fas fa-times"></i>';
+        cancelBtn.onclick = endPreview;
+        statusIndicator.appendChild(cancelBtn);
+    }
+    cancelBtn.style.display = 'inline-flex';
+
+    statusText.textContent = 'Previewing (5s)';
 
     // Start Countdown
-    let timeLeft = 8;
+    let timeLeft = 5;
     previewInterval = setInterval(() => {
         timeLeft--;
         if (timeLeft > 0) statusText.textContent = `Previewing (${timeLeft}s)`;
         else clearInterval(previewInterval);
     }, 1000);
 
-    // 5. Auto-Revert after 8s
-    previewTimeout = setTimeout(endPreview, 8000);
+    // 5. Auto-Revert after 5s
+    previewTimeout = setTimeout(endPreview, 5000);
 
-    // 6. Focus Map
-    focusOnAlert(alert);
+    // 6. Focus Map - DISABLED per user request
+    // focusOnAlert(alert);
 }
 
 function endPreview() {
@@ -1390,6 +1402,11 @@ function endPreview() {
     previewInterval = null;
 
     const statusIndicator = document.getElementById('status-indicator');
+
+    // Hide cancel button
+    const cancelBtn = statusIndicator.querySelector('.preview-cancel-btn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+
     statusIndicator.className = 'status-indicator live';
     statusIndicator.querySelector('.status-text').textContent = 'Live';
 

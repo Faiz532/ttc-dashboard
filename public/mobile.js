@@ -132,12 +132,12 @@ const rawMapData = [
             { name: "College", x: 640, y: 580, accessible: false },
             { name: "Wellesley", x: 640, y: 550, accessible: true },
             { name: "Bloor-Yonge", x: 640, y: 500, interchange: true, accessible: true },
-            { name: "Rosedale", x: 640, y: 460, accessible: true },
-            { name: "Summerhill", x: 640, y: 430, accessible: true },
-            { name: "St Clair", x: 640, y: 400, accessible: true },
-            { name: "Davisville", x: 640, y: 370, accessible: true },
-            { name: "Eglinton", x: 640, y: 340, interchange: true, accessible: true },
-            { name: "Lawrence", x: 640, y: 310, accessible: true },
+            { name: "Rosedale", x: 640, y: 475, accessible: true },
+            { name: "Summerhill", x: 640, y: 455, accessible: true },
+            { name: "St Clair", x: 640, y: 430, accessible: true },
+            { name: "Davisville", x: 640, y: 405, accessible: true },
+            { name: "Eglinton", x: 640, y: 380, interchange: true, accessible: true },
+            { name: "Lawrence", x: 640, y: 340, accessible: true },
             { name: "York Mills", x: 640, y: 280, accessible: true },
             { name: "Sheppard-Yonge", x: 640, y: 200, interchange: true, accessible: true },
             { name: "North York Centre", x: 640, y: 150, accessible: true },
@@ -1409,21 +1409,33 @@ function previewUpcomingAlert(alertId) {
     const statusIndicator = document.getElementById('status-indicator');
     const statusText = statusIndicator.querySelector('.status-text');
     statusIndicator.className = 'status-indicator preview';
-    statusText.textContent = 'Previewing (8s)';
+
+    // Add cancel button if not already present
+    let cancelBtn = statusIndicator.querySelector('.preview-cancel-btn');
+    if (!cancelBtn) {
+        cancelBtn = document.createElement('button');
+        cancelBtn.className = 'preview-cancel-btn';
+        cancelBtn.innerHTML = '<i class="fas fa-times"></i>';
+        cancelBtn.onclick = endPreview;
+        statusIndicator.appendChild(cancelBtn);
+    }
+    cancelBtn.style.display = 'inline-flex';
+
+    statusText.textContent = 'Previewing (5s)';
 
     // Start Countdown
-    let timeLeft = 8;
+    let timeLeft = 5;
     previewInterval = setInterval(() => {
         timeLeft--;
         if (timeLeft > 0) statusText.textContent = `Previewing (${timeLeft}s)`;
         else clearInterval(previewInterval);
     }, 1000);
 
-    // 5. Auto-Revert after 8s
-    previewTimeout = setTimeout(endPreview, 8000);
+    // 5. Auto-Revert after 5s
+    previewTimeout = setTimeout(endPreview, 5000);
 
-    // 6. Focus Map
-    focusOnAlert(alert);
+    // 6. Focus Map - DISABLED per user request
+    // focusOnAlert(alert);
 }
 
 function endPreview() {
@@ -1433,6 +1445,11 @@ function endPreview() {
     previewInterval = null;
 
     const statusIndicator = document.getElementById('status-indicator');
+
+    // Hide cancel button
+    const cancelBtn = statusIndicator.querySelector('.preview-cancel-btn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+
     statusIndicator.className = 'status-indicator live';
     statusIndicator.querySelector('.status-text').textContent = 'Live';
 

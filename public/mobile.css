@@ -42,6 +42,28 @@
     }
 }
 
+/* Preview Cancel Button */
+.preview-cancel-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: #d97706;
+    cursor: pointer;
+    font-size: 10px;
+    margin-left: 4px;
+    transition: all 0.2s;
+}
+
+.preview-cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
 /* Map Elements Preview Glow */
 /* Map Elements Preview Glow */
 .alert-preview {
