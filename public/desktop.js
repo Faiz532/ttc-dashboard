@@ -231,23 +231,23 @@ const rawMapData = [
             { name: "St Patrick", x: 400, y: 610, accessible: true },
             { name: "Osgoode", x: 400, y: 640, accessible: true },
             { name: "St Andrew", x: 400, y: 670, accessible: true },
-            { name: "Union", x: 520, y: 700, accessible: true },
-            { name: "King", x: 640, y: 670, accessible: false },
-            { name: "Queen", x: 640, y: 640, accessible: true },
-            { name: "TMU", x: 640, y: 610, accessible: true },
-            { name: "College", x: 640, y: 580, accessible: false },
-            { name: "Wellesley", x: 640, y: 550, accessible: true },
-            { name: "Bloor-Yonge", x: 640, y: 492, interchange: true, accessible: true },
-            { name: "Rosedale", x: 640, y: 475, accessible: false },
-            { name: "Summerhill", x: 640, y: 455, accessible: false },
-            { name: "St Clair", x: 640, y: 430, accessible: true },
-            { name: "Davisville", x: 640, y: 405, accessible: true },
-            { name: "Eglinton", x: 640, y: 380, accessible: true },
-            { name: "Lawrence", x: 640, y: 340, accessible: true },
-            { name: "York Mills", x: 640, y: 280, accessible: true },
-            { name: "Sheppard-Yonge", x: 640, y: 200, interchange: true, accessible: true },
-            { name: "North York Centre", x: 640, y: 150, accessible: true },
-            { name: "Finch", x: 640, y: 100, accessible: true }
+            { name: "Union", x: 480, y: 700, accessible: true },
+            { name: "King", x: 560, y: 670, accessible: false },
+            { name: "Queen", x: 560, y: 640, accessible: true },
+            { name: "TMU", x: 560, y: 610, accessible: true },
+            { name: "College", x: 560, y: 580, accessible: false },
+            { name: "Wellesley", x: 560, y: 550, accessible: true },
+            { name: "Bloor-Yonge", x: 560, y: 492, interchange: true, accessible: true },
+            { name: "Rosedale", x: 560, y: 472, accessible: false },
+            { name: "Summerhill", x: 560, y: 452, accessible: false },
+            { name: "St Clair", x: 560, y: 432, accessible: true },
+            { name: "Davisville", x: 560, y: 412, accessible: true },
+            { name: "Eglinton", x: 560, y: 380, interchange: true, accessible: true },
+            { name: "Lawrence", x: 560, y: 348, accessible: true },
+            { name: "York Mills", x: 560, y: 316, accessible: true },
+            { name: "Sheppard-Yonge", x: 560, y: 292, interchange: true, accessible: true },
+            { name: "North York Centre", x: 560, y: 268, accessible: true },
+            { name: "Finch", x: 560, y: 244, accessible: true }
         ]
     },
     {
@@ -269,38 +269,38 @@ const rawMapData = [
             { name: "Bathurst", x: 329, y: 492, accessible: true },
             { name: "Spadina", x: 360, y: 492, interchange: true, accessible: true },
             { name: "St George", x: 400, y: 492, interchange: true, accessible: true },
-            { name: "Bay", x: 520, y: 492, accessible: true },
-            { name: "Bloor-Yonge", x: 640, y: 492, interchange: true, accessible: true },
-            { name: "Sherbourne", x: 670, y: 492, accessible: true },
-            { name: "Castle Frank", x: 695, y: 492, accessible: false },
-            { name: "Broadview", x: 720, y: 492, accessible: true },
-            { name: "Chester", x: 745, y: 492, accessible: true },
-            { name: "Pape", x: 770, y: 492, accessible: true },
-            { name: "Donlands", x: 795, y: 492, accessible: false },
-            { name: "Greenwood", x: 820, y: 492, accessible: false },
-            { name: "Coxwell", x: 845, y: 492, accessible: true },
-            { name: "Woodbine", x: 870, y: 492, accessible: true },
-            { name: "Main Street", x: 895, y: 492, accessible: true },
-            { name: "Victoria Park", x: 915, y: 455, accessible: true },
-            { name: "Warden", x: 935, y: 418, accessible: false },
-            { name: "Kennedy", x: 955, y: 380, accessible: true }
+            { name: "Bay", x: 480, y: 492, accessible: true },
+            { name: "Bloor-Yonge", x: 560, y: 492, interchange: true, accessible: true },
+            { name: "Sherbourne", x: 585, y: 492, accessible: true },
+            { name: "Castle Frank", x: 610, y: 492, accessible: false },
+            { name: "Broadview", x: 635, y: 492, accessible: true },
+            { name: "Chester", x: 660, y: 492, accessible: true },
+            { name: "Pape", x: 685, y: 492, accessible: true },
+            { name: "Donlands", x: 710, y: 492, accessible: false },
+            { name: "Greenwood", x: 735, y: 492, accessible: false },
+            { name: "Coxwell", x: 760, y: 492, accessible: true },
+            { name: "Woodbine", x: 785, y: 492, accessible: true },
+            { name: "Main Street", x: 810, y: 492, accessible: true },
+            { name: "Victoria Park", x: 835, y: 455, accessible: true },
+            { name: "Warden", x: 860, y: 418, accessible: false },
+            { name: "Kennedy", x: 885, y: 380, accessible: true }
         ]
     },
     {
         line: "4",
         stations: [
-            { name: "Sheppard-Yonge", x: 640, y: 200, interchange: true, accessible: true },
-            { name: "Bayview", x: 690, y: 200, accessible: true },
-            { name: "Bessarion", x: 740, y: 200, accessible: true },
-            { name: "Leslie", x: 790, y: 200, accessible: true },
-            { name: "Don Mills", x: 840, y: 200, accessible: true }
+            { name: "Sheppard-Yonge", x: 560, y: 292, interchange: true, accessible: true },
+            { name: "Bayview", x: 610, y: 292, accessible: true },
+            { name: "Bessarion", x: 660, y: 292, accessible: true },
+            { name: "Leslie", x: 710, y: 292, accessible: true },
+            { name: "Don Mills", x: 760, y: 292, accessible: true }
         ]
     },
     {
         line: "5",
         stations: [
             { name: "Mount Dennis", x: 220, y: 380, interchange: true, accessible: true },
-            { name: "Kennedy", x: 955, y: 380, interchange: true, accessible: true }
+            { name: "Kennedy", x: 885, y: 380, interchange: true, accessible: true }
         ]
     },
     {
@@ -348,6 +348,8 @@ function initMap() {
 function checkSubwayStatusAndFetch() {
     const statusIndicator = document.getElementById('status-indicator');
     const statusText = statusIndicator.querySelector('.status-text');
+    const closedOverlay = document.getElementById('closed-overlay');
+    const reopenTimeSpan = document.getElementById('reopen-time');
 
     if (isSubwayClosed()) {
         // Subway is closed - don't make API calls
@@ -355,6 +357,14 @@ function checkSubwayStatusAndFetch() {
         statusIndicator.classList.remove('live', 'loading');
         statusIndicator.classList.add('closed');
         statusText.textContent = `Closed until ${getNextOpenTime()}`;
+
+        // Show the closed overlay
+        if (closedOverlay) {
+            closedOverlay.classList.remove('hidden');
+            if (reopenTimeSpan) {
+                reopenTimeSpan.textContent = getNextOpenTime();
+            }
+        }
 
         // Clear any existing alerts from the map
         alertsLayer.innerHTML = '';
@@ -371,6 +381,12 @@ function checkSubwayStatusAndFetch() {
             isSubwayCurrentlyClosed = false;
             console.log('Subway reopened - resuming API calls');
         }
+
+        // Hide the closed overlay
+        if (closedOverlay) {
+            closedOverlay.classList.add('hidden');
+        }
+
         fetchData();
     }
 }
@@ -432,11 +448,22 @@ function getPathFromStations(stations, lineId) {
         if (lineId === '1') {
             if (s.name === 'Union') {
                 const prev = stations[i - 1];
-                if (prev && prev.name === 'St Andrew') { d += `Q 400 700, 520 700 `; continue; }
+                if (prev && prev.name === 'St Andrew') { d += `Q 400 700, 480 700 `; continue; }
             }
             if (s.name === 'King') {
                 const prev = stations[i - 1];
-                if (prev && prev.name === 'Union') { d += `Q 640 700, 640 670 `; continue; }
+                if (prev && prev.name === 'Union') { d += `Q 560 700, 560 670 `; continue; }
+            }
+        }
+        if (lineId === '6') {
+            if (s.name === 'Westmore') {
+                // Curve from Humber College (y=200) up to Westmore (y=170)
+                // Humber is at -125, 200. Westmore is at -100, 170.
+                // Draw vertical line up to 185, then curve right
+                d += `L -125 185 Q -125 170, -110 170 `;
+                // Then continue to Westmore L
+                d += `L ${s.x} ${s.y} `;
+                continue;
             }
         }
         d += `L ${s.x} ${s.y} `;
@@ -571,7 +598,7 @@ function renderStations() {
             else if (s.line === '4' || s.y === 490) { rot = 45; tx = 10; ty = 10; anchor = "start"; }
             else if (s.line === '2') {
                 if (s.name === 'St George') {
-                    rot = -45; tx = 10; ty = -10; anchor = "start";
+                    rot = 0; tx = -15; ty = -15; anchor = "end";
                 } else if (s.name === 'Spadina') {
                     rot = 45; tx = -10; ty = -10; anchor = "end";
                 } else if (s.name === 'Keele') {
@@ -595,6 +622,7 @@ function renderStations() {
             else if (s.name === "Don Mills") { rot = 0; tx = 18; ty = 5; anchor = "start"; } // Label close to track
             else if (s.name === "Mount Dennis") { rot = 0; tx = -20; ty = 5; anchor = "end"; } // Label between badge and station
             else if (s.name === "Finch West" && s.line === '6') { rot = 0; tx = 15; ty = 5; anchor = "start"; } // Label to the right
+            else if (s.name === "Yorkdale") { rot = 0; tx = -15; ty = 5; anchor = "end"; } // Label on the left
 
             // Apply transform - rotate first for proper alignment
             if (rot !== 0) {
@@ -692,7 +720,7 @@ function drawSpadinaTransfer() {
 
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.textContent = "Spadina";
-    text.setAttribute("class", "station-label");
+    text.setAttribute("class", "station-label terminal-label");
     text.setAttribute("x", x - 15);
     text.setAttribute("y", y2 - 15);
     text.setAttribute("text-anchor", "end");
@@ -740,7 +768,7 @@ function drawStGeorge() {
 
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     text.textContent = "St George";
-    text.setAttribute("class", "station-label");
+    text.setAttribute("class", "station-label terminal-label");
     text.setAttribute("x", x + 15);
     text.setAttribute("y", y - 15);
     text.setAttribute("text-anchor", "start");
@@ -748,9 +776,9 @@ function drawStGeorge() {
 }
 
 function drawKennedy() {
-    // Kennedy Custom Rendering - positioned at Line 5's position (y=380)
-    const x = 955;
-    const y = 380; // Line 5 Kennedy position (intersects both lines)
+    // Kennedy Custom Rendering - positioned where Line 2 meets Line 5
+    const x = 885;
+    const y = 380;
 
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     g.setAttribute("transform", `translate(${x}, ${y})`);

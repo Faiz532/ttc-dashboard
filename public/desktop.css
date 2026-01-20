@@ -1022,3 +1022,202 @@ body.light-mode .alert-description {
 body.light-mode .content-panel {
     background: rgba(229, 231, 235, 0.95);
 }
+
+/* ==========================================
+   SUBWAY CLOSED OVERLAY
+   ========================================== */
+.closed-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+.closed-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.closed-content {
+    text-align: center;
+    padding: 48px 64px;
+    background: var(--surface-glass);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid var(--surface-glass-border);
+    border-radius: 32px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: floatIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes floatIn {
+    0% {
+        opacity: 0;
+        transform: translateY(30px) scale(0.9);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.closed-icon {
+    font-size: 56px;
+    color: #6366f1;
+    margin-bottom: 20px;
+    display: block;
+    animation: moonGlow 3s ease-in-out infinite;
+}
+
+@keyframes moonGlow {
+
+    0%,
+    100% {
+        text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+    }
+
+    50% {
+        text-shadow: 0 0 40px rgba(99, 102, 241, 0.8), 0 0 60px rgba(99, 102, 241, 0.4);
+    }
+}
+
+.closed-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.closed-subtitle {
+    font-size: 18px;
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.closed-subtitle span {
+    color: var(--l1-color);
+    font-weight: 700;
+}
+
+.closed-divider {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    margin: 24px auto;
+    border-radius: 2px;
+}
+
+.closed-note {
+    font-size: 14px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.closed-note::before {
+    content: '\f05a';
+    /* fa-info-circle */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 14px;
+}
+
+.closed-hours {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 8px;
+}
+
+.hours-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #9ca3af;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.hours-title i {
+    color: var(--l1-color);
+}
+
+.hours-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.hours-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.hours-day {
+    font-size: 14px;
+    color: #d1d5db;
+    font-weight: 500;
+}
+
+.hours-time {
+    font-size: 14px;
+    color: white;
+    font-weight: 600;
+}
+
+/* Light mode adjustments for closed overlay */
+body.light-mode .closed-overlay {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+body.light-mode .closed-title {
+    color: #1f2937;
+}
+
+body.light-mode .closed-subtitle {
+    color: #6b7280;
+}
+
+body.light-mode .closed-note {
+    color: #9ca3af;
+}
+
+body.light-mode .closed-hours {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .hours-day {
+    color: #4b5563;
+}
+
+body.light-mode .hours-time {
+    color: #1f2937;
+}
+
+body.light-mode .hours-row {
+    border-color: rgba(0, 0, 0, 0.05);
+}
