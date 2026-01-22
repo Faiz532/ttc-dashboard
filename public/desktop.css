@@ -684,6 +684,62 @@ svg {
 }
 
 /* ==========================================
+   LINE FILTER BUTTONS
+   ========================================== */
+.line-filter {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filter-btn {
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.filter-btn:hover {
+    transform: scale(1.05);
+}
+
+.filter-btn.active {
+    box-shadow: 0 0 0 2px white;
+}
+
+.filter-btn.bg-l1 {
+    background: var(--l1-color);
+    color: black;
+}
+
+.filter-btn.bg-l2 {
+    background: var(--l2-color);
+    color: white;
+}
+
+.filter-btn.bg-l4 {
+    background: var(--l4-color);
+    color: white;
+}
+
+.filter-btn.bg-l5 {
+    background: var(--l5-color);
+    color: white;
+}
+
+.filter-btn.bg-l6 {
+    background: var(--l6-color);
+    color: white;
+}
+
+/* ==========================================
    ALERT CARDS
    ========================================== */
 .alert-card {
@@ -833,7 +889,7 @@ svg {
 }
 
 .terminal-label {
-    font-size: 17px;
+    font-size: 14px;
     font-weight: 800;
     fill: white;
 }

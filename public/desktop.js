@@ -269,7 +269,7 @@ const rawMapData = [
             { name: "Bathurst", x: 329, y: 492, accessible: true },
             { name: "Spadina", x: 360, y: 492, interchange: true, accessible: true },
             { name: "St George", x: 400, y: 492, interchange: true, accessible: true },
-            { name: "Bay", x: 480, y: 492, accessible: true },
+            { name: "Bay", x: 510, y: 492, accessible: true },
             { name: "Bloor-Yonge", x: 560, y: 492, interchange: true, accessible: true },
             { name: "Sherbourne", x: 585, y: 492, accessible: true },
             { name: "Castle Frank", x: 610, y: 492, accessible: false },
@@ -530,9 +530,9 @@ function renderStations() {
                 // Skip - handled by drawKennedy()
                 bdx = 0; bdy = 0;
             }
-            else if (s.name === "Sheppard-Yonge" && s.line === '4') { bdx = -175; bdy = -2; } // 10px left, 2px up
-            else if (s.name === "Don Mills") { bdx = 120; bdy = -2; } // Badge far right
-            else if (s.name === "Mount Dennis") { bdx = -160; bdy = 0; } // Badge far left
+            else if (s.name === "Sheppard-Yonge" && s.line === '4') { bdx = -150; bdy = -2; } // Close to label
+            else if (s.name === "Don Mills") { bdx = 100; bdy = -1; } // Badge far right
+            else if (s.name === "Mount Dennis") { bdx = -140; bdy = 0; } // Badge far left
             else if (s.name === "Humber College") { bdx = 0; bdy = 30; } // Badge below station
             else if (s.name === "Finch West" && s.line === '6') { bdx = 135; bdy = 0; } // 10px left
 
@@ -593,7 +593,7 @@ function renderStations() {
             }
             else if (s.line === '1' && (s.name === "Downsview Park" || s.name === "Sheppard West")) { tx = 15; ty = 4; anchor = "start"; }
             else if (s.line === '1' && (s.name === "Sheppard-Yonge" || s.name === "Wellesley" || s.name === "St Andrew")) { tx = -15; ty = 4; anchor = "end"; }
-            else if (s.line === '1' && s.name === "Bloor-Yonge") { tx = -15; ty = -15; anchor = "end"; }
+            else if (s.line === '1' && s.name === "Bloor-Yonge") { tx = -15; ty = 20; anchor = "end"; }
             else if (s.line === '1' && s.name === "Union") { tx = 0; ty = 25; anchor = "middle"; }
             else if (s.line === '4' || s.y === 490) { rot = 45; tx = 10; ty = 10; anchor = "start"; }
             else if (s.line === '2') {
@@ -603,6 +603,8 @@ function renderStations() {
                     rot = 45; tx = -10; ty = -10; anchor = "end";
                 } else if (s.name === 'Keele') {
                     rot = 45; tx = 10; ty = 10; anchor = "start";
+                } else if (s.name === 'Bay') {
+                    rot = 0; tx = 0; ty = -15; anchor = "middle";
                 } else {
                     rot = 45; tx = 10; ty = 10; anchor = "start";
                 }
@@ -820,7 +822,7 @@ function drawKennedy() {
 
     // Line 2 Badge (Green) - far right
     const g2 = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    g2.setAttribute("transform", "translate(105, 0)");
+    g2.setAttribute("transform", "translate(95, 0)");
     const bubble2 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     bubble2.setAttribute("r", 12);
     bubble2.setAttribute("fill", getLineColor('2'));
@@ -839,7 +841,7 @@ function drawKennedy() {
 
     // Line 5 Badge (Orange) - even more right
     const g5 = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    g5.setAttribute("transform", "translate(135, 0)");
+    g5.setAttribute("transform", "translate(125, 0)");
     const bubble5 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     bubble5.setAttribute("r", 12);
     bubble5.setAttribute("fill", getLineColor('5'));
@@ -1388,15 +1390,42 @@ function renderAllAlerts() {
     });
 }
 
+let selectedAlertLine = 'all'; // Track current filter
+
 function renderAlertsList() {
     const listContainer = document.getElementById('alerts-list');
-    if (activeAlerts.length === 0) {
-        listContainer.innerHTML = '<p style="color: var(--text-muted);">No active alerts at this time.</p>';
+
+    // Filter alerts by selected line
+    let filteredAlerts = selectedAlertLine === 'all'
+        ? activeAlerts
+        : activeAlerts.filter(a => a.line === selectedAlertLine);
+
+    if (filteredAlerts.length === 0) {
+        // For Line 5, we still want to show the Opening Soon notice
+        if (selectedAlertLine === '5') {
+            const line5Notice = `
+                <div class="alert-card" style="border-left-color: var(--l5-color); opacity: 0.9;">
+                    <div class="alert-card-header">
+                        <div class="alert-line-badge" style="background: var(--l5-color); color: white;">5</div>
+                        <div class="alert-title"><i class="fas fa-hard-hat" style="margin-right: 6px;"></i>Line 5 Eglinton - Opening Soon</div>
+                    </div>
+                    <div class="alert-description">
+                        This line is not yet in service. Real-time tracking will be available once the line opens.
+                    </div>
+                </div>`;
+            listContainer.innerHTML = line5Notice;
+            return;
+        }
+        if (selectedAlertLine === 'all') {
+            listContainer.innerHTML = '<p style="color: var(--text-muted);">No active alerts at this time.</p>';
+        } else {
+            listContainer.innerHTML = `<p style="color: var(--text-muted);">No alerts for Line ${selectedAlertLine}.</p>`;
+        }
         return;
     }
 
     // Sort alerts: 1) Active before Cleared, 2) Suspensions before Delays, 3) By line number
-    const sortedAlerts = [...activeAlerts].sort((a, b) => {
+    const sortedAlerts = [...filteredAlerts].sort((a, b) => {
         // Active alerts first
         if (a.status === 'active' && b.status !== 'active') return -1;
         if (a.status !== 'active' && b.status === 'active') return 1;
@@ -1436,7 +1465,34 @@ function renderAlertsList() {
         </div>
     `;
     }).join('');
+
+    // Add Line 5 Coming Soon notice when filter is 'all' or '5'
+    if (selectedAlertLine === 'all' || selectedAlertLine === '5') {
+        const line5Notice = `
+            <div class="alert-card" style="border-left-color: var(--l5-color); opacity: 0.9;">
+                <div class="alert-card-header">
+                    <div class="alert-line-badge" style="background: var(--l5-color); color: white;">5</div>
+                    <div class="alert-title"><i class="fas fa-hard-hat" style="margin-right: 6px;"></i>Line 5 Eglinton - Opening Soon</div>
+                </div>
+                <div class="alert-description">
+                    This line is not yet in service. Real-time tracking will be available once the line opens.
+                </div>
+            </div>`;
+        listContainer.innerHTML = line5Notice + listContainer.innerHTML;
+    }
 }
+
+// Filter button click handlers
+document.querySelectorAll('#alerts-filter .filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        // Update active state
+        document.querySelectorAll('#alerts-filter .filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        // Update filter and re-render
+        selectedAlertLine = btn.dataset.line;
+        renderAlertsList();
+    });
+});
 
 function calculateFlow(line, startName, endName, direction) {
     if (direction === 'Both Ways') return 'both';
