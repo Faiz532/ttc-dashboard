@@ -109,9 +109,35 @@ async function parseAlertWithAI(text) {
             originalText: text,
             activeStartTime: json.start_time ? new Date(json.start_time).getTime() : null,
             activeEndTime: json.end_time ? new Date(json.end_time).getTime() : null,
-            // Match server.js logic: Default to NO_SERVICE unless explicitly Delay/Minor
-            effect: (json.severity === 'Delay' || json.severity === 'Minor') ? 'SIGNIFICANT_DELAYS' : 'NO_SERVICE'
+            // Smart effect detection: Check text first, then AI severity, then default
+            effect: determineEffect(text, json.severity)
         };
+
+        function determineEffect(originalText, aiSeverity) {
+            const lowerText = originalText.toLowerCase();
+
+            // Text-based detection (most reliable)
+            const delayKeywords = ['slower than usual', 'slow', 'delay', 'reduced speed', 'move slower'];
+            const suspensionKeywords = ['no service', 'suspended', 'closed', 'not stopping', 'bypass'];
+
+            // Check for delay indicators
+            if (delayKeywords.some(keyword => lowerText.includes(keyword))) {
+                return 'SIGNIFICANT_DELAYS';
+            }
+
+            // Check for suspension indicators
+            if (suspensionKeywords.some(keyword => lowerText.includes(keyword))) {
+                return 'NO_SERVICE';
+            }
+
+            // Fallback to AI severity
+            if (aiSeverity === 'Delay' || aiSeverity === 'Minor') {
+                return 'SIGNIFICANT_DELAYS';
+            }
+
+            // Default to NO_SERVICE for unknown cases
+            return 'NO_SERVICE';
+        }
 
         if (resultObj.line && resultObj.start) {
             processedAlertsCache.set(text, resultObj);
