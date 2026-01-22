@@ -189,7 +189,7 @@ const rawMapData = [
             { name: "Bathurst", x: 329, y: 492, accessible: true },
             { name: "Spadina", x: 360, y: 492, interchange: true, accessible: true },
             { name: "St George", x: 400, y: 492, interchange: true, accessible: true },
-            { name: "Bay", x: 480, y: 492, accessible: true },
+            { name: "Bay", x: 510, y: 492, accessible: true },
             { name: "Bloor-Yonge", x: 560, y: 492, interchange: true, accessible: true },
             { name: "Sherbourne", x: 585, y: 492, accessible: true },
             { name: "Castle Frank", x: 610, y: 492, accessible: false },
@@ -399,9 +399,9 @@ function renderStations() {
                 // Skip - handled by drawKennedy()
                 bdx = 0; bdy = 0;
             }
-            else if (s.name === "Sheppard-Yonge" && s.line === '4') { bdx = -175; bdy = -2; } // 10px left, 2px up
-            else if (s.name === "Don Mills") { bdx = 120; bdy = -2; } // Badge far right
-            else if (s.name === "Mount Dennis") { bdx = -160; bdy = 0; } // Badge far left
+            else if (s.name === "Sheppard-Yonge" && s.line === '4') { bdx = -150; bdy = -2; } // Close to label
+            else if (s.name === "Don Mills") { bdx = 100; bdy = -1; } // Badge far right
+            else if (s.name === "Mount Dennis") { bdx = -140; bdy = 0; } // Badge far left
             else if (s.name === "Humber College") { bdx = 0; bdy = 30; } // Badge below station
             else if (s.name === "Finch West" && s.line === '6') { bdx = 135; bdy = 0; } // 10px left
 
@@ -689,7 +689,7 @@ function drawKennedy() {
 
     // Line 2 Badge (Green) - far right
     const g2 = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    g2.setAttribute("transform", "translate(105, 0)");
+    g2.setAttribute("transform", "translate(95, 0)");
     const bubble2 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     bubble2.setAttribute("r", 12);
     bubble2.setAttribute("fill", getLineColor('2'));
@@ -708,7 +708,7 @@ function drawKennedy() {
 
     // Line 5 Badge (Orange) - even more right
     const g5 = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    g5.setAttribute("transform", "translate(135, 0)");
+    g5.setAttribute("transform", "translate(125, 0)");
     const bubble5 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     bubble5.setAttribute("r", 12);
     bubble5.setAttribute("fill", getLineColor('5'));
