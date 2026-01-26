@@ -1,17 +1,57 @@
-// --- State Management ---
-let activeTab = 'map';
-let activeAlerts = [];
-let upcomingAlerts = [];
-let mapDraggable = null;
-let pollingInterval = null;
-let isSubwayCurrentlyClosed = false;
+/**
+ * ============================================================================
+ * TTC DASHBOARD - MOBILE MAP APPLICATION
+ * ============================================================================
+ * 
+ * This is the main JavaScript file for the mobile version of the TTC
+ * real-time subway alerts dashboard. It's optimized for touch devices with:
+ * 
+ * 1. TOUCH-OPTIMIZED MAP - Smooth drag and pinch-to-zoom on the subway map
+ * 2. SWIPE-UP SHEETS - Bottom sheets for alerts that slide up from the footer
+ * 3. MOBILE NAVIGATION - Bottom tab bar for switching between views
+ * 4. RESPONSIVE LAYOUT - Fits well on phone screens
+ * 
+ * The map is built using SVG and animated with GSAP/Draggable.
+ * Alert data is fetched from /api/data and rendered as animated paths.
+ * 
+ * KEY DIFFERENCES FROM DESKTOP:
+ * - Bottom navigation bar instead of side menu
+ * - Swipe-up sheets instead of side panels
+ * - Larger touch targets for station markers
+ * - Different initial zoom/pan to fit mobile viewport
+ * 
+ * KEY DEPENDENCIES:
+ * - GSAP (GreenSock Animation Platform) for smooth animations
+ * - Draggable (GSAP plugin) for map drag functionality
+ * - VANTA.js for animated background
+ * 
+ * Author: Faiz Prasla
+ * ============================================================================
+ */
 
-// ==========================================
+// ============================================================================
+// STATE MANAGEMENT - Global variables tracking the app's current state
+// ============================================================================
+
+let activeTab = 'map';           // Current active tab: 'map', 'alerts', or 'upcoming'
+let activeAlerts = [];           // Currently active subway alerts from the API
+let upcomingAlerts = [];         // Future scheduled alerts
+let mapDraggable = null;         // GSAP Draggable instance for map panning
+let pollingInterval = null;      // Reference to the 60-second polling timer
+let isSubwayCurrentlyClosed = false;  // True if subway is outside operating hours
+
+
+// ============================================================================
 // SUBWAY OPERATING HOURS (Toronto time)
-// ==========================================
+// ============================================================================
 // Mon-Sat: 6:00 AM - 2:00 AM (next day)
 // Sunday: 8:00 AM - 2:00 AM (next day)
+// During closed hours, we don't fetch data and show a "closed" message
 
+/**
+ * Check if the subway is currently closed based on Toronto time
+ * @returns {boolean} - True if subway is closed
+ */
 function isSubwayClosed() {
     const now = new Date();
     // Convert to Toronto time
@@ -29,47 +69,71 @@ function isSubwayClosed() {
     }
 }
 
+/**
+ * Get the time when subway will reopen (for display)
+ * @returns {string} - "6:00 AM" or "8:00 AM" depending on day
+ */
 function getNextOpenTime() {
     const now = new Date();
     const torontoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
     const day = torontoTime.getDay();
 
     if (day === 0) {
-        return '8:00 AM';
+        return '8:00 AM';  // Sunday
     } else {
-        return '6:00 AM';
+        return '6:00 AM';  // Monday-Saturday
     }
 }
 
-// --- Map Configuration (Easy to adjust) ---
+
+// ============================================================================
+// MAP CONFIGURATION - Easy-to-adjust settings for map positioning
+// ============================================================================
+
 const MAP_CONFIG = {
     // Visual center point on the map (SVG coordinates)
-    centerX: 430,
-    centerY: 375,
+    centerX: 430,            // Horizontal center of the map SVG
+    centerY: 375,            // Vertical center of the map SVG
+
     // Offset to fine-tune screen position (pixels)
-    offsetX: 200,  // Positive = shift right
-    offsetY: 200,  // Positive = shift down
-    // Zoom multiplier (1.0 = fit width, 2.0 = 2x zoom)
-    zoomMultiplier: 2.0,
-    // Bottom navigation height (pixels)
-    bottomNavHeight: 100,
-    // Pan bounds padding (pixels)
-    boundsPadding: 1000
+    offsetX: 200,            // Positive = shift right
+    offsetY: 200,            // Positive = shift down
+
+    // Zoom settings
+    zoomMultiplier: 2.0,     // 1.0 = fit width, 2.0 = 2x zoom
+
+    // UI element sizes
+    bottomNavHeight: 100,    // Height of bottom navigation bar (pixels)
+    boundsPadding: 1000      // Extra padding for pan bounds (pixels)
 };
 
-// --- DOM Elements ---
-const mapRoot = document.getElementById('map-root');
-const viewport = document.getElementById('map-viewport');
+
+// ============================================================================
+// DOM ELEMENT REFERENCES
+// ============================================================================
+
+const mapRoot = document.getElementById('map-root');       // Root container for map transforms
+const viewport = document.getElementById('map-viewport');  // Visible map area
+
+// Bottom sheet panels (swipe up from navigation)
 const sheets = {
-    alerts: document.getElementById('sheet-alerts'),
-    upcoming: document.getElementById('sheet-upcoming')
-};
-const badges = {
-    active: document.getElementById('badge-active'),
-    upcoming: document.getElementById('badge-upcoming')
+    alerts: document.getElementById('sheet-alerts'),       // Active alerts sheet
+    upcoming: document.getElementById('sheet-upcoming')    // Upcoming alerts sheet
 };
 
-// --- Map Data (Simplified for brevity, but same logic) ---
+// Notification badges that show counts
+const badges = {
+    active: document.getElementById('badge-active'),       // Badge on Alerts tab
+    upcoming: document.getElementById('badge-upcoming')    // Badge on Upcoming tab
+};
+
+
+// ============================================================================
+// SUBWAY MAP DATA - Station coordinates and metadata
+// ============================================================================
+// This is the same data structure as desktop, but may have different
+// coordinates optimized for the mobile viewport.
+
 const rawMapData = [
     {
         line: "5",
@@ -78,6 +142,7 @@ const rawMapData = [
             { name: "Kennedy", x: 970, y: 380, interchange: true, accessible: true }
         ]
     },
+
     {
         line: "6",
         stations: [
@@ -692,6 +757,15 @@ function getPathFromStations(stations, lineId) {
                 d += `Q 640 700, 640 670 `;
                 continue;
             }
+            if (s.name === 'St George') {
+                const prev = stations[i - 1];
+                if (prev && prev.name === 'Spadina') {
+                    // Spadina (360, 480) -> St George (400, 480)
+                    // Stop short and curve down towards Museum (400, 550)
+                    d += `L 385 480 Q 400 480, 400 495 `;
+                    continue;
+                }
+            }
         }
         if (lineId === '6') {
             if (s.name === 'Westmore') {
@@ -1013,7 +1087,10 @@ function mergeOverlappingAlerts(alerts) {
                 direction: m.direction,
                 shuttle: m.isShuttle,
                 effect: m.isDelay ? 'SIGNIFICANT_DELAYS' : 'SUSPENSION',
-                singleStation: false
+                singleStation: false,
+                reason: m.original.reason,
+                originalText: m.original.originalText,
+                id: m.original.id
             });
         });
     });
@@ -1090,6 +1167,9 @@ function renderLists() {
         ? activeAlerts
         : activeAlerts.filter(a => a.line === selectedAlertLine);
 
+    // Merge overlapping/directional duplicates for cleaner list
+    const mergedFilteredAlerts = mergeOverlappingAlerts(filteredAlerts);
+
     // Alerts List
     // Line 5 Coming Soon Notice (always shown at top)
     const line5Notice = `
@@ -1101,8 +1181,8 @@ function renderLists() {
                     </div>
                 </div>`;
 
-    const dynamicAlertsHtml = filteredAlerts.length
-        ? filteredAlerts.map(a => createAlertCard(a)).join('')
+    const dynamicAlertsHtml = mergedFilteredAlerts.length
+        ? mergedFilteredAlerts.map(a => createAlertCard(a)).join('')
         : '<div style="text-align:center; padding:20px; color:gray">No alerts for this line</div>';
 
     // Show Line 5 notice only when filter is 'all' or '5'

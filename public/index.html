@@ -1,13 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 
+<!--
+============================================================================
+TTC DASHBOARD - ENTRY POINT
+============================================================================
+
+This is the main entry page that visitors first hit.
+It immediately redirects users to either:
+- mobile.html (on phones/tablets, screen width <= 768px)
+- desktop.html (on desktops/laptops, screen width > 768px)
+
+WHY SEPARATE PAGES?
+- The desktop version has a full interactive map with drag/zoom
+- The mobile version has a condensed map and swipe-up sheets
+- Rather than making one page do both, we optimized each experience
+
+WHAT HAPPENS:
+1. Page loads with "Loading Dashboard..." message
+2. JavaScript checks screen width
+3. User is redirected to appropriate version
+
+============================================================================
+-->
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Toronto Transit Live</title>
+
+    <!-- Basic styling for the loading screen -->
     <style>
         body {
             background: #0f1115;
+            /* Dark background matching our theme */
             color: white;
             display: flex;
             align-items: center;
@@ -17,18 +43,28 @@
             font-family: sans-serif;
         }
     </style>
+
+    <!-- Device Detection & Redirect Script -->
     <script>
-        // Redirect Logic
+        /**
+         * Redirect user to the appropriate version based on screen size
+         * Uses window.innerWidth to detect viewport width
+         * 768px is a common tablet/mobile breakpoint
+         */
         function redirect() {
-            const isMobile = window.innerWidth <= 768; // Standard tablet/mobile breakpoint
+            const isMobile = window.innerWidth <= 768;  // Standard mobile breakpoint
             if (isMobile) {
-                window.location.replace("mobile.html");
+                window.location.replace("mobile.html");  // Send to mobile version
             } else {
-                window.location.replace("desktop.html");
+                window.location.replace("desktop.html"); // Send to desktop version
             }
         }
+
+        // Run redirect as soon as page loads
         window.onload = redirect;
     </script>
+
+    <!-- Vercel Analytics - Track page views and performance -->
     <script type="module">
         import { inject } from 'https://cdn.jsdelivr.net/npm/@vercel/analytics/+esm';
         inject();
@@ -36,6 +72,7 @@
 </head>
 
 <body>
+    <!-- This message shows briefly while JavaScript loads and redirects -->
     <div>Loading Dashboard...</div>
 </body>
 

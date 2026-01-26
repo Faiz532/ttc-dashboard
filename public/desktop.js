@@ -1,19 +1,53 @@
-// Desktop Map Application - Toronto Transit Live
-// Floating UI Version
+/**
+ * ============================================================================
+ * TTC DASHBOARD - DESKTOP MAP APPLICATION
+ * ============================================================================
+ * 
+ * This is the main JavaScript file for the desktop version of the TTC
+ * real-time subway alerts dashboard. It handles:
+ * 
+ * 1. MAP RENDERING - Drawing the subway lines and stations as SVG
+ * 2. ALERT VISUALIZATION - Drawing animated alert paths on affected segments
+ * 3. USER INTERACTION - Drag, zoom, pinch-to-zoom on the map
+ * 4. DATA FETCHING - Polling the API for live alert data
+ * 5. UI MANAGEMENT - Menu panels, legend popup, theme switching
+ * 
+ * The map is built using SVG elements and animated with GSAP/Draggable.
+ * Alert data is fetched from /api/data and rendered as animated paths.
+ * 
+ * KEY DEPENDENCIES:
+ * - GSAP (GreenSock Animation Platform) for smooth animations
+ * - Draggable (GSAP plugin) for map drag functionality
+ * - Lucide Icons for UI icons
+ * - VANTA.js for animated background
+ * 
+ * Author: Faiz Prasla
+ * ============================================================================
+ */
 
-lucide.createIcons();
-let activeAlerts = [];
-let upcomingAlerts = [];
-let pollingInterval = null;
-let currentTab = 'lines';
-let isSubwayCurrentlyClosed = false;
+// ============================================================================
+// STATE MANAGEMENT - Global variables that track the app's current state
+// ============================================================================
 
-const mapRoot = document.getElementById('map-root');
-const viewport = document.getElementById('viewport');
-const tracksLayer = document.getElementById('tracks-layer');
-const stationsLayer = document.getElementById('stations-layer');
-const alertsLayer = document.getElementById('alerts-layer');
-let mapDraggable = null;
+lucide.createIcons();  // Initialize Lucide icons throughout the page
+
+let activeAlerts = [];           // Currently active subway alerts from the API
+let upcomingAlerts = [];         // Future scheduled alerts
+let pollingInterval = null;      // Reference to the 60-second polling timer
+let currentTab = 'lines';        // Which menu tab is currently active
+let isSubwayCurrentlyClosed = false;  // True if subway is outside operating hours
+
+// ============================================================================
+// DOM ELEMENT REFERENCES
+// ============================================================================
+// These are the main SVG elements we'll be manipulating
+
+const mapRoot = document.getElementById('map-root');         // Root container for the map (gets transformed for pan/zoom)
+const viewport = document.getElementById('viewport');        // The visible area / container
+const tracksLayer = document.getElementById('tracks-layer'); // SVG layer for subway line tracks
+const stationsLayer = document.getElementById('stations-layer'); // SVG layer for station markers
+const alertsLayer = document.getElementById('alerts-layer'); // SVG layer for alert overlays
+let mapDraggable = null;  // GSAP Draggable instance for map panning
 
 // ==========================================
 // SUBWAY OPERATING HOURS (Toronto time)
@@ -206,6 +240,24 @@ setInterval(updateClock, 1000);
 updateClock();
 
 
+// ============================================================================
+// SUBWAY MAP DATA - Coordinates and metadata for all stations
+// ============================================================================
+// Each line is an object with:
+// - line: The line number ("1", "2", "4", "5", "6")
+// - stations: Array of station objects with:
+//   - name: Official station name
+//   - x, y: SVG coordinates for positioning on the map
+//   - accessible: Whether the station has accessibility features
+//   - interchange: Whether this is a transfer station between lines
+//
+// The coordinates are in SVG units (not pixels) and match the viewBox.
+// Line 1 is U-shaped (VMC down to Union, then up to Finch)
+// Line 2 is horizontal (Kipling to Kennedy)
+// Line 4 is a short horizontal line (Sheppard-Yonge to Don Mills)
+// Line 5 is the Eglinton Crosstown (not yet open, shown as dashed)
+// Line 6 is the Finch West LRT
+
 const rawMapData = [
     {
         line: "1",
@@ -391,6 +443,17 @@ function checkSubwayStatusAndFetch() {
     }
 }
 
+
+// ============================================================================
+// MAP RENDERING - Drawing tracks, stations, and labels
+// ============================================================================
+
+/**
+ * Render all subway line tracks as SVG paths
+ * Each line is drawn as a colored path following the station coordinates
+ * Line 5 (Eglinton) gets special treatment with a hollow/dashed style
+ * since it's not yet open
+ */
 function renderTracks() {
     tracksLayer.innerHTML = '';
     rawMapData.forEach(lineData => {
@@ -454,6 +517,16 @@ function getPathFromStations(stations, lineId) {
                 const prev = stations[i - 1];
                 if (prev && prev.name === 'Union') { d += `Q 560 700, 560 670 `; continue; }
             }
+            if (s.name === 'St George') {
+                // Smooth corner from Spadina (360,480) to Museum (400,550)
+                // Coming from Spadina (left) to St George (corner), then down
+                const prev = stations[i - 1];
+                if (prev && prev.name === 'Spadina') {
+                    // Stop 15px short of the corner (x=400), then curve down
+                    d += `L 385 480 Q 400 480, 400 495 `;
+                    continue;
+                }
+            }
         }
         if (lineId === '6') {
             if (s.name === 'Westmore') {
@@ -471,19 +544,40 @@ function getPathFromStations(stations, lineId) {
     return d;
 }
 
+/**
+ * Get the official TTC color for a subway line
+ * Line 1 (Yonge-University): Yellow
+ * Line 2 (Bloor-Danforth): Green
+ * Line 4 (Sheppard): Purple/Magenta
+ * Line 5 (Eglinton): Orange
+ * Line 6 (Finch West): Grey
+ */
 function getLineColor(lineId) {
-    if (lineId === '1') return "#FFC425";
-    if (lineId === '2') return "#009639";
-    if (lineId === '4') return "#B5236B";
-    if (lineId === '5') return "#F37021";
-    if (lineId === '6') return "#9ca3af";
-    return "#ffffff";
+    if (lineId === '1') return "#FFC425";  // Yellow
+    if (lineId === '2') return "#009639";  // Green
+    if (lineId === '4') return "#B5236B";  // Purple
+    if (lineId === '5') return "#F37021";  // Orange
+    if (lineId === '6') return "#9ca3af";  // Grey
+    return "#ffffff";  // Default white
 }
 
+/**
+ * Get text color for line badges (black on yellow, white on everything else)
+ */
 function getLineTextColor(lineId) { return (lineId === '1') ? "black" : "white"; }
 
+/**
+ * Render all station markers and labels
+ * 
+ * Station types:
+ * - Interchange stations: Large circles with accessibility icon, connecting multiple lines
+ * - Accessible stations: Medium circles with accessibility icon
+ * - Regular stations: Simple white circles with black border
+ * 
+ * Terminal stations also get line number badges positioned near them
+ */
 function renderStations() {
-    stationsLayer.innerHTML = '';
+    stationsLayer.innerHTML = '';  // Clear existing stations
     const allStations = [];
     rawMapData.forEach(l => {
         const len = l.stations.length;
@@ -861,7 +955,17 @@ function drawKennedy() {
     document.getElementById('stations-layer').appendChild(g);
 }
 
+
+// ============================================================================
+// MAP INTERACTION - Drag, zoom, and pinch-to-zoom functionality
+// ============================================================================
+
+/**
+ * Set up drag-to-pan functionality using GSAP Draggable
+ * Also sets up mouse wheel zoom
+ */
 function setupDragAndZoom() {
+    // Skip if GSAP isn't loaded
     if (typeof gsap === 'undefined' || typeof Draggable === 'undefined') return;
     gsap.set(mapRoot, { x: 0, y: 0, scale: 1 });
     mapDraggable = Draggable.create(mapRoot, {
@@ -912,6 +1016,12 @@ function setupPinchZoom() {
     }
 }
 
+/**
+ * Smoothly animate the map to center on a specific alert
+ * Used when user clicks "Preview on Map" for an upcoming alert
+ * 
+ * @param {Object} alert - The alert object to focus on
+ */
 function focusOnAlert(alert) {
     // Find the affected station(s) coordinates (in SVG coordinate space)
     const lineObj = rawMapData.find(l => l.line === alert.line);
@@ -1071,6 +1181,20 @@ function updateMapBounds(specificScale) {
 }
 
 
+// ============================================================================
+// DATA FETCHING - Get alert data from the server
+// ============================================================================
+
+/**
+ * Fetch latest alert data from the server API
+ * Called on initial load and then every 60 seconds
+ * 
+ * Updates:
+ * - activeAlerts (currently active disruptions)
+ * - upcomingAlerts (scheduled future disruptions)
+ * - UI indicators (loading/live/error status)
+ * - Map visualization (re-renders alert paths)
+ */
 async function fetchData() {
     const statusIndicator = document.getElementById('status-indicator');
     const statusText = statusIndicator.querySelector('.status-text');
@@ -1373,7 +1497,12 @@ function mergeOverlappingAlerts(alerts) {
     return mergedAlerts;
 }
 
+/**
+ * Re-render all alert paths on the map
+ * Clears the alerts layer and redraws based on activeAlerts data
+ */
 function renderAllAlerts() {
+    // Clear all existing alert paths
     while (alertsLayer.firstChild) {
         alertsLayer.removeChild(alertsLayer.firstChild);
     }
@@ -1399,6 +1528,10 @@ function renderAlertsList() {
     let filteredAlerts = selectedAlertLine === 'all'
         ? activeAlerts
         : activeAlerts.filter(a => a.line === selectedAlertLine);
+
+    // Merge overlapping alerts (e.g. Northbound + Southbound = Both Ways)
+    // This prevents double alerts in the list
+    filteredAlerts = mergeOverlappingAlerts(filteredAlerts);
 
     if (filteredAlerts.length === 0) {
         // For Line 5, we still want to show the Opening Soon notice
@@ -1548,11 +1681,19 @@ function drawStationAlert(line, stationName, isDelay, isPreview = false) {
     alertsLayer.appendChild(circle);
 }
 
-// ==========================================
+
+// ============================================================================
 // VANTA.JS ANIMATED BACKGROUND
-// ==========================================
+// ============================================================================
+// Creates the animated network pattern in the background
+// Adjusts colors based on light/dark theme
+
 let vantaEffect = null;
 
+/**
+ * Initialize or update the Vanta.js animated background
+ * @param {string} theme - 'light' or 'dark'
+ */
 function initVanta(theme) {
     const isLight = theme === 'light';
     const bg = isLight ? 0xe5e7eb : 0x0f1115;
@@ -1631,6 +1772,12 @@ if (themeBtn) {
         }
     });
 }
+
+
+// ============================================================================
+// APPLICATION ENTRY POINT
+// ============================================================================
+// Start the application when the page finishes loading
 
 window.onload = initMap;
 
