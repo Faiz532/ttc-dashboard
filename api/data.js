@@ -35,7 +35,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");  // Google AI
 // Go to: Vercel Dashboard > Your Project > Settings > Environment Variables
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
 // TTC's official live alerts API
 const TTC_LIVE_ALERTS_API = 'https://alerts.ttc.ca/api/alerts/live-alerts';
@@ -213,8 +213,24 @@ async function parseAlertWithAI(text) {
         Line 2: Kipling, Islington, Royal York, Old Mill, Jane, Runnymede, High Park, Keele, Dundas West, Lansdowne, Dufferin, Ossington, Christie, Bathurst, Spadina, St George, Bay, Bloor-Yonge, Sherbourne, Castle Frank, Broadview, Chester, Pape, Donlands, Greenwood, Coxwell, Woodbine, Main Street, Victoria Park, Warden, Kennedy
         Line 4: Sheppard-Yonge, Bayview, Bessarion, Leslie, Don Mills
 
-        Identify Line (1,2,4,5,6), Start/End Stations, Status (active/future/cleared), Direction, Severity.
-        Format: JSON. keys: line, start, end, reason, status, direction, start_time, end_time, severity.
+        ## CRITICAL INSTRUCTIONS
+        1. Extract the EXACT start and end station names mentioned in the alert text
+        2. Do NOT infer or expand the station range - use ONLY the stations explicitly mentioned
+        3. If the text says "from X to Y stations", return start: X, end: Y (exactly those stations)
+        4. Match station names to the valid list above (e.g., "Eglinton" matches "Eglinton")
+        
+        ## REQUIRED OUTPUT
+        Return JSON with these keys:
+        - line: 1, 2, 4, 5, or 6
+        - start: First station name mentioned (EXACTLY as stated in the text)
+        - end: Last station name mentioned (EXACTLY as stated in the text)
+        - reason: Brief reason (e.g., "Track issues", "Medical emergency")
+        - status: "active", "future", or "cleared"
+        - direction: "Northbound", "Southbound", "Eastbound", "Westbound", or null
+        - start_time: Start time if specified, else null
+        - end_time: End time if specified, else null
+        - severity: "Minor", "Delay", or "Major"
+        
         Input: "${text}"
         `;
 

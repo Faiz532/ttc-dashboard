@@ -180,7 +180,7 @@ const rawMapData = [
             { name: "Yorkdale", x: 360, y: 290, accessible: true },
             { name: "Lawrence West", x: 360, y: 320, accessible: true },
             { name: "Glencairn", x: 360, y: 350, accessible: true },
-            { name: "Eglinton West", displayName: "Cedarvale", x: 360, y: 380, interchange: true, accessible: true },
+            { name: "Cedarvale", x: 360, y: 380, interchange: true, accessible: true },
             { name: "St Clair West", x: 360, y: 410, accessible: true },
             { name: "Dupont", x: 360, y: 440, accessible: true },
             { name: "Spadina", x: 360, y: 480, interchange: true, accessible: false }, // Offset -20px
@@ -1212,7 +1212,7 @@ function createAlertCard(a, isUpcoming = false) {
     const badgeClass = a.line === '1' ? 'bg-l1' : a.line === '2' ? 'bg-l2' : 'bg-l4';
 
     return `
-            <div class="alert-card">
+            <div class="alert-card" onclick="${isUpcoming ? '' : `previewActiveAlert('${a.id}')`}" style="cursor: ${isUpcoming ? 'default' : 'pointer'};">
                 <div class="alert-header">
                     <div class="line-badge ${badgeClass}">${a.line}</div>
                     <div style="font-weight:600; font-size:15px;">${a.reason}</div>
@@ -1516,6 +1516,59 @@ function previewUpcomingAlert(alertId) {
 
     // 6. Focus Map - DISABLED per user request
     // focusOnAlert(alert);
+}
+
+function previewActiveAlert(alertId) {
+    const alert = activeAlerts.find(a => a.id == alertId);
+    if (!alert) return;
+
+    // 1. Switch to Map tab
+    switchTab('map');
+
+    // 2. Clear Previous Preview
+    if (previewTimeout) clearTimeout(previewTimeout);
+    if (previewInterval) clearInterval(previewInterval);
+
+    // 3. Draw only this alert on Map
+    const layer = document.getElementById('alerts-layer');
+    while (layer.firstChild) layer.removeChild(layer.firstChild);
+
+    const isDelay = alert.effect === 'SIGNIFICANT_DELAYS' || alert.effect === 'REDUCED_SPEED';
+    if (alert.singleStation) {
+        drawStationAlert(alert.line, alert.start, isDelay, true);
+    } else {
+        const flow = calculateFlow(alert.line, alert.start, alert.end, alert.direction);
+        drawAlertPath(alert.line, alert.start, alert.end, flow, alert.shuttle, isDelay, true);
+    }
+
+    // 4. Update Status Indicator to show preview mode
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = statusIndicator.querySelector('.status-text');
+    statusIndicator.className = 'status-indicator preview';
+
+    // Add cancel button if not already present
+    let cancelBtn = statusIndicator.querySelector('.preview-cancel-btn');
+    if (!cancelBtn) {
+        cancelBtn = document.createElement('button');
+        cancelBtn.className = 'preview-cancel-btn';
+        cancelBtn.innerHTML = '<i class="fas fa-times"></i>';
+        cancelBtn.onclick = endPreview;
+        statusIndicator.appendChild(cancelBtn);
+    }
+    cancelBtn.style.display = 'inline-flex';
+
+    statusText.textContent = 'Previewing (5s)';
+
+    // Start Countdown
+    let timeLeft = 5;
+    previewInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft > 0) statusText.textContent = `Previewing (${timeLeft}s)`;
+        else clearInterval(previewInterval);
+    }, 1000);
+
+    // 5. Auto-Revert after 5s
+    previewTimeout = setTimeout(endPreview, 5000);
 }
 
 function endPreview() {

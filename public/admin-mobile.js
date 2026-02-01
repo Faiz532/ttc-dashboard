@@ -81,7 +81,7 @@ const rawMapData = [
             { name: "Yorkdale", x: 360, y: 290, accessible: true },
             { name: "Lawrence West", x: 360, y: 320, accessible: true },
             { name: "Glencairn", x: 360, y: 350, accessible: true },
-            { name: "Eglinton West", displayName: "Cedarvale", x: 360, y: 380, interchange: true, accessible: true },
+            { name: "Cedarvale", x: 360, y: 380, interchange: true, accessible: true },
             { name: "St Clair West", x: 360, y: 410, accessible: true },
             { name: "Dupont", x: 360, y: 440, accessible: true },
             { name: "Spadina", x: 360, y: 480, interchange: true, accessible: false }, // Offset -20px

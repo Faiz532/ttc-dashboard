@@ -1110,6 +1110,16 @@ canvas.vanta-canvas {
     padding: 16px;
     margin-bottom: 12px;
     border-left: 4px solid var(--alert-color);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.alert-card:hover {
+    transform: scale(1.015);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.alert-card:active {
+    transform: scale(0.98);
 }
 
 .alert-header {

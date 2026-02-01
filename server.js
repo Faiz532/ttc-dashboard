@@ -48,7 +48,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");  // Google's AI
 // structured data like which stations are affected, what line, etc.
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });  // Fast model for quick responses
+const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });  // Gemini 3.0 Flash preview
 
 
 // ============================================================================
@@ -390,6 +390,12 @@ async function parseAlertWithAI(text) {
         4. Direction affected ("Northbound", "Southbound", "Eastbound", "Westbound", or "Both Ways")
         5. Severity: "Suspension" (no trains), "Delay" (slow/reduced), or "Minor"
         
+        ## CRITICAL INSTRUCTIONS
+        1. Extract the EXACT start and end station names mentioned in the alert text
+        2. Do NOT infer or expand the station range - use ONLY the stations explicitly mentioned
+        3. If the text says "from X to Y stations", return start: X, end: Y (exactly those stations)
+        4. Match station names to the valid list above
+        
         ## TIMING RULES
         - "Starts at 11pm" and current time is 10pm → status: "future"
         - "Weekend closure" on Friday before evening → status: "future"
@@ -662,14 +668,29 @@ function startPolling() {
 async function fetchTTCAlerts() {
     console.log("🔄 Fetching live data from all sources...");
 
-    // Currently only using Live API (most reliable)
-    // BlueSky and web scraping are available but disabled to reduce noise
-    const liveApiResult = await fetchTTCLiveAlerts();
-    const liveApiAlerts = liveApiResult.current || [];
-    const upcomingAlerts = liveApiResult.upcoming || [];
+    // Fetch from all sources in parallel for speed
+    const [liveApiResult, blueSkyAlerts, websiteAlerts] = await Promise.all([
+        fetchTTCLiveAlerts(),
+        fetchBlueSkyAlerts().catch(e => { console.error("BlueSky fetch failed:", e.message); return []; }),
+        fetchTTCWebsiteAlerts().catch(e => { console.error("Website scrape failed:", e.message); return []; })
+    ]);
 
-    // Start with Live API alerts (highest priority)
-    const allAlerts = [...liveApiAlerts];
+    const liveApiAlerts = liveApiResult.current || [];
+    let upcomingAlerts = liveApiResult.upcoming || [];
+
+    // Combine all sources - Live API has highest priority (listed first)
+    const allAlerts = [...liveApiAlerts, ...blueSkyAlerts, ...websiteAlerts];
+
+    // ========================================
+    // Deduplicate upcoming alerts too
+    // ========================================
+    const seenUpcoming = new Set();
+    upcomingAlerts = upcomingAlerts.filter(alert => {
+        const key = `${alert.line}-${alert.start}-${alert.end}`;
+        if (seenUpcoming.has(key)) return false;
+        seenUpcoming.add(key);
+        return true;
+    });
 
     // ========================================
     // STEP 1: Separate Active vs Cleared alerts
@@ -678,14 +699,25 @@ async function fetchTTCAlerts() {
     const clearedAlerts = allAlerts.filter(a => a.status !== 'active');
 
     // ========================================
-    // STEP 2: Deduplicate active alerts
+    // STEP 2: Deduplicate active alerts (exact matches + overlapping ranges)
     // ========================================
     const uniqueAlerts = [];
     const seen = new Set();
 
     activeAlerts.forEach(alert => {
         const key = `${alert.line}-${alert.start}-${alert.end}`;
-        if (!seen.has(key)) {
+        // Skip exact duplicates
+        if (seen.has(key)) return;
+
+        // Also skip if this alert significantly overlaps with an existing one on same line
+        const hasOverlap = uniqueAlerts.some(existing => {
+            if (existing.line !== alert.line) return false;
+            // Check if ranges overlap significantly (share at least one endpoint)
+            return (existing.start === alert.start || existing.end === alert.end ||
+                existing.start === alert.end || existing.end === alert.start);
+        });
+
+        if (!hasOverlap) {
             seen.add(key);
             uniqueAlerts.push(alert);
         }
