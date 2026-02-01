@@ -1514,7 +1514,7 @@ function previewUpcomingAlert(alertId) {
     // 5. Auto-Revert after 5s
     previewTimeout = setTimeout(endPreview, 5000);
 
-    // 6. Focus Map - DISABLED per user request
+    // 6. Zoom disabled per user request
     // focusOnAlert(alert);
 }
 
@@ -1569,6 +1569,9 @@ function previewActiveAlert(alertId) {
 
     // 5. Auto-Revert after 5s
     previewTimeout = setTimeout(endPreview, 5000);
+
+    // 6. Zoom disabled per user request
+    // focusOnAlert(alert);
 }
 
 function endPreview() {
@@ -1591,7 +1594,7 @@ function endPreview() {
 }
 
 function focusOnAlert(alert) {
-    // Find coords
+    // Find station coordinates for the alert
     const lineObj = rawMapData.find(l => l.line === alert.line);
     if (!lineObj) return;
 
@@ -1599,13 +1602,14 @@ function focusOnAlert(alert) {
     const endStation = alert.end ? lineObj.stations.find(s => s.name === alert.end) : null;
     if (!startStation) return;
 
-    let centerX, centerY;
+    // Calculate center point of the alert in SVG coordinates
+    let alertCenterX, alertCenterY;
     if (endStation) {
-        centerX = (startStation.x + endStation.x) / 2;
-        centerY = (startStation.y + endStation.y) / 2;
+        alertCenterX = (startStation.x + endStation.x) / 2;
+        alertCenterY = (startStation.y + endStation.y) / 2;
     } else {
-        centerX = startStation.x;
-        centerY = startStation.y;
+        alertCenterX = startStation.x;
+        alertCenterY = startStation.y;
     }
 
     // Get viewport dimensions
@@ -1613,13 +1617,21 @@ function focusOnAlert(alert) {
     const viewHeight = viewport.clientHeight;
     const availableHeight = viewHeight - MAP_CONFIG.bottomNavHeight;
 
-    // Calculate the zoom level (2x zoom for better visibility on mobile)
-    const ZOOM = 2.0;
+    // Calculate zoom level (use same base as initial map scale, but 2x more)
+    const baseScale = (viewWidth / 1000) * MAP_CONFIG.zoomMultiplier;
+    const ZOOM = baseScale * 1.5; // 1.5x extra zoom for preview
 
-    // Calculate target position to center the alert in the viewport
-    // Account for the bottom navigation bar by using availableHeight
-    const targetX = (viewWidth / 2) - (centerX * ZOOM);
-    const targetY = (availableHeight / 2) - (centerY * ZOOM);
+    // Screen center coordinates
+    const screenCenterX = viewWidth / 2;
+    const screenCenterY = availableHeight / 2;
+
+    // Target position: center the alert in the visible area
+    // Simplified formula: screenCenter - (alertCenter * scale) + offset
+    const targetX = screenCenterX - (alertCenterX * ZOOM) + MAP_CONFIG.offsetX;
+    const targetY = screenCenterY - (alertCenterY * ZOOM) + MAP_CONFIG.offsetY + 200;
+
+    console.log('Focus on alert:', alert.start, '→', alert.end, 'at', alertCenterX, alertCenterY);
+    console.log('Target position:', targetX, targetY, 'Zoom:', ZOOM);
 
     if (typeof gsap !== 'undefined') {
         gsap.to(mapRoot, {
@@ -1632,7 +1644,6 @@ function focusOnAlert(alert) {
                 currentScale = ZOOM;
                 currentX = targetX;
                 currentY = targetY;
-                if (typeof updateMapBounds === 'function') updateMapBounds(null);
             }
         });
     }
