@@ -6,10 +6,8 @@
  * This is the backend server for the Toronto Transit Commission (TTC) 
  * real-time subway alerts dashboard. It does the following:
  * 
- * 1. FETCHES LIVE ALERTS from multiple sources:
- *    - TTC's official Live Alerts API (primary source)
- *    - BlueSky social feed (@ttcalerts.bsky.social) for breaking news
- *    - TTC website scraping (backup/additional source)
+ * 1. FETCHES LIVE ALERTS from:
+ *    - TTC's official Live Alerts API (primary and only source)
  * 
  * 2. USES AI (Google Gemini) to parse alert text and extract:
  *    - Which subway line is affected (1, 2, 4, 5, or 6)
@@ -61,7 +59,7 @@ const PORT = process.env.PORT || 3000;  // Use environment port (for production)
 app.use(cors());  // Allow requests from any origin (needed for development)
 app.use(express.static(path.join(__dirname, 'public')));  // Serve static files from /public folder
 
-const cheerio = require('cheerio');  // jQuery-like library for scraping HTML content
+
 
 
 // ============================================================================
@@ -69,8 +67,7 @@ const cheerio = require('cheerio');  // jQuery-like library for scraping HTML co
 // ============================================================================
 // These are the external APIs and websites we fetch alert data from
 
-const BLUESKY_API_URL = 'https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=ttcalerts.bsky.social';
-const TTC_SUBWAY_URL = 'https://www.ttc.ca/service-advisories/subway-service';
+
 const TTC_LIVE_ALERTS_API = 'https://alerts.ttc.ca/api/alerts/live-alerts';
 
 
@@ -483,85 +480,7 @@ function parseAlertText(text) {
 // DATA FETCHING - Get alerts from external sources
 // ============================================================================
 
-/**
- * Fetch alerts from BlueSky social feed
- * The @ttcalerts.bsky.social account posts breaking transit news
- * 
- * @returns {Array} - Array of parsed alert objects
- */
-async function fetchBlueSkyAlerts() {
-    try {
-        console.log("🐦 Fetching BlueSky alerts...");
-        const response = await axios.get(BLUESKY_API_URL);
-        const feed = response.data.feed || [];
-        const alerts = [];
 
-        // Process each post in the feed
-        for (const item of feed) {
-            const text = item.post?.record?.text || "";
-
-            // Only look at posts from the last 24 hours to avoid stale data
-            const createdAt = new Date(item.post?.record?.createdAt);
-            if (Date.now() - createdAt.getTime() > 24 * 60 * 60 * 1000) continue;
-
-            // Only process posts that mention subway lines
-            if (text.includes("Line 1") || text.includes("Line 2") || text.includes("Line 4")) {
-                const parsed = await parseAlertWithAI(text);
-                if (parsed) {
-                    console.log(`✅ AI Parsed BlueSky Alert: [Line ${parsed.line}] ${parsed.start} <-> ${parsed.end}`);
-                    alerts.push(parsed);
-                }
-            }
-        }
-
-        return alerts;
-    } catch (error) {
-        console.error("Error fetching BlueSky alerts:", error.message);
-        return [];
-    }
-}
-
-/**
- * Scrape the TTC website for planned closures
- * This catches scheduled maintenance that might not be in the live API
- * 
- * @returns {Array} - Array of parsed alert objects
- */
-async function fetchTTCWebsiteAlerts() {
-    try {
-        console.log("🌐 Scraping TTC website...");
-        const response = await axios.get(TTC_SUBWAY_URL);
-        const $ = cheerio.load(response.data);  // Load HTML into cheerio
-        const alerts = [];
-
-        // Look through all text elements on the page
-        const elements = $('div, p').toArray();
-        for (const el of elements) {
-            const text = $(el).text().trim();
-
-            // Skip very long text blocks (probably not alerts)
-            if (text.length > 300) continue;
-
-            // Only process text that mentions subway lines
-            if (!text.includes("Line 1") && !text.includes("Line 2") && !text.includes("Line 4")) continue;
-
-            // Skip if we already parsed this exact text
-            const alreadyFound = alerts.some(a => a.originalText === text);
-            if (alreadyFound) continue;
-
-            const parsed = await parseAlertWithAI(text);
-            if (parsed) {
-                console.log(`✅ AI Parsed Web Alert: [Line ${parsed.line}] ${parsed.start} <-> ${parsed.end}`);
-                alerts.push(parsed);
-            }
-        }
-
-        return alerts;
-    } catch (error) {
-        console.error("Error scraping TTC website:", error.message);
-        return [];
-    }
-}
 
 /**
  * Fetch alerts from TTC's official Live Alerts API
@@ -666,20 +585,16 @@ function startPolling() {
  * @returns {Object} - { current: [...], upcoming: [...] }
  */
 async function fetchTTCAlerts() {
-    console.log("🔄 Fetching live data from all sources...");
+    console.log("🔄 Fetching live data from TTC Live Alerts API...");
 
-    // Fetch from all sources in parallel for speed
-    const [liveApiResult, blueSkyAlerts, websiteAlerts] = await Promise.all([
-        fetchTTCLiveAlerts(),
-        fetchBlueSkyAlerts().catch(e => { console.error("BlueSky fetch failed:", e.message); return []; }),
-        fetchTTCWebsiteAlerts().catch(e => { console.error("Website scrape failed:", e.message); return []; })
-    ]);
+    // Fetch from the official TTC Live Alerts API
+    const liveApiResult = await fetchTTCLiveAlerts();
 
     const liveApiAlerts = liveApiResult.current || [];
     let upcomingAlerts = liveApiResult.upcoming || [];
 
-    // Combine all sources - Live API has highest priority (listed first)
-    const allAlerts = [...liveApiAlerts, ...blueSkyAlerts, ...websiteAlerts];
+    // Use alerts from the Live API
+    const allAlerts = [...liveApiAlerts];
 
     // ========================================
     // Deduplicate upcoming alerts too
