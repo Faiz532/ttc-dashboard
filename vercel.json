@@ -1,0 +1,31 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "api/data.js",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "public/**",
+            "use": "@vercel/static"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/data",
+            "dest": "/api/data.js"
+        },
+        {
+            "src": "/api/alerts",
+            "dest": "/api/data.js"
+        },
+        {
+            "src": "/api/upcoming-alerts",
+            "dest": "/api/data.js"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/public/$1"
+        }
+    ]
+}
