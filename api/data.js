@@ -66,7 +66,7 @@ const VALID_STATIONS = [
     // Line 1 stations (Yellow - Yonge-University line)
     "Vaughan Metropolitan Centre", "Highway 407", "Pioneer Village", "York University",
     "Finch West", "Downsview Park", "Sheppard West", "Wilson", "Yorkdale",
-    "Lawrence West", "Glencairn", "Cedarvale", "St Clair West", "Dupont",
+    "Lawrence West", "Glencairn", "Eglinton West", "St Clair West", "Dupont",
     "Spadina", "St George", "Museum", "Queen's Park", "St Patrick", "Osgoode",
     "St Andrew", "Union", "King", "Queen", "Dundas", "College", "Wellesley",
     "Bloor-Yonge", "Rosedale", "Summerhill", "St Clair", "Davisville", "Eglinton",
@@ -103,8 +103,8 @@ const STATION_MAP = {
     "Bathurst St": "Bathurst",
     "Keele St": "Keele",
     "Broadview Stn": "Broadview",
-    "Eglinton West": "Cedarvale",  // Station renamed
-    "Cedarvale": "Cedarvale"
+    "Eglinton West": "Eglinton West",
+    "Cedarvale": "Eglinton West"  // Maps old name to current
 };
 
 /**
@@ -112,7 +112,7 @@ const STATION_MAP = {
  * Used to check if one alert range is contained within another
  */
 const STATIONS_BY_LINE = {
-    "1": ["Vaughan Metropolitan Centre", "Highway 407", "Pioneer Village", "York University", "Finch West", "Downsview Park", "Sheppard West", "Wilson", "Yorkdale", "Lawrence West", "Glencairn", "Cedarvale", "St Clair West", "Dupont", "Spadina", "St George", "Museum", "Queen's Park", "St Patrick", "Osgoode", "St Andrew", "Union", "King", "Queen", "Dundas", "College", "Wellesley", "Bloor-Yonge", "Rosedale", "Summerhill", "St Clair", "Davisville", "Eglinton", "Lawrence", "York Mills", "Sheppard-Yonge", "North York Centre", "Finch"],
+    "1": ["Vaughan Metropolitan Centre", "Highway 407", "Pioneer Village", "York University", "Finch West", "Downsview Park", "Sheppard West", "Wilson", "Yorkdale", "Lawrence West", "Glencairn", "Eglinton West", "St Clair West", "Dupont", "Spadina", "St George", "Museum", "Queen's Park", "St Patrick", "Osgoode", "St Andrew", "Union", "King", "Queen", "Dundas", "College", "Wellesley", "Bloor-Yonge", "Rosedale", "Summerhill", "St Clair", "Davisville", "Eglinton", "Lawrence", "York Mills", "Sheppard-Yonge", "North York Centre", "Finch"],
     "2": ["Kipling", "Islington", "Royal York", "Old Mill", "Jane", "Runnymede", "High Park", "Keele", "Dundas West", "Lansdowne", "Dufferin", "Ossington", "Christie", "Bathurst", "Spadina", "St George", "Bay", "Bloor-Yonge", "Sherbourne", "Castle Frank", "Broadview", "Chester", "Pape", "Donlands", "Greenwood", "Coxwell", "Woodbine", "Main Street", "Victoria Park", "Warden", "Kennedy"],
     "4": ["Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills"]
 };
@@ -209,7 +209,7 @@ async function parseAlertWithAI(text) {
         You are a TTC Subway Alert Parser. Current Time: "${currentTime}".
         
         ## VALID STATION NAMES
-        Line 1: Vaughan Metropolitan Centre, Highway 407, Pioneer Village, York University, Finch West, Downsview Park, Sheppard West, Wilson, Yorkdale, Lawrence West, Glencairn, Cedarvale, St Clair West, Dupont, Spadina, St George, Museum, Queen's Park, St Patrick, Osgoode, St Andrew, Union, King, Queen, Dundas, College, Wellesley, Bloor-Yonge, Rosedale, Summerhill, St Clair, Davisville, Eglinton, Lawrence, York Mills, Sheppard-Yonge, North York Centre, Finch
+        Line 1: Vaughan Metropolitan Centre, Highway 407, Pioneer Village, York University, Finch West, Downsview Park, Sheppard West, Wilson, Yorkdale, Lawrence West, Glencairn, Eglinton West, St Clair West, Dupont, Spadina, St George, Museum, Queen's Park, St Patrick, Osgoode, St Andrew, Union, King, Queen, Dundas, College, Wellesley, Bloor-Yonge, Rosedale, Summerhill, St Clair, Davisville, Eglinton, Lawrence, York Mills, Sheppard-Yonge, North York Centre, Finch
         Line 2: Kipling, Islington, Royal York, Old Mill, Jane, Runnymede, High Park, Keele, Dundas West, Lansdowne, Dufferin, Ossington, Christie, Bathurst, Spadina, St George, Bay, Bloor-Yonge, Sherbourne, Castle Frank, Broadview, Chester, Pape, Donlands, Greenwood, Coxwell, Woodbine, Main Street, Victoria Park, Warden, Kennedy
         Line 4: Sheppard-Yonge, Bayview, Bessarion, Leslie, Don Mills
 
