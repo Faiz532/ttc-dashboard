@@ -234,7 +234,7 @@ async function parseAlertWithAI(text) {
         - end: Last station name mentioned (EXACTLY as stated in the text)
         - reason: Brief reason (e.g., "Track issues", "Medical emergency")
         - status: "active", "future", or "cleared"
-        - direction: "Northbound", "Southbound", "Eastbound", "Westbound", or null
+        - direction: "Northbound", "Southbound", "Eastbound", "Westbound", "Both Ways", or null
         - start_time: Start time if specified, else null
         - end_time: End time if specified, else null
         - severity: "Minor", "Delay", or "Major"
