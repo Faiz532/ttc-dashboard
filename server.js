@@ -95,7 +95,7 @@ const VALID_STATIONS = [
     // Line 1 (Yonge-University) - Yellow line, U-shaped route
     "Vaughan Metropolitan Centre", "Highway 407", "Pioneer Village", "York University",
     "Finch West", "Downsview Park", "Sheppard West", "Wilson", "Yorkdale",
-    "Lawrence West", "Glencairn", "Eglinton West", "St Clair West", "Dupont",
+    "Lawrence West", "Glencairn", "Cedarvale", "St Clair West", "Dupont",
     "Spadina", "St George", "Museum", "Queen's Park", "St Patrick", "Osgoode",
     "St Andrew", "Union", "King", "Queen", "Dundas", "College", "Wellesley",
     "Bloor-Yonge", "Rosedale", "Summerhill", "St Clair", "Davisville", "Eglinton",
@@ -136,7 +136,9 @@ const STATION_MAP = {
     "VMC": "Vaughan Metropolitan Centre",
     "Bathurst St": "Bathurst",
     "Keele St": "Keele",
-    "Broadview Stn": "Broadview"
+    "Broadview Stn": "Broadview",
+    "Eglinton West": "Cedarvale",  // Maps TTC API name to frontend map name
+    "Cedarvale": "Cedarvale"
 };
 
 
@@ -150,7 +152,7 @@ const STATION_MAP = {
 const LINE_1_STATIONS = [
     "Vaughan Metropolitan Centre", "Highway 407", "Pioneer Village", "York University",
     "Finch West", "Downsview Park", "Sheppard West", "Wilson", "Yorkdale",
-    "Lawrence West", "Glencairn", "Eglinton West", "St Clair West", "Dupont",
+    "Lawrence West", "Glencairn", "Cedarvale", "St Clair West", "Dupont",
     "Spadina", "St George", "Museum", "Queen's Park", "St Patrick", "Osgoode",
     "St Andrew", "Union", "King", "Queen", "Dundas", "College", "Wellesley",
     "Bloor-Yonge", "Rosedale", "Summerhill", "St Clair", "Davisville", "Eglinton",
@@ -374,7 +376,7 @@ async function parseAlertWithAI(text) {
         ## VALID STATION NAMES (use exactly these names - be VERY careful with similar names!)
         IMPORTANT: "Humber College" (Line 6) is DIFFERENT from "College" (Line 1). Use the EXACT name.
         
-        Line 1: Vaughan Metropolitan Centre, Highway 407, Pioneer Village, York University, Finch West, Downsview Park, Sheppard West, Wilson, Yorkdale, Lawrence West, Glencairn, Eglinton West, St Clair West, Dupont, Spadina, St George, Museum, Queen's Park, St Patrick, Osgoode, St Andrew, Union, King, Queen, Dundas, College, Wellesley, Bloor-Yonge, Rosedale, Summerhill, St Clair, Davisville, Eglinton, Lawrence, York Mills, Sheppard-Yonge, North York Centre, Finch
+        Line 1: Vaughan Metropolitan Centre, Highway 407, Pioneer Village, York University, Finch West, Downsview Park, Sheppard West, Wilson, Yorkdale, Lawrence West, Glencairn, Cedarvale, St Clair West, Dupont, Spadina, St George, Museum, Queen's Park, St Patrick, Osgoode, St Andrew, Union, King, Queen, Dundas, College, Wellesley, Bloor-Yonge, Rosedale, Summerhill, St Clair, Davisville, Eglinton, Lawrence, York Mills, Sheppard-Yonge, North York Centre, Finch
         Line 2: Kipling, Islington, Royal York, Old Mill, Jane, Runnymede, High Park, Keele, Dundas West, Lansdowne, Dufferin, Ossington, Christie, Bathurst, Spadina, St George, Bay, Bloor-Yonge, Sherbourne, Castle Frank, Broadview, Chester, Pape, Donlands, Greenwood, Coxwell, Woodbine, Main Street, Victoria Park, Warden, Kennedy
         Line 4: Sheppard-Yonge, Bayview, Bessarion, Leslie, Don Mills
         Line 6 (Finch West LRT): Humber College, Westmore, Martin Grove, Albion, Stevenson, Mount Olive, Rowntree Mills, Pearldale, Duncanwoods, Milvan Rumike, Emery, Signet Arrow, Norfinch Oakdale, Jane and Finch, Driftwood, Tobermory, Sentinel, Finch West
