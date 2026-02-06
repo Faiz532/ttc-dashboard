@@ -80,14 +80,21 @@ const VALID_STATIONS = [
     "Main Street", "Victoria Park", "Warden", "Kennedy",
 
     // Line 4 stations (Purple - Sheppard line)
-    "Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills"
+    "Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills",
+
+    // Line 6 stations (Finch West LRT) - Grey line
+    // IMPORTANT: "Humber College" is different from "College" on Line 1!
+    "Humber College", "Westmore", "Martin Grove", "Albion", "Stevenson",
+    "Mount Olive", "Rowntree Mills", "Pearldale", "Duncanwoods", "Milvan Rumike",
+    "Emery", "Signet Arrow", "Norfinch Oakdale", "Jane and Finch", "Driftwood",
+    "Tobermory", "Sentinel"
 ];
 
 /**
  * Maps common variations/typos to official station names
  * Examples:
  *   "St. George" → "St George" (no periods)
- *   "Eglinton West" → "Cedarvale" (station was renamed)
+ *   "Cedarvale" → "Eglinton West" (old name)
  *   "VMC" → "Vaughan Metropolitan Centre" (abbreviation)
  */
 const STATION_MAP = {
@@ -114,7 +121,8 @@ const STATION_MAP = {
 const STATIONS_BY_LINE = {
     "1": ["Vaughan Metropolitan Centre", "Highway 407", "Pioneer Village", "York University", "Finch West", "Downsview Park", "Sheppard West", "Wilson", "Yorkdale", "Lawrence West", "Glencairn", "Eglinton West", "St Clair West", "Dupont", "Spadina", "St George", "Museum", "Queen's Park", "St Patrick", "Osgoode", "St Andrew", "Union", "King", "Queen", "Dundas", "College", "Wellesley", "Bloor-Yonge", "Rosedale", "Summerhill", "St Clair", "Davisville", "Eglinton", "Lawrence", "York Mills", "Sheppard-Yonge", "North York Centre", "Finch"],
     "2": ["Kipling", "Islington", "Royal York", "Old Mill", "Jane", "Runnymede", "High Park", "Keele", "Dundas West", "Lansdowne", "Dufferin", "Ossington", "Christie", "Bathurst", "Spadina", "St George", "Bay", "Bloor-Yonge", "Sherbourne", "Castle Frank", "Broadview", "Chester", "Pape", "Donlands", "Greenwood", "Coxwell", "Woodbine", "Main Street", "Victoria Park", "Warden", "Kennedy"],
-    "4": ["Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills"]
+    "4": ["Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills"],
+    "6": ["Humber College", "Westmore", "Martin Grove", "Albion", "Stevenson", "Mount Olive", "Rowntree Mills", "Pearldale", "Duncanwoods", "Milvan Rumike", "Emery", "Signet Arrow", "Norfinch Oakdale", "Jane and Finch", "Driftwood", "Tobermory", "Sentinel", "Finch West"]
 };
 
 
