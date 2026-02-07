@@ -1614,6 +1614,24 @@ function renderAlertsList() {
     // This prevents double alerts in the list
     filteredAlerts = mergeOverlappingAlerts(filteredAlerts);
 
+    // Inject Line 5 Opening Alert (Static)
+    if (selectedAlertLine === 'all' || selectedAlertLine === '5') {
+        const l5Opening = {
+            id: 'l5-opening-static',
+            line: '5',
+            reason: 'Opening Soon',
+            effect: 'OPENING_SOON',
+            start: 'Mount Dennis',
+            end: 'Kennedy',
+            direction: 'Both Ways',
+            singleStation: false,
+            originalText: 'Line 5 Eglinton Crosstown opens Sunday, February 8, 2026 at 5:00 AM.',
+            status: 'active'
+        };
+        // Add to front of list
+        filteredAlerts.unshift(l5Opening);
+    }
+
     if (filteredAlerts.length === 0) {
         if (selectedAlertLine === 'all') {
             listContainer.innerHTML = '<p style="color: var(--text-muted);">No active alerts at this time.</p>';
@@ -1625,6 +1643,10 @@ function renderAlertsList() {
 
     // Sort alerts: 1) Active before Cleared, 2) Suspensions before Delays, 3) By line number
     const sortedAlerts = [...filteredAlerts].sort((a, b) => {
+        // Opening Soon comes first
+        if (a.effect === 'OPENING_SOON') return -1;
+        if (b.effect === 'OPENING_SOON') return 1;
+
         // Active alerts first
         if (a.status === 'active' && b.status !== 'active') return -1;
         if (a.status !== 'active' && b.status === 'active') return 1;
@@ -1642,15 +1664,19 @@ function renderAlertsList() {
     listContainer.innerHTML = sortedAlerts.map(alert => {
         const isCleared = alert.status === 'cleared';
         const isDelay = alert.effect === 'SIGNIFICANT_DELAYS' || alert.effect === 'REDUCED_SPEED';
+        const isOpening = alert.effect === 'OPENING_SOON';
 
         let borderColor = 'var(--alert-color)';
         if (isCleared) borderColor = 'var(--l2-color)';
         else if (isDelay) borderColor = 'var(--delay-color)';
+        else if (isOpening) borderColor = 'var(--l5-color)';
 
         const bgOpacity = isCleared ? '0.5' : '1';
 
+        const extraClass = isOpening ? 'special-opening-card' : '';
+
         return `
-        <div class="alert-card" style="border-left-color: ${borderColor}; opacity: ${bgOpacity};">
+        <div class="alert-card ${extraClass}" style="border-left-color: ${borderColor}; opacity: ${bgOpacity};">
             <div class="alert-card-header">
                 <div class="alert-line-badge line-${alert.line}">${alert.line}</div>
                 <div class="alert-title">${alert.reason}</div>

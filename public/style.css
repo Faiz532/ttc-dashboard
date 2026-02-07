@@ -1170,6 +1170,15 @@ canvas.vanta-canvas {
     stroke-width: 10px;
     fill: none;
     pointer-events: none;
+    stroke-dasharray: 15, 15;
+    animation: dashFlow 1s linear infinite;
+    opacity: 0.8;
+}
+
+@keyframes dashFlow {
+    to {
+        stroke-dashoffset: -30;
+    }
 }
 
 /* --- Status Indicator (Loading/Live) --- */
@@ -1296,4 +1305,56 @@ body.light-mode .status-indicator {
 
 body.light-mode .status-indicator.live {
     border-color: rgba(34, 197, 94, 0.4);
+}/* Special Opening Alert Effect */
+.special-opening-card {
+    background: linear-gradient(135deg,
+            rgba(243, 112, 33, 0.05) 0%,
+            rgba(243, 112, 33, 0.15) 50%,
+            rgba(243, 112, 33, 0.05) 100%);
+    background-size: 200% 200%;
+    animation: shimmerEffect 3s ease infinite;
+    position: relative;
+    overflow: hidden;
+    border-left: 4px solid var(--l5-color) !important;
+}
+
+@keyframes shimmerEffect {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.special-opening-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transform: skewX(-20deg) translateX(-150%);
+    animation: lightSweep 3s infinite;
+    pointer-events: none;
+}
+
+@keyframes lightSweep {
+    0% {
+        transform: skewX(-20deg) translateX(-150%);
+    }
+
+    50% {
+        transform: skewX(-20deg) translateX(150%);
+    }
+
+    100% {
+        transform: skewX(-20deg) translateX(150%);
+    }
 }

@@ -1246,6 +1246,23 @@ function renderLists() {
     // Merge overlapping/directional duplicates for cleaner list
     const mergedFilteredAlerts = mergeOverlappingAlerts(filteredAlerts);
 
+    // Inject Line 5 Opening Alert (Static)
+    if (selectedAlertLine === 'all' || selectedAlertLine === '5') {
+        mergedFilteredAlerts.unshift({
+            id: 'l5-opening',
+            line: '5',
+            reason: 'Opening Soon',
+            effect: 'OPENING_SOON',
+            start: 'Mount Dennis',
+            end: 'Kennedy',
+            direction: 'Both Ways',
+            singleStation: false,
+            originalText: 'Line 5 Eglinton Crosstown opens Sunday, February 8, 2026 at 5:00 AM.',
+            status: 'active',
+            shuttle: false
+        });
+    }
+
     const dynamicAlertsHtml = mergedFilteredAlerts.length
         ? mergedFilteredAlerts.map(a => createAlertCard(a)).join('')
         : '<div style="text-align:center; padding:20px; color:gray">No alerts for this line</div>';
@@ -1270,14 +1287,25 @@ document.querySelectorAll('#alerts-filter .filter-btn').forEach(btn => {
 });
 
 function createAlertCard(a, isUpcoming = false) {
-    const color = (a.effect === 'SIGNIFICANT_DELAYS') ? 'bg-l1' : 'bg-alert';
-    // Simplified logic for demo color mapping
-    const badgeClass = a.line === '1' ? 'bg-l1' : a.line === '2' ? 'bg-l2' : 'bg-l4';
+    let color = 'bg-alert';
+    if (a.effect === 'SIGNIFICANT_DELAYS') color = 'bg-l1'; // using l1 color (yellow) for delays?
+    // Note: bg-alert is red (defined in css vars usually)
+
+    // Helper for line badge
+    let badgeClass = 'bg-l4'; // default
+    if (a.line === '1') badgeClass = 'bg-l1';
+    else if (a.line === '2') badgeClass = 'bg-l2';
+    else if (a.line === '5') badgeClass = 'bg-l5'; // Will need to define or inline
+
+    // Custom style for Opening Soon
+    const isOpening = a.effect === 'OPENING_SOON';
+    const borderStyle = isOpening ? `border-left: 4px solid var(--l5-color);` : '';
+    const extraClass = isOpening ? 'special-opening-card' : '';
 
     return `
-            <div class="alert-card" onclick="${isUpcoming ? '' : `previewActiveAlert('${a.id}')`}" style="cursor: ${isUpcoming ? 'default' : 'pointer'};">
+            <div class="alert-card ${extraClass}" onclick="${isUpcoming ? '' : `previewActiveAlert('${a.id}')`}" style="cursor: ${isUpcoming ? 'default' : 'pointer'}; ${borderStyle}">
                 <div class="alert-header">
-                    <div class="line-badge ${badgeClass}">${a.line}</div>
+                    <div class="line-badge ${badgeClass}" style="${a.line === '5' ? 'background: var(--l5-color); color: white;' : ''}">${a.line}</div>
                     <div style="font-weight:600; font-size:15px;">${a.reason}</div>
                 </div>
                 <div class="alert-body">
