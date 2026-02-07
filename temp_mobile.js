@@ -4,24 +4,57 @@ let activeAlerts = [];
 let upcomingAlerts = [];
 let mapDraggable = null;
 let pollingInterval = null;
-let manualAlertCounter = 1; // For generating unique IDs
+let isSubwayCurrentlyClosed = false;
+
+// ==========================================
+// SUBWAY OPERATING HOURS (Toronto time)
+// ==========================================
+// Mon-Sat: 6:00 AM - 2:00 AM (next day)
+// Sunday: 8:00 AM - 2:00 AM (next day)
+
+function isSubwayClosed() {
+    const now = new Date();
+    // Convert to Toronto time
+    const torontoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
+    const hour = torontoTime.getHours();
+    const day = torontoTime.getDay(); // 0 = Sunday
+
+    // Closed hours: 2:00 AM - 6:00 AM (Mon-Sat), 2:00 AM - 8:00 AM (Sunday)
+    if (day === 0) {
+        // Sunday: closed from 2 AM to 8 AM
+        return hour >= 2 && hour < 8;
+    } else {
+        // Monday-Saturday: closed from 2 AM to 6 AM
+        return hour >= 2 && hour < 6;
+    }
+}
+
+function getNextOpenTime() {
+    const now = new Date();
+    const torontoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
+    const day = torontoTime.getDay();
+
+    if (day === 0) {
+        return '8:00 AM';
+    } else {
+        return '6:00 AM';
+    }
+}
 
 // --- Map Configuration (Easy to adjust) ---
 const MAP_CONFIG = {
     // Visual center point on the map (SVG coordinates)
-    centerX: 430,            // Horizontal center of the map SVG
-    centerY: 375,            // Vertical center of the map SVG
-
+    centerX: 430,
+    centerY: 375,
     // Offset to fine-tune screen position (pixels)
-    offsetX: 200,            // Positive = shift right
-    offsetY: 200,            // Positive = shift down
-
-    // Zoom settings
-    zoomMultiplier: 2.0,     // 1.0 = fit width, 2.0 = 2x zoom
-
-    // UI element sizes
-    bottomNavHeight: 100,    // Height of bottom navigation bar (pixels)
-    boundsPadding: 1000      // Extra padding for pan bounds (pixels)
+    offsetX: 200,  // Positive = shift right
+    offsetY: 200,  // Positive = shift down
+    // Zoom multiplier (1.0 = fit width, 2.0 = 2x zoom)
+    zoomMultiplier: 2.0,
+    // Bottom navigation height (pixels)
+    bottomNavHeight: 100,
+    // Pan bounds padding (pixels)
+    boundsPadding: 1000
 };
 
 // --- DOM Elements ---
@@ -29,8 +62,7 @@ const mapRoot = document.getElementById('map-root');
 const viewport = document.getElementById('map-viewport');
 const sheets = {
     alerts: document.getElementById('sheet-alerts'),
-    upcoming: document.getElementById('sheet-upcoming'),
-    create: document.getElementById('sheet-create')
+    upcoming: document.getElementById('sheet-upcoming')
 };
 const badges = {
     active: document.getElementById('badge-active'),
@@ -42,32 +74,8 @@ const rawMapData = [
     {
         line: "5",
         stations: [
-            // Line 5 Eglinton - 25 stations from Mount Dennis to Kennedy (extended left, aligned interchanges)
-            { name: "Mount Dennis", x: 150, y: 380, accessible: true },
-            { name: "Keelesdale", x: 192, y: 380, accessible: true },
-            { name: "Caledonia", x: 234, y: 380, accessible: true },
-            { name: "Fairbank", x: 276, y: 380, accessible: true },
-            { name: "Oakwood", x: 318, y: 380, accessible: true },
-            { name: "Cedarvale", x: 360, y: 380, interchange: true, accessible: true }, // Matches Line 1
-            { name: "Forest Hill", x: 430, y: 380, accessible: true },
-            { name: "Chaplin", x: 500, y: 380, accessible: true },
-            { name: "Avenue", x: 570, y: 380, accessible: true },
-            { name: "Eglinton", x: 640, y: 380, interchange: true, accessible: true }, // Matches Line 1
-            { name: "Mount Pleasant", displayName: "Mt. Pleasant", x: 674, y: 380, accessible: true }, // Restore orig +70 relative to prev
-            { name: "Leaside", x: 708, y: 380, accessible: true },
-            { name: "Laird", x: 742, y: 380, accessible: true },
-            { name: "Sunnybrook Park", x: 776, y: 380, accessible: true },
-            { name: "Don Valley", x: 810, y: 380, accessible: true },
-            { name: "Aga Khan Park & Museum", x: 844, y: 380, accessible: true },
-            { name: "Wynford", x: 878, y: 380, accessible: true },
-            { name: "Sloane", x: 912, y: 380, accessible: true },
-            { name: "O'Connor", x: 946, y: 380, accessible: true },
-            { name: "Pharmacy", x: 980, y: 380, accessible: true },
-            { name: "Hakimi Lebovic", x: 1014, y: 380, accessible: true },
-            { name: "Golden Mile", x: 1048, y: 380, accessible: true },
-            { name: "Birchmount", x: 1082, y: 380, accessible: true },
-            { name: "Ionview", x: 1116, y: 380, accessible: true },
-            { name: "Kennedy", x: 1150, y: 380, interchange: true, accessible: true }
+            { name: "Mount Dennis", x: 220, y: 380, interchange: true, accessible: true },
+            { name: "Kennedy", x: 970, y: 380, interchange: true, accessible: true }
         ]
     },
     {
@@ -107,7 +115,7 @@ const rawMapData = [
             { name: "Yorkdale", x: 360, y: 290, accessible: true },
             { name: "Lawrence West", x: 360, y: 320, accessible: true },
             { name: "Glencairn", x: 360, y: 350, accessible: true },
-            { name: "Cedarvale", x: 360, y: 380, interchange: true, accessible: true },
+            { name: "Eglinton West", displayName: "Cedarvale", x: 360, y: 380, interchange: true, accessible: true },
             { name: "St Clair West", x: 360, y: 410, accessible: true },
             { name: "Dupont", x: 360, y: 440, accessible: true },
             { name: "Spadina", x: 360, y: 480, interchange: true, accessible: false }, // Offset -20px
@@ -124,13 +132,13 @@ const rawMapData = [
             { name: "College", x: 640, y: 580, accessible: false },
             { name: "Wellesley", x: 640, y: 550, accessible: true },
             { name: "Bloor-Yonge", x: 640, y: 500, interchange: true, accessible: true },
-            { name: "Rosedale", x: 640, y: 460, accessible: true },
-            { name: "Summerhill", x: 640, y: 430, accessible: true },
-            { name: "St Clair", x: 640, y: 400, accessible: true },
-            { name: "Davisville", x: 640, y: 350, accessible: true },
+            { name: "Rosedale", x: 640, y: 475, accessible: true },
+            { name: "Summerhill", x: 640, y: 455, accessible: true },
+            { name: "St Clair", x: 640, y: 430, accessible: true },
+            { name: "Davisville", x: 640, y: 405, accessible: true },
             { name: "Eglinton", x: 640, y: 380, interchange: true, accessible: true },
-            { name: "Lawrence", x: 640, y: 315, accessible: true },
-            { name: "York Mills", x: 640, y: 255, accessible: true },
+            { name: "Lawrence", x: 640, y: 340, accessible: true },
+            { name: "York Mills", x: 640, y: 280, accessible: true },
             { name: "Sheppard-Yonge", x: 640, y: 200, interchange: true, accessible: true },
             { name: "North York Centre", x: 640, y: 150, accessible: true },
             { name: "Finch", x: 640, y: 100, accessible: true }
@@ -145,31 +153,31 @@ const rawMapData = [
             { name: "Old Mill", x: 99, y: 500, accessible: false },
             { name: "Jane", x: 122, y: 500, accessible: true },
             { name: "Runnymede", x: 145, y: 500, accessible: true },
-            { name: "High Park", x: 168, y: 500, accessible: false },
+            { name: "High Park", x: 168, y: 500, accessible: true },
             { name: "Keele", x: 191, y: 500, accessible: true },
             { name: "Dundas West", x: 214, y: 500, accessible: true },
-            { name: "Lansdowne", x: 237, y: 500, accessible: false },
+            { name: "Lansdowne", x: 237, y: 500, accessible: true },
             { name: "Dufferin", x: 260, y: 500, accessible: true },
             { name: "Ossington", x: 283, y: 500, accessible: true },
-            { name: "Christie", x: 306, y: 500, accessible: false },
+            { name: "Christie", x: 306, y: 500, accessible: true },
             { name: "Bathurst", x: 329, y: 500, accessible: true },
             { name: "Spadina", x: 360, y: 500, interchange: true, accessible: true },
             { name: "St George", x: 400, y: 500, interchange: true, accessible: true },
-            { name: "Bay", x: 520, y: 500, accessible: false },
+            { name: "Bay", x: 520, y: 500, accessible: true },
             { name: "Bloor-Yonge", x: 640, y: 500, interchange: true, accessible: true },
-            { name: "Sherbourne", x: 680, y: 500, accessible: true },
-            { name: "Castle Frank", x: 720, y: 500, accessible: false },
-            { name: "Broadview", x: 760, y: 500, accessible: true },
-            { name: "Chester", x: 800, y: 500, accessible: true },
-            { name: "Pape", x: 840, y: 500, accessible: true },
-            { name: "Donlands", x: 880, y: 500, accessible: false },
-            { name: "Greenwood", x: 920, y: 500, accessible: false },
-            { name: "Coxwell", x: 960, y: 500, accessible: true },
-            { name: "Woodbine", x: 1000, y: 500, accessible: true },
-            { name: "Main Street", x: 1040, y: 500, accessible: true },
-            { name: "Victoria Park", x: 1080, y: 460, accessible: true },
-            { name: "Warden", x: 1115, y: 420, accessible: false },
-            { name: "Kennedy", x: 1150, y: 380, interchange: true, accessible: true }
+            { name: "Sherbourne", x: 670, y: 500, accessible: true },
+            { name: "Castle Frank", x: 695, y: 500, accessible: true },
+            { name: "Broadview", x: 720, y: 500, accessible: true },
+            { name: "Chester", x: 745, y: 500, accessible: true },
+            { name: "Pape", x: 770, y: 500, accessible: true },
+            { name: "Donlands", x: 795, y: 500, accessible: true },
+            { name: "Greenwood", x: 820, y: 500, accessible: false },
+            { name: "Coxwell", x: 845, y: 500, accessible: true },
+            { name: "Woodbine", x: 870, y: 500, accessible: true },
+            { name: "Main Street", x: 895, y: 500, accessible: true }, // Pivot point
+            { name: "Victoria Park", x: 920, y: 460, accessible: true }, // Diagonal start
+            { name: "Warden", x: 945, y: 420, accessible: true },
+            { name: "Kennedy", x: 970, y: 380, accessible: true }
         ]
     },
     {
@@ -194,51 +202,79 @@ function init() {
     setupDragAndZoom(); // Now handles all dragging setup including initial positioning
     setupPinchZoom();
     setupSheetGestures();
-    setupAdminForm(); // Admin: Setup form handling instead of API
-    // ADMIN MODE: No API fetching
-    // fetchData();
-    // pollingInterval = setInterval(fetchData, 60000);
-    renderAlertsOnMap(); // Initial render with empty alerts
-    renderLists();
-    updateBadges();
 
-    console.log("ADMIN MOBILE INIT FINISHED");
+    // Check subway status and start polling
+    checkSubwayStatusAndFetch();
+    pollingInterval = setInterval(checkSubwayStatusAndFetch, 60000);
 
-    // Disclaimer Logic - REMOVED to use new Info Popup
-    // const modal = document.getElementById('disclaimer-modal');
-    // ... logic removed
-
-    // Recenter Button - animate back to initial fit
-    document.getElementById('btn-recenter').addEventListener('click', () => {
-        const viewWidth = viewport.clientWidth;
-        const viewHeight = viewport.clientHeight;
-
-        const availableHeight = viewHeight - MAP_CONFIG.bottomNavHeight;
-        const newScale = (viewWidth / 1000) * MAP_CONFIG.zoomMultiplier;
-
-        const screenCenterX = viewWidth / 2;
-        const screenCenterY = availableHeight / 2;
-
-        const newX = screenCenterX - (MAP_CONFIG.centerX * newScale) + MAP_CONFIG.offsetX;
-        const newY = screenCenterY - (MAP_CONFIG.centerY * newScale) + MAP_CONFIG.offsetY;
-
-        gsap.to(mapRoot, {
-            x: newX,
-            y: newY,
-            scale: newScale,
-            duration: 0.6,
-            ease: "power2.out",
-            force3D: false,
-            onComplete: () => {
-                currentScale = newScale;
-                currentX = newX;
-                currentY = newY;
-                updateMapBounds();
-            }
-        });
-    });
-    console.log("Events Attached");
+    console.log("MOBILE INIT FINISHED");
 }
+
+function checkSubwayStatusAndFetch() {
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = statusIndicator ? statusIndicator.querySelector('.status-text') : null;
+
+    if (isSubwayClosed()) {
+        // Subway is closed - don't make API calls
+        isSubwayCurrentlyClosed = true;
+        if (statusIndicator) {
+            statusIndicator.classList.remove('live', 'loading');
+            statusIndicator.classList.add('closed');
+        }
+        if (statusText) {
+            statusText.textContent = `Closed until ${getNextOpenTime()}`;
+        }
+
+        // Clear any existing alerts from the map
+        const alertsLayer = document.getElementById('alerts-layer');
+        if (alertsLayer) alertsLayer.innerHTML = '';
+        activeAlerts = [];
+        upcomingAlerts = [];
+        updateAlertsList([]);
+        updateUpcomingList([]);
+
+        console.log('Subway closed - skipping API call');
+    } else {
+        // Subway is open - fetch data
+        if (isSubwayCurrentlyClosed) {
+            // Just reopened - reset status
+            isSubwayCurrentlyClosed = false;
+            console.log('Subway reopened - resuming API calls');
+        }
+        fetchData();
+    }
+}
+
+// Recenter Button - animate back to initial fit
+document.getElementById('btn-recenter').addEventListener('click', () => {
+    const viewWidth = viewport.clientWidth;
+    const viewHeight = viewport.clientHeight;
+
+    const availableHeight = viewHeight - MAP_CONFIG.bottomNavHeight;
+    const newScale = (viewWidth / 1000) * MAP_CONFIG.zoomMultiplier;
+
+    const screenCenterX = viewWidth / 2;
+    const screenCenterY = availableHeight / 2;
+
+    const newX = screenCenterX - (MAP_CONFIG.centerX * newScale) + MAP_CONFIG.offsetX;
+    const newY = screenCenterY - (MAP_CONFIG.centerY * newScale) + MAP_CONFIG.offsetY;
+
+    gsap.to(mapRoot, {
+        x: newX,
+        y: newY,
+        scale: newScale,
+        duration: 0.6,
+        ease: "power2.out",
+        force3D: false,
+        onComplete: () => {
+            currentScale = newScale;
+            currentX = newX;
+            currentY = newY;
+            updateMapBounds();
+        }
+    });
+});
+console.log("Events Attached");
 
 // --- Navigation Logic ---
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -255,8 +291,8 @@ function switchTab(tab) {
     if (activeNav) activeNav.classList.add('active');
 
     // Handle Sheets
-    Object.values(sheets).forEach(s => { if (s) s.classList.remove('active'); });
-    if (tab === 'alerts' || tab === 'upcoming' || tab === 'create') {
+    Object.values(sheets).forEach(s => s.classList.remove('active'));
+    if (tab === 'alerts' || tab === 'upcoming') {
         if (sheets[tab]) {
             sheets[tab].classList.add('active');
             // Reset any random drag position
@@ -312,7 +348,13 @@ function renderMap() {
             path.setAttribute("class", `track line-${lineData.line}`);
             tracks.appendChild(path);
 
-            // Line 5 is now open - render as solid track (no hollow effect)
+            // Line 5 Hollow Effect (Inner Line)
+            if (lineData.line === '5') {
+                const innerPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                innerPath.setAttribute("d", getPathFromStations(lineData.stations, lineData.line));
+                innerPath.setAttribute("class", "line-5-inner");
+                tracks.appendChild(innerPath);
+            }
         });
 
         // Render Stations
@@ -322,12 +364,10 @@ function renderMap() {
                 if (s.name === 'Spadina') return;
                 // Skip St George on Line 1
                 if (s.name === 'St George' && l.line === '1') return;
-                // Skip Cedarvale on Line 5 (use Line 1)
-                // Cedarvale on Line 5 now rendered by Line 5 to handle label below track
-                // Skip Eglinton on Line 5 (use Line 1)
-                if (s.name === 'Eglinton' && l.line === '5') return;
-                // Skip Kennedy on Line 5 (use Line 2)
+                // Skip Kennedy on Line 5
                 if (s.name === 'Kennedy' && l.line === '5') return;
+                // Skip Kennedy on Line 2
+                if (s.name === 'Kennedy' && l.line === '2') return;
                 // Skip Finch West on Line 1 (use Line 6 interchange marker)
                 if (s.name === 'Finch West' && l.line === '1') return;
 
@@ -358,8 +398,7 @@ function renderMap() {
                 }
 
                 // Detached Terminal Badges (Line Number to the side)
-                // Skip Kennedy badge for Line 5 (Line 2 handles both badges)
-                if ((i === 0 || i === l.stations.length - 1) && !(s.name === 'Kennedy' && l.line === '5')) {
+                if (i === 0 || i === l.stations.length - 1) {
                     const badgeG = document.createElementNS("http://www.w3.org/2000/svg", "g");
                     let bdx = 0, bdy = 0;
 
@@ -374,7 +413,7 @@ function renderMap() {
                     } else if (s.name === "Kipling") {
                         bdx = -105; // Special horizontal layout
                     } else if (s.name === "Kennedy") {
-                        bdx = 120; bdy = 0; // 30px more left
+                        bdx = 100; bdy = -10; // Detached from track, to the right
                     } else if (s.name === "Don Mills") {
                         bdx = 120; // Far right, detached from track
                     } else if (s.name === "Finch West" && l.line !== '6') {
@@ -406,30 +445,6 @@ function renderMap() {
                     badgeG.appendChild(badgeText);
 
                     g.appendChild(badgeG);
-
-                    // Kennedy special case: Add Line 5 badge beside Line 2 badge
-                    if (s.name === "Kennedy" && l.line === '2') {
-                        const badge5G = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                        badge5G.setAttribute("transform", `translate(${bdx + 28}, ${bdy})`); // 28px to the right of Line 2 badge
-
-                        const badge5Circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                        badge5Circle.setAttribute("r", 12);
-                        badge5Circle.setAttribute("fill", getLineColor('5'));
-                        badge5Circle.setAttribute("stroke", "white");
-                        badge5Circle.setAttribute("stroke-width", 2);
-                        badge5G.appendChild(badge5Circle);
-
-                        const badge5Text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                        badge5Text.textContent = "5";
-                        badge5Text.setAttribute("class", "terminal-text");
-                        badge5Text.setAttribute("fill", "white");
-                        badge5Text.setAttribute("dy", 1);
-                        badge5Text.setAttribute("text-anchor", "middle");
-                        badge5Text.setAttribute("dominant-baseline", "middle");
-                        badge5G.appendChild(badge5Text);
-
-                        g.appendChild(badge5G);
-                    }
                 }
 
 
@@ -440,15 +455,14 @@ function renderMap() {
                 // Skip Line 6 Finch West (use Line 1)
                 const sName = s.name.trim(); // Sanitize name
                 const isDup = (l.line === '4' && sName === "Sheppard-Yonge") ||
-                    (l.line === '1' && ["Spadina", "St George", "Bloor-Yonge", "Cedarvale"].includes(sName)) || // Cedarvale handled by Line 5 (to be below track)
-                    (l.line === '5' && ["Kennedy", "Eglinton"].includes(sName)); // Eglinton on Line 1, Kennedy on Line 2
+                    (l.line === '1' && ["Spadina", "St George", "Bloor-Yonge"].includes(sName));
 
                 if (!isDup) {
                     // Use displayName if available, otherwise use name
                     const labelName = s.displayName || sName;
                     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
                     text.textContent = labelName;
-                    if (i === 0 || i === l.stations.length - 1 || sName === "Finch West" || sName === "St George" || sName === "Spadina" || sName === "Cedarvale" || sName === "Eglinton") {
+                    if (i === 0 || i === l.stations.length - 1 || sName === "Finch West" || sName === "St George" || sName === "Spadina") {
                         text.setAttribute("class", "station-label terminal-label");
                     } else {
                         text.setAttribute("class", "station-label");
@@ -459,9 +473,6 @@ function renderMap() {
                     // Custom adjustments for specific lines and layout areas
                     if (l.line === '1') {
                         if (s.name === "Union") { tx = 0; ty = 28; anchor = "middle"; }
-                        else if (s.name === "St Clair West" || s.name === "Dupont") { tx = -15; ty = 5; anchor = "end"; } // Left of track
-                        else if (s.name === "Cedarvale") { tx = 15; ty = -15; anchor = "start"; } // Above Line 5, right of Line 1
-                        else if (s.name === "Eglinton") { tx = -15; ty = 25; anchor = "end"; } // Below Line 5, left of Line 1
                         else if (s.name === "St Andrew" || s.name === "Wellesley" || s.name === "Sheppard-Yonge") { tx = -15; ty = 5; anchor = "end"; }
                         else if (s.name === "Downsview Park" || s.name === "Sheppard West" || s.name === "Finch West" || s.name === "Vaughan Metropolitan Centre" || s.name === "Highway 407" || s.name === "Pioneer Village" || s.name === "York University") { tx = 15; ty = 5; anchor = "start"; }  // Right of track
                         else if (s.x < 360) { tx = -15; ty = 5; anchor = "end"; } // West side of U
@@ -470,9 +481,6 @@ function renderMap() {
                         // Rotate Line 2 labels to avoid track collision
                         if (s.name === 'Kipling') {
                             rot = 0; tx = -25; ty = 5; anchor = "end";
-                        } else if (s.name === 'Kennedy') {
-                            rot = 0; tx = 20; ty = 5; anchor = "start"; // 30px more left
-                            text.setAttribute("class", "station-label terminal-label"); // Bold
                         } else if (sName === 'St George') {
                             rot = 0; tx = 15; ty = -17; anchor = "start"; // 3px Down adjustment
                         } else if (sName === 'Spadina') {
@@ -490,17 +498,11 @@ function renderMap() {
                             tx = 0; ty = -15; anchor = "middle";
                         }
                     } else if (l.line === '5') {
-                        // Line 5 stations - labels start at station and go upward
+                        // Line 5 stations - labels above the track
                         if (s.name === 'Mount Dennis') {
-                            rot = 0; tx = -20; ty = 5; anchor = "end"; // Terminal - horizontal
-                        } else if (s.name === 'Kennedy') {
-                            rot = 0; tx = 20; ty = 5; anchor = "start"; // Terminal - horizontal
-                        } else if (s.name === 'Oakwood') {
-                            rot = -45; tx = 5; ty = -10; anchor = "start"; // Above Line 5 track
-                        } else if (s.name === 'Cedarvale') {
-                            rot = 0; tx = 15; ty = 25; anchor = "start"; // Horizontal, Below Line 5, Right of Line 1
+                            rot = 0; tx = -20; ty = 5; anchor = "end"; // 15px more right
                         } else {
-                            rot = -45; tx = 5; ty = -10; anchor = "start"; // First letter near station, going upward
+                            rot = -45; tx = 0; ty = -15; anchor = "end";
                         }
                     } else if (l.line === '6') {
                         // Line 6 stations - label positioning
@@ -527,14 +529,8 @@ function renderMap() {
                     }
 
                     text.setAttribute("text-anchor", anchor);
-                    // For Line 5, translate first then rotate to move labels above track
-                    if (l.line === '5' && rot !== 0) {
-                        text.setAttribute("transform", `translate(${tx}, ${ty}) rotate(${rot})`);
-                    } else if (rot !== 0) {
-                        text.setAttribute("transform", `rotate(${rot}) translate(${tx}, ${ty})`);
-                    } else {
-                        text.setAttribute("transform", `translate(${tx}, ${ty})`);
-                    }
+                    if (rot !== 0) text.setAttribute("transform", `rotate(${rot}) translate(${tx}, ${ty})`);
+                    else text.setAttribute("transform", `translate(${tx}, ${ty})`);
 
                     // Group text in a g to handle position relative to station g
                     const tg = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -546,7 +542,7 @@ function renderMap() {
             });
         });
         drawSpadinaTransfer();
-        // Kennedy is now fully handled by Line 2 station rendering
+        drawKennedy();
     } catch (e) { console.error("renderMap Error:", e); }
 }
 
@@ -696,15 +692,6 @@ function getPathFromStations(stations, lineId) {
                 d += `Q 640 700, 640 670 `;
                 continue;
             }
-            if (s.name === 'St George') {
-                const prev = stations[i - 1];
-                if (prev && prev.name === 'Spadina') {
-                    // Spadina (360, 480) -> St George (400, 480)
-                    // Stop short and curve down towards Museum (400, 550)
-                    d += `L 385 480 Q 400 480, 400 495 `;
-                    continue;
-                }
-            }
         }
         if (lineId === '6') {
             if (s.name === 'Westmore') {
@@ -712,7 +699,9 @@ function getPathFromStations(stations, lineId) {
                 // Humber is at -125, 200. Westmore is at -100, 170.
                 // Draw vertical line up to 185, then curve right
                 d += `L -125 185 Q -125 170, -110 170 `;
-                // Then continue to Westmore L line
+                // Then continue to Westmore L
+                d += `L ${s.x} ${s.y} `;
+                continue;
             }
         }
         d += `L ${s.x} ${s.y} `;
@@ -1035,11 +1024,8 @@ function mergeOverlappingAlerts(alerts) {
 function calculateFlow(line, startName, endName, direction) {
     if (direction === 'Both Ways') return 'both';
     const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return 'forward';
-    const idx1 = findStationIndex(lineObj, startName);
-    const idx2 = findStationIndex(lineObj, endName);
-
-    // Line 1 is North-South
-    if (line === '1') {
+    const idx1 = findStationIndex(lineObj, startName); const idx2 = findStationIndex(lineObj, endName);
+    if (direction && line === '1') {
         const unionIdx = 21; const midIdx = (idx1 + idx2) / 2;
         if (midIdx < unionIdx) {
             if (direction === 'Northbound') return 'reverse'; if (direction === 'Southbound') return 'forward';
@@ -1047,17 +1033,7 @@ function calculateFlow(line, startName, endName, direction) {
             if (direction === 'Northbound') return 'forward'; if (direction === 'Southbound') return 'reverse';
         }
     }
-
-    // Lines 2, 4, 5, 6 are East-West
-    // For horizontal lines: lower index = west, higher index = east
-    // Eastbound = going from west to east = forward
-    // Westbound = going from east to west = reverse
-    if (direction === 'Eastbound') return 'forward';
-    if (direction === 'Westbound') return 'reverse';
-
-    // Default fallback based on station order
-    if (idx1 < idx2) return 'forward';
-    return 'reverse';
+    if (idx1 < idx2) return 'forward'; return 'reverse';
 }
 
 function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay, isPreview = false) {
@@ -1114,11 +1090,24 @@ function renderLists() {
         ? activeAlerts
         : activeAlerts.filter(a => a.line === selectedAlertLine);
 
+    // Alerts List
+    // Line 5 Coming Soon Notice (always shown at top)
+    const line5Notice = `
+                <div class="alert-card" style="border-left: 4px solid var(--l5-color); opacity: 0.9;">
+                    <div class="alert-badge" style="background: var(--l5-color); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">5</div>
+                    <div class="alert-info">
+                        <div class="alert-title"><i class="fas fa-hard-hat" style="margin-right: 6px;"></i>Line 5 Eglinton - Coming Soon</div>
+                        <div class="alert-desc">This line is not yet in service. Real-time tracking will be available once the line opens.</div>
+                    </div>
+                </div>`;
+
     const dynamicAlertsHtml = filteredAlerts.length
         ? filteredAlerts.map(a => createAlertCard(a)).join('')
         : '<div style="text-align:center; padding:20px; color:gray">No alerts for this line</div>';
 
-    document.getElementById('alerts-list').innerHTML = dynamicAlertsHtml;
+    // Show Line 5 notice only when filter is 'all' or '5'
+    const showLine5Notice = selectedAlertLine === 'all' || selectedAlertLine === '5';
+    document.getElementById('alerts-list').innerHTML = (showLine5Notice ? line5Notice : '') + dynamicAlertsHtml;
 
     // Upcoming List
     const upcomingHtml = upcomingAlerts.length ? upcomingAlerts.map(a => createAlertCard(a, true)).join('') : '<div style="text-align:center; padding:20px; color:gray">No upcoming alerts</div>';
@@ -1141,18 +1130,12 @@ function createAlertCard(a, isUpcoming = false) {
     const color = (a.effect === 'SIGNIFICANT_DELAYS') ? 'bg-l1' : 'bg-alert';
     // Simplified logic for demo color mapping
     const badgeClass = a.line === '1' ? 'bg-l1' : a.line === '2' ? 'bg-l2' : 'bg-l4';
-    // Check if this is a manual alert (ADMIN MODE)
-    const isManualAlert = a.id && a.id.toString().startsWith('manual-');
 
     return `
-            <div class="alert-card" style="position: relative;">
+            <div class="alert-card">
                 <div class="alert-header">
                     <div class="line-badge ${badgeClass}">${a.line}</div>
-                    <div style="font-weight:600; font-size:15px; flex: 1;">${a.reason}</div>
-                    ${isManualAlert ? `
-                    <button onclick="deleteManualAlert('${a.id}')" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #ef4444; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">
-                        <i class="fas fa-trash"></i>
-                    </button>` : ''}
+                    <div style="font-weight:600; font-size:15px;">${a.reason}</div>
                 </div>
                 <div class="alert-body">
                     <div style="margin-bottom:6px; color:white; font-size:13px;">
@@ -1213,37 +1196,38 @@ function setupDragAndZoom() {
     console.log('Map Config:', MAP_CONFIG);
     console.log('Centering:', { viewWidth, viewHeight, currentScale, currentX, currentY });
 
-    // Initial positioning
     gsap.set(mapRoot, {
-        scale: currentScale,
         x: currentX,
         y: currentY,
-        transformOrigin: "0 0"
+        scale: currentScale,
+        transformOrigin: "0 0",
+        force3D: false
     });
 
-    updateMapBounds();
-
-    Draggable.create(mapRoot, {
+    mapDraggable = Draggable.create(mapRoot, {
         type: "x,y",
         inertia: true,
-        onDragStart: () => {
-            // Disable pinch zoom while dragging to avoid conflict
-            isPinching = false;
+        trigger: viewport,
+        edgeResistance: 0.75,
+        onDragStart: function () {
+            if (isPinching) {
+                this.endDrag();
+                return;
+            }
+            updateMapBounds();
         },
         onDrag: function () {
-            currentX = this.x;
-            currentY = this.y;
+            if (isPinching) {
+                this.endDrag();
+            }
         },
-        onThrowUpdate: function () {
-            currentX = this.x;
-            currentY = this.y;
-        },
-        bbox: getMapBounds(currentScale) // Use dynamic bounds
-    });
+        onDragEnd: function () {
+            currentX = gsap.getProperty(mapRoot, "x");
+            currentY = gsap.getProperty(mapRoot, "y");
+        }
+    })[0];
 
-    // Reference for enabling/disabling
-    mapDraggable = Draggable.get(mapRoot);
-
+    updateMapBounds();
     window.addEventListener('resize', () => {
         updateMapBounds();
     });
@@ -1322,14 +1306,14 @@ function setupPinchZoom() {
 function getMapBounds(scale) {
     const viewWidth = viewport.clientWidth;
     const viewHeight = viewport.clientHeight;
-    const mapWidth = 1600 * scale; // Synced with viewBox width in mobile.html
+    const mapWidth = 1300 * scale;
     const mapHeight = 800 * scale;
 
     // Custom Padding configuration as requested
     const PAD_TOP = 300;
-    const PAD_BOTTOM = 0;
+    const PAD_BOTTOM = 0; // Reduced to 0
     const PAD_LEFT = 200;
-    const PAD_RIGHT = 1200; // Maximum right panning space for Kennedy area
+    const PAD_RIGHT = -200; // Increased by 300 (from -500)
 
     let minX, maxX, minY, maxY;
 
@@ -1519,172 +1503,6 @@ function focusOnAlert(alert) {
             }
         });
     }
-}
-
-// === ADMIN MODE: Form Handling ===
-function setupAdminForm() {
-    const lineSelect = document.getElementById('line-select');
-    const startSelect = document.getElementById('start-select');
-    const endSelect = document.getElementById('end-select');
-    const directionSelect = document.getElementById('direction-select');
-    const form = document.getElementById('alert-form');
-
-    if (!lineSelect || !form) {
-        console.warn('Admin form elements not found');
-        return;
-    }
-
-    // Direction options based on line orientation
-    const northSouthOptions = `
-        <option value="Both Ways">Both Ways</option>
-        <option value="Northbound">Northbound</option>
-        <option value="Southbound">Southbound</option>
-    `;
-    const eastWestOptions = `
-        <option value="Both Ways">Both Ways</option>
-        <option value="Eastbound">Eastbound</option>
-        <option value="Westbound">Westbound</option>
-    `;
-
-    // Populate stations and update direction options when line changes
-    lineSelect.addEventListener('change', () => {
-        const lineId = lineSelect.value;
-        const lineData = rawMapData.find(l => l.line === lineId);
-
-        if (!lineData) {
-            startSelect.innerHTML = '<option value="">Select Line First</option>';
-            endSelect.innerHTML = '<option value="">Select Line First</option>';
-            startSelect.disabled = true;
-            endSelect.disabled = true;
-            return;
-        }
-
-        const options = lineData.stations.map(s =>
-            `<option value="${s.name}">${s.name}</option>`
-        ).join('');
-
-        startSelect.innerHTML = '<option value="">Select Station</option>' + options;
-        endSelect.innerHTML = '<option value="">Select Station</option>' + options;
-        startSelect.disabled = false;
-        endSelect.disabled = false;
-
-        // Update direction options based on line
-        // Line 1 is North-South, Lines 2/4/5/6 are East-West
-        if (lineId === '1') {
-            directionSelect.innerHTML = northSouthOptions;
-        } else {
-            directionSelect.innerHTML = eastWestOptions;
-        }
-    });
-
-    // Form submission
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-
-        const alert = {
-            id: 'manual-' + manualAlertCounter++,
-            line: lineSelect.value,
-            start: startSelect.value,
-            end: endSelect.value,
-            direction: directionSelect.value,
-            effect: document.getElementById('effect-select').value,
-            reason: document.getElementById('reason-input').value || 'Test Alert',
-            shuttle: document.getElementById('shuttle-check').checked,
-            singleStation: startSelect.value === endSelect.value,
-            status: 'active',
-            originalText: 'Manual test alert'
-        };
-
-        activeAlerts.push(alert);
-        renderAlertsOnMap();
-        renderLists();
-        updateBadges();
-
-        // Reset form
-        form.reset();
-        startSelect.disabled = true;
-        endSelect.disabled = true;
-
-        // Switch to map tab
-        switchTab('map');
-
-        // Zoom disabled for testing
-        // zoomToAlert(alert);
-    });
-}
-
-// Function to zoom to an alert on the map
-function zoomToAlert(alert) {
-    const lineObj = rawMapData.find(l => l.line === alert.line);
-    if (!lineObj) return;
-
-    const startStation = lineObj.stations.find(s => s.name === alert.start);
-    const endStation = alert.end ? lineObj.stations.find(s => s.name === alert.end) : null;
-
-    if (!startStation) return;
-
-    let centerX, centerY;
-    if (endStation && endStation.name !== startStation.name) {
-        centerX = (startStation.x + endStation.x) / 2;
-        centerY = (startStation.y + endStation.y) / 2;
-    } else {
-        centerX = startStation.x;
-        centerY = startStation.y;
-    }
-
-    // Get viewport dimensions
-    const viewportEl = document.getElementById('map-viewport');
-    if (!viewportEl) return;
-
-    const viewportRect = viewportEl.getBoundingClientRect();
-    const viewWidth = viewportRect.width;
-    const viewHeight = viewportRect.height;
-
-    // SVG viewBox is "-150 0 1300 800" for mobile
-    const viewBoxX = -150;
-    const viewBoxWidth = 1300;
-    const viewBoxHeight = 800;
-
-    // Scale to zoom in on the alert
-    const targetScale = 2;
-
-    // Calculate pixel position relative to SVG coordinate system
-    const scaleX = viewWidth / viewBoxWidth;
-    const scaleY = viewHeight / viewBoxHeight;
-    const scale = Math.min(scaleX, scaleY);
-
-    // Center of viewport in SVG coordinates
-    const svgCenterX = viewBoxX + viewBoxWidth / 2;
-    const svgCenterY = viewBoxHeight / 2;
-
-    // Offset to center the alert
-    const targetX = (svgCenterX - centerX) * scale * targetScale;
-    const targetY = (svgCenterY - centerY) * scale * targetScale;
-
-    const mapRoot = document.getElementById('map-root');
-    if (typeof gsap !== 'undefined' && mapRoot) {
-        gsap.to(mapRoot, {
-            x: targetX,
-            y: targetY,
-            scale: targetScale,
-            duration: 0.8,
-            ease: "power2.out",
-            onComplete: () => {
-                currentScale = targetScale;
-                currentX = targetX;
-                currentY = targetY;
-                if (typeof updateMapBounds === 'function') updateMapBounds(null);
-            }
-        });
-    }
-}
-
-// Function to delete a manual alert
-function deleteManualAlert(id) {
-    activeAlerts = activeAlerts.filter(a => a.id !== id);
-    renderAlertsOnMap();
-    renderLists();
-    updateBadges();
 }
 
 window.onload = init;

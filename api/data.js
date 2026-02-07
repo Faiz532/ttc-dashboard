@@ -82,6 +82,12 @@ const VALID_STATIONS = [
     // Line 4 stations (Purple - Sheppard line)
     "Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills",
 
+    // Line 5 (Eglinton Crosstown LRT) - Orange line, 25 stations
+    "Mount Dennis", "Keelesdale", "Caledonia", "Fairbank", "Oakwood", "Cedarvale",
+    "Forest Hill", "Chaplin", "Avenue", "Mount Pleasant", "Leaside", "Laird",
+    "Sunnybrook Park", "Don Valley", "Aga Khan Park & Museum", "Wynford", "Sloane",
+    "O'Connor", "Pharmacy", "Hakimi Lebovic", "Golden Mile", "Birchmount", "Ionview",
+
     // Line 6 stations (Finch West LRT) - Grey line
     // IMPORTANT: "Humber College" is different from "College" on Line 1!
     "Humber College", "Westmore", "Martin Grove", "Albion", "Stevenson",
@@ -122,6 +128,7 @@ const STATIONS_BY_LINE = {
     "1": ["Vaughan Metropolitan Centre", "Highway 407", "Pioneer Village", "York University", "Finch West", "Downsview Park", "Sheppard West", "Wilson", "Yorkdale", "Lawrence West", "Glencairn", "Cedarvale", "St Clair West", "Dupont", "Spadina", "St George", "Museum", "Queen's Park", "St Patrick", "Osgoode", "St Andrew", "Union", "King", "Queen", "Dundas", "College", "Wellesley", "Bloor-Yonge", "Rosedale", "Summerhill", "St Clair", "Davisville", "Eglinton", "Lawrence", "York Mills", "Sheppard-Yonge", "North York Centre", "Finch"],
     "2": ["Kipling", "Islington", "Royal York", "Old Mill", "Jane", "Runnymede", "High Park", "Keele", "Dundas West", "Lansdowne", "Dufferin", "Ossington", "Christie", "Bathurst", "Spadina", "St George", "Bay", "Bloor-Yonge", "Sherbourne", "Castle Frank", "Broadview", "Chester", "Pape", "Donlands", "Greenwood", "Coxwell", "Woodbine", "Main Street", "Victoria Park", "Warden", "Kennedy"],
     "4": ["Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills"],
+    "5": ["Mount Dennis", "Keelesdale", "Caledonia", "Fairbank", "Oakwood", "Cedarvale", "Forest Hill", "Chaplin", "Avenue", "Eglinton", "Mount Pleasant", "Leaside", "Laird", "Sunnybrook Park", "Don Valley", "Aga Khan Park & Museum", "Wynford", "Sloane", "O'Connor", "Pharmacy", "Hakimi Lebovic", "Golden Mile", "Birchmount", "Ionview", "Kennedy"],
     "6": ["Humber College", "Westmore", "Martin Grove", "Albion", "Stevenson", "Mount Olive", "Rowntree Mills", "Pearldale", "Duncanwoods", "Milvan Rumike", "Emery", "Signet Arrow", "Norfinch Oakdale", "Jane and Finch", "Driftwood", "Tobermory", "Sentinel", "Finch West"]
 };
 
@@ -220,12 +227,16 @@ async function parseAlertWithAI(text) {
         Line 1: Vaughan Metropolitan Centre, Highway 407, Pioneer Village, York University, Finch West, Downsview Park, Sheppard West, Wilson, Yorkdale, Lawrence West, Glencairn, Cedarvale, St Clair West, Dupont, Spadina, St George, Museum, Queen's Park, St Patrick, Osgoode, St Andrew, Union, King, Queen, Dundas, College, Wellesley, Bloor-Yonge, Rosedale, Summerhill, St Clair, Davisville, Eglinton, Lawrence, York Mills, Sheppard-Yonge, North York Centre, Finch
         Line 2: Kipling, Islington, Royal York, Old Mill, Jane, Runnymede, High Park, Keele, Dundas West, Lansdowne, Dufferin, Ossington, Christie, Bathurst, Spadina, St George, Bay, Bloor-Yonge, Sherbourne, Castle Frank, Broadview, Chester, Pape, Donlands, Greenwood, Coxwell, Woodbine, Main Street, Victoria Park, Warden, Kennedy
         Line 4: Sheppard-Yonge, Bayview, Bessarion, Leslie, Don Mills
+        Line 5: Mount Dennis, Keelesdale, Caledonia, Fairbank, Oakwood, Cedarvale, Forest Hill, Chaplin, Avenue, Eglinton, Mount Pleasant, Leaside, Laird, Don Valley, Wynford, Sloane, O'Connor, Aga Khan Park & Museum, Sunnybrook Park, Pharmacy, Birchmount, Ionview, Victoria Park, Kennedy
+        Line 6: Humber College, Westmore, Martin Grove, Albion, Stevenson, Mount Olive, Rowntree Mills, Pearldale, Duncanwoods, Milvan Rumike, Emery, Signet Arrow, Norfinch Oakdale, Jane and Finch, Driftwood, Tobermory, Sentinel, Finch West
 
         ## CRITICAL INSTRUCTIONS
         1. Extract the EXACT start and end station names mentioned in the alert text
         2. Do NOT infer or expand the station range - use ONLY the stations explicitly mentioned
         3. If the text says "from X to Y stations", return start: X, end: Y (exactly those stations)
         4. Match station names to the valid list above (e.g., "Eglinton" matches "Eglinton")
+        5. **IMPORTANT**: If the alert mentions "Line 5", "Eglinton Crosstown", or "LRT 5", treat it as a valid Line 5 alert.
+        6. Note: Line 5 is currently in testing/simulation mode, so alerts may be simulations. Treat them as REAL alerts for the purpose of this JSON.
         
         ## REQUIRED OUTPUT
         Return JSON with these keys:

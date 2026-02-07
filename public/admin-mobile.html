@@ -27,7 +27,7 @@
     <!-- MAP CONTAINER (Background) -->
     <div id="map-viewport">
         <!-- SVG Map Container - viewBox extended to 1020 to include Kennedy Line 5 terminal -->
-        <svg id="map-root" viewBox="-150 0 1300 800" preserveAspectRatio="xMidYMid meet"
+        <svg id="map-root" viewBox="-150 0 1600 800" preserveAspectRatio="xMidYMid meet"
             xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <!-- Line 1 Glow -->
@@ -104,15 +104,6 @@
             <g id="tracks-layer"></g>
             <g id="alerts-layer"></g>
             <g id="stations-layer"></g>
-            <!-- Line 5 Opening Soon Label -->
-            <g id="line5-label" transform="translate(830, 420)">
-                <rect x="-75" y="-18" width="150" height="36" rx="6" fill="#0F1014" stroke="var(--l5-color)"
-                    stroke-width="2" />
-                <circle cx="-55" cy="0" r="12" fill="var(--l5-color)" />
-                <text x="-55" y="4" fill="white" font-size="11" font-weight="700" text-anchor="middle">5</text>
-                <text x="10" y="5" fill="white" font-size="11" font-weight="600" text-anchor="middle">Opening
-                    Soon</text>
-            </g>
         </svg>
     </div>
 
@@ -214,16 +205,6 @@
                     </div>
                 </div>
                 <div class="sheet-content" id="alerts-list">
-                    <!-- Line 5 Coming Soon Notice -->
-                    <div class="alert-card" style="border-left: 4px solid var(--l5-color); opacity: 0.9;">
-                        <div class="alert-badge" style="background: var(--l5-color);">5</div>
-                        <div class="alert-info">
-                            <div class="alert-title"><i class="fas fa-hard-hat" style="margin-right: 6px;"></i>Line 5
-                                Eglinton - Coming Soon</div>
-                            <div class="alert-desc">This line is not yet in service. Real-time tracking will be
-                                available once the line opens.</div>
-                        </div>
-                    </div>
                     <!-- Dynamic Alert Cards Here -->
                 </div>
             </div>
@@ -263,6 +244,7 @@
                                     <option value="1">Line 1 - Yonge-University</option>
                                     <option value="2">Line 2 - Bloor-Danforth</option>
                                     <option value="4">Line 4 - Sheppard</option>
+                                    <option value="5">Line 5 - Eglinton</option>
                                     <option value="6">Line 6 - Finch West</option>
                                 </select>
                             </div>

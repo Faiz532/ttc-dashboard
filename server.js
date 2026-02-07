@@ -111,6 +111,12 @@ const VALID_STATIONS = [
     // Line 4 (Sheppard) - Purple line, short east-west route
     "Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills",
 
+    // Line 5 (Eglinton Crosstown LRT) - Orange line, 25 stations
+    "Mount Dennis", "Keelesdale", "Caledonia", "Fairbank", "Oakwood", "Cedarvale",
+    "Forest Hill", "Chaplin", "Avenue", "Mount Pleasant", "Leaside", "Laird",
+    "Sunnybrook Park", "Don Valley", "Aga Khan Park & Museum", "Wynford", "Sloane",
+    "O'Connor", "Pharmacy", "Hakimi Lebovic", "Golden Mile", "Birchmount", "Ionview",
+
     // Line 6 (Finch West LRT) - Grey line
     // IMPORTANT: "Humber College" is different from "College" on Line 1!
     "Humber College", "Westmore", "Martin Grove", "Albion", "Stevenson",
@@ -173,6 +179,15 @@ const LINE_4_STATIONS = [
     "Sheppard-Yonge", "Bayview", "Bessarion", "Leslie", "Don Mills"
 ];
 
+// Line 5: Eglinton Crosstown LRT from Mount Dennis to Kennedy (25 stations)
+const LINE_5_STATIONS = [
+    "Mount Dennis", "Keelesdale", "Caledonia", "Fairbank", "Oakwood",
+    "Cedarvale", "Forest Hill", "Chaplin", "Avenue", "Eglinton",
+    "Mount Pleasant", "Leaside", "Laird", "Sunnybrook Park", "Don Valley",
+    "Aga Khan Park & Museum", "Wynford", "Sloane", "O'Connor", "Pharmacy",
+    "Hakimi Lebovic", "Golden Mile", "Birchmount", "Ionview", "Kennedy"
+];
+
 // Line 6: Finch West LRT from Humber College to Finch West station
 const LINE_6_STATIONS = [
     "Humber College", "Westmore", "Martin Grove", "Albion", "Stevenson",
@@ -186,6 +201,7 @@ const STATIONS_BY_LINE = {
     "1": LINE_1_STATIONS,
     "2": LINE_2_STATIONS,
     "4": LINE_4_STATIONS,
+    "5": LINE_5_STATIONS,
     "6": LINE_6_STATIONS
 };
 
@@ -370,15 +386,18 @@ async function parseAlertWithAI(text) {
         - Line 1 (Yellow): Vaughan MC to Finch via Union (U-shaped subway)
         - Line 2 (Green): Kipling to Kennedy (horizontal subway)
         - Line 4 (Purple): Sheppard-Yonge to Don Mills (short horizontal subway)
-        - Line 5 (Orange): Eglinton - NOT YET IN SERVICE (coming soon)
+        - Line 5 (Orange): Eglinton Crosstown LRT from Mount Dennis to Kennedy
         - Line 6 (Grey): Finch West LRT from Humber College to Finch West station
         
         ## VALID STATION NAMES (use exactly these names - be VERY careful with similar names!)
         IMPORTANT: "Humber College" (Line 6) is DIFFERENT from "College" (Line 1). Use the EXACT name.
+        IMPORTANT: "Cedarvale" on Line 1 is DIFFERENT from "Cedarvale" on Line 5. Check line context.
+        IMPORTANT: "Victoria Park" on Line 2 is DIFFERENT from "Victoria Park" on Line 5. Check line context.
         
         Line 1: Vaughan Metropolitan Centre, Highway 407, Pioneer Village, York University, Finch West, Downsview Park, Sheppard West, Wilson, Yorkdale, Lawrence West, Glencairn, Cedarvale, St Clair West, Dupont, Spadina, St George, Museum, Queen's Park, St Patrick, Osgoode, St Andrew, Union, King, Queen, Dundas, College, Wellesley, Bloor-Yonge, Rosedale, Summerhill, St Clair, Davisville, Eglinton, Lawrence, York Mills, Sheppard-Yonge, North York Centre, Finch
         Line 2: Kipling, Islington, Royal York, Old Mill, Jane, Runnymede, High Park, Keele, Dundas West, Lansdowne, Dufferin, Ossington, Christie, Bathurst, Spadina, St George, Bay, Bloor-Yonge, Sherbourne, Castle Frank, Broadview, Chester, Pape, Donlands, Greenwood, Coxwell, Woodbine, Main Street, Victoria Park, Warden, Kennedy
         Line 4: Sheppard-Yonge, Bayview, Bessarion, Leslie, Don Mills
+        Line 5: Mount Dennis, Keelesdale, Caledonia, Fairbank, Oakwood, Cedarvale, Forest Hill, Chaplin, Avenue, Eglinton, Mount Pleasant, Leaside, Laird, Don Valley, Wynford, Sloane, O'Connor, Aga Khan Park & Museum, Sunnybrook Park, Pharmacy, Birchmount, Ionview, Victoria Park, Kennedy
         Line 6 (Finch West LRT): Humber College, Westmore, Martin Grove, Albion, Stevenson, Mount Olive, Rowntree Mills, Pearldale, Duncanwoods, Milvan Rumike, Emery, Signet Arrow, Norfinch Oakdale, Jane and Finch, Driftwood, Tobermory, Sentinel, Finch West
         
         ## TASK

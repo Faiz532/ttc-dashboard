@@ -138,8 +138,32 @@ const rawMapData = [
     {
         line: "5",
         stations: [
-            { name: "Mount Dennis", x: 220, y: 380, interchange: true, accessible: true },
-            { name: "Kennedy", x: 970, y: 380, interchange: true, accessible: true }
+            // Line 5 Eglinton - 25 stations from Mount Dennis to Kennedy (extended left, aligned interchanges)
+            { name: "Mount Dennis", x: 150, y: 380, accessible: true },
+            { name: "Keelesdale", x: 192, y: 380, accessible: true },
+            { name: "Caledonia", x: 234, y: 380, accessible: true },
+            { name: "Fairbank", x: 276, y: 380, accessible: true },
+            { name: "Oakwood", x: 318, y: 380, accessible: true },
+            { name: "Cedarvale", x: 360, y: 380, interchange: true, accessible: true }, // Matches Line 1
+            { name: "Forest Hill", x: 430, y: 380, accessible: true },
+            { name: "Chaplin", x: 500, y: 380, accessible: true },
+            { name: "Avenue", x: 570, y: 380, accessible: true },
+            { name: "Eglinton", x: 640, y: 380, interchange: true, accessible: true }, // Matches Line 1
+            { name: "Mount Pleasant", displayName: "Mt. Pleasant", x: 674, y: 380, accessible: true }, // Restore orig +70 relative to prev
+            { name: "Leaside", x: 708, y: 380, accessible: true },
+            { name: "Laird", x: 742, y: 380, accessible: true },
+            { name: "Sunnybrook Park", x: 776, y: 380, accessible: true },
+            { name: "Don Valley", x: 810, y: 380, accessible: true },
+            { name: "Aga Khan Park & Museum", x: 844, y: 380, accessible: true },
+            { name: "Wynford", x: 878, y: 380, accessible: true },
+            { name: "Sloane", x: 912, y: 380, accessible: true },
+            { name: "O'Connor", x: 946, y: 380, accessible: true },
+            { name: "Pharmacy", x: 980, y: 380, accessible: true },
+            { name: "Hakimi Lebovic", x: 1014, y: 380, accessible: true },
+            { name: "Golden Mile", x: 1048, y: 380, accessible: true },
+            { name: "Birchmount", x: 1082, y: 380, accessible: true },
+            { name: "Ionview", x: 1116, y: 380, accessible: true },
+            { name: "Kennedy", x: 1150, y: 380, interchange: true, accessible: true }
         ]
     },
 
@@ -169,22 +193,23 @@ const rawMapData = [
     {
         line: "1",
         stations: [
+            // Line 1 - Official TTC data
             { name: "Vaughan Metropolitan Centre", x: 240, y: 50, accessible: true },
             { name: "Highway 407", x: 240, y: 80, accessible: true },
             { name: "Pioneer Village", x: 260, y: 110, accessible: true },
             { name: "York University", x: 280, y: 140, accessible: true },
-            { name: "Finch West", x: 300, y: 170, accessible: true },
+            { name: "Finch West", x: 300, y: 170, interchange: true, accessible: true },
             { name: "Downsview Park", x: 320, y: 200, accessible: true },
             { name: "Sheppard West", x: 340, y: 230, accessible: true },
             { name: "Wilson", x: 360, y: 260, accessible: true },
-            { name: "Yorkdale", x: 360, y: 290, accessible: true },
-            { name: "Lawrence West", x: 360, y: 320, accessible: true },
-            { name: "Glencairn", x: 360, y: 350, accessible: true },
+            { name: "Yorkdale", x: 360, y: 283, accessible: true },
+            { name: "Lawrence West", x: 360, y: 313, accessible: true },
+            { name: "Glencairn", x: 360, y: 343, accessible: true },
             { name: "Cedarvale", x: 360, y: 380, interchange: true, accessible: true },
             { name: "St Clair West", x: 360, y: 410, accessible: true },
-            { name: "Dupont", x: 360, y: 440, accessible: true },
-            { name: "Spadina", x: 360, y: 480, interchange: true, accessible: false }, // Offset -20px
-            { name: "St George", x: 400, y: 480, interchange: true, accessible: true }, // Offset -20px
+            { name: "Dupont", x: 360, y: 440, accessible: false },
+            { name: "Spadina", x: 360, y: 480, interchange: true, accessible: true },
+            { name: "St George", x: 400, y: 480, interchange: true, accessible: true },
             { name: "Museum", x: 400, y: 550, accessible: false },
             { name: "Queen's Park", x: 400, y: 580, accessible: true },
             { name: "St Patrick", x: 400, y: 610, accessible: true },
@@ -193,17 +218,17 @@ const rawMapData = [
             { name: "Union", x: 520, y: 700, accessible: true },
             { name: "King", x: 640, y: 670, accessible: false },
             { name: "Queen", x: 640, y: 640, accessible: true },
-            { name: "Dundas", displayName: "TMU", x: 640, y: 610, accessible: true },
+            { name: "Dundas", displayName: "TMU", x: 640, y: 610, accessible: false },
             { name: "College", x: 640, y: 580, accessible: false },
             { name: "Wellesley", x: 640, y: 550, accessible: true },
             { name: "Bloor-Yonge", x: 640, y: 500, interchange: true, accessible: true },
-            { name: "Rosedale", x: 640, y: 475, accessible: true },
-            { name: "Summerhill", x: 640, y: 455, accessible: true },
+            { name: "Rosedale", x: 640, y: 475, accessible: false },
+            { name: "Summerhill", x: 640, y: 455, accessible: false },
             { name: "St Clair", x: 640, y: 430, accessible: true },
             { name: "Davisville", x: 640, y: 405, accessible: true },
             { name: "Eglinton", x: 640, y: 380, interchange: true, accessible: true },
-            { name: "Lawrence", x: 640, y: 340, accessible: true },
-            { name: "York Mills", x: 640, y: 280, accessible: true },
+            { name: "Lawrence", x: 640, y: 315, accessible: false },
+            { name: "York Mills", x: 640, y: 255, accessible: true },
             { name: "Sheppard-Yonge", x: 640, y: 200, interchange: true, accessible: true },
             { name: "North York Centre", x: 640, y: 150, accessible: true },
             { name: "Finch", x: 640, y: 100, accessible: true }
@@ -218,36 +243,37 @@ const rawMapData = [
             { name: "Old Mill", x: 99, y: 500, accessible: false },
             { name: "Jane", x: 122, y: 500, accessible: true },
             { name: "Runnymede", x: 145, y: 500, accessible: true },
-            { name: "High Park", x: 168, y: 500, accessible: true },
+            { name: "High Park", x: 168, y: 500, accessible: false },
             { name: "Keele", x: 191, y: 500, accessible: true },
             { name: "Dundas West", x: 214, y: 500, accessible: true },
-            { name: "Lansdowne", x: 237, y: 500, accessible: true },
+            { name: "Lansdowne", x: 237, y: 500, accessible: false },
             { name: "Dufferin", x: 260, y: 500, accessible: true },
             { name: "Ossington", x: 283, y: 500, accessible: true },
-            { name: "Christie", x: 306, y: 500, accessible: true },
+            { name: "Christie", x: 306, y: 500, accessible: false },
             { name: "Bathurst", x: 329, y: 500, accessible: true },
             { name: "Spadina", x: 360, y: 500, interchange: true, accessible: true },
             { name: "St George", x: 400, y: 500, interchange: true, accessible: true },
-            { name: "Bay", x: 520, y: 500, accessible: true },
+            { name: "Bay", x: 520, y: 500, accessible: false },
             { name: "Bloor-Yonge", x: 640, y: 500, interchange: true, accessible: true },
-            { name: "Sherbourne", x: 670, y: 500, accessible: true },
-            { name: "Castle Frank", x: 695, y: 500, accessible: true },
-            { name: "Broadview", x: 720, y: 500, accessible: true },
-            { name: "Chester", x: 745, y: 500, accessible: true },
-            { name: "Pape", x: 770, y: 500, accessible: true },
-            { name: "Donlands", x: 795, y: 500, accessible: true },
-            { name: "Greenwood", x: 820, y: 500, accessible: false },
-            { name: "Coxwell", x: 845, y: 500, accessible: true },
-            { name: "Woodbine", x: 870, y: 500, accessible: true },
-            { name: "Main Street", x: 895, y: 500, accessible: true }, // Pivot point
-            { name: "Victoria Park", x: 920, y: 460, accessible: true }, // Diagonal start
-            { name: "Warden", x: 945, y: 420, accessible: true },
-            { name: "Kennedy", x: 970, y: 380, accessible: true }
+            { name: "Sherbourne", x: 680, y: 500, accessible: true },
+            { name: "Castle Frank", x: 720, y: 500, accessible: false },
+            { name: "Broadview", x: 760, y: 500, accessible: true },
+            { name: "Chester", x: 800, y: 500, accessible: true },
+            { name: "Pape", x: 840, y: 500, accessible: true },
+            { name: "Donlands", x: 880, y: 500, accessible: false },
+            { name: "Greenwood", x: 920, y: 500, accessible: false },
+            { name: "Coxwell", x: 960, y: 500, accessible: true },
+            { name: "Woodbine", x: 1000, y: 500, accessible: true },
+            { name: "Main Street", x: 1040, y: 500, accessible: true },
+            { name: "Victoria Park", x: 1080, y: 460, accessible: true },
+            { name: "Warden", x: 1115, y: 420, accessible: false },
+            { name: "Kennedy", x: 1150, y: 380, interchange: true, accessible: true }
         ]
     },
     {
         line: "4",
         stations: [
+            // Line 4 - Official TTC data
             { name: "Sheppard-Yonge", x: 640, y: 200, interchange: true, accessible: true },
             { name: "Bayview", x: 690, y: 200, accessible: true },
             { name: "Bessarion", x: 740, y: 200, accessible: true },
@@ -402,21 +428,25 @@ function renderMap() {
         const stations = document.getElementById('stations-layer');
         console.log("renderMap called. Data length:", rawMapData ? rawMapData.length : "UNDEFINED");
 
+        const OPENING_DATE = new Date('2026-02-08T05:00:00'); // Sunday Feb 8 2026 5AM
+        const isLine5Open = Date.now() >= OPENING_DATE;
+
         // Render Tracks
         rawMapData.forEach(lineData => {
-            console.log("Rendering line:", lineData.line);
             const d = getPathFromStations(lineData.stations, lineData.line);
-            console.log("Path d:", d);
 
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             path.setAttribute("d", d);
             path.setAttribute("class", `track line-${lineData.line}`);
+
+
+            // 1. Draw the main track first (Background/Width)
             tracks.appendChild(path);
 
-            // Line 5 Hollow Effect (Inner Line)
-            if (lineData.line === '5') {
+            // 2. Draw the hollow inner line on top if Line 5 is closed
+            if (lineData.line === '5' && !isLine5Open) {
                 const innerPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                innerPath.setAttribute("d", getPathFromStations(lineData.stations, lineData.line));
+                innerPath.setAttribute("d", d);
                 innerPath.setAttribute("class", "line-5-inner");
                 tracks.appendChild(innerPath);
             }
@@ -429,10 +459,12 @@ function renderMap() {
                 if (s.name === 'Spadina') return;
                 // Skip St George on Line 1
                 if (s.name === 'St George' && l.line === '1') return;
-                // Skip Kennedy on Line 5
+                // Skip Cedarvale on Line 5 (use Line 1)
+                // Cedarvale on Line 5 now rendered by Line 5 to handle label below track
+                // Skip Eglinton on Line 5 (use Line 1)
+                if (s.name === 'Eglinton' && l.line === '5') return;
+                // Skip Kennedy on Line 5 (use Line 2)
                 if (s.name === 'Kennedy' && l.line === '5') return;
-                // Skip Kennedy on Line 2
-                if (s.name === 'Kennedy' && l.line === '2') return;
                 // Skip Finch West on Line 1 (use Line 6 interchange marker)
                 if (s.name === 'Finch West' && l.line === '1') return;
 
@@ -463,7 +495,8 @@ function renderMap() {
                 }
 
                 // Detached Terminal Badges (Line Number to the side)
-                if (i === 0 || i === l.stations.length - 1) {
+                // Skip Kennedy badge for Line 5 (Line 2 handles both badges)
+                if ((i === 0 || i === l.stations.length - 1) && !(s.name === 'Kennedy' && l.line === '5')) {
                     const badgeG = document.createElementNS("http://www.w3.org/2000/svg", "g");
                     let bdx = 0, bdy = 0;
 
@@ -478,7 +511,7 @@ function renderMap() {
                     } else if (s.name === "Kipling") {
                         bdx = -105; // Special horizontal layout
                     } else if (s.name === "Kennedy") {
-                        bdx = 100; bdy = -10; // Detached from track, to the right
+                        bdx = 120; bdy = 0; // 30px more left
                     } else if (s.name === "Don Mills") {
                         bdx = 120; // Far right, detached from track
                     } else if (s.name === "Finch West" && l.line !== '6') {
@@ -510,6 +543,30 @@ function renderMap() {
                     badgeG.appendChild(badgeText);
 
                     g.appendChild(badgeG);
+
+                    // Kennedy special case: Add Line 5 badge beside Line 2 badge
+                    if (s.name === "Kennedy" && l.line === '2') {
+                        const badge5G = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                        badge5G.setAttribute("transform", `translate(${bdx + 28}, ${bdy})`); // 28px to the right of Line 2 badge
+
+                        const badge5Circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                        badge5Circle.setAttribute("r", 12);
+                        badge5Circle.setAttribute("fill", getLineColor('5'));
+                        badge5Circle.setAttribute("stroke", "white");
+                        badge5Circle.setAttribute("stroke-width", 2);
+                        badge5G.appendChild(badge5Circle);
+
+                        const badge5Text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        badge5Text.textContent = "5";
+                        badge5Text.setAttribute("class", "terminal-text");
+                        badge5Text.setAttribute("fill", "white");
+                        badge5Text.setAttribute("dy", 1);
+                        badge5Text.setAttribute("text-anchor", "middle");
+                        badge5Text.setAttribute("dominant-baseline", "middle");
+                        badge5G.appendChild(badge5Text);
+
+                        g.appendChild(badge5G);
+                    }
                 }
 
 
@@ -520,14 +577,15 @@ function renderMap() {
                 // Skip Line 6 Finch West (use Line 1)
                 const sName = s.name.trim(); // Sanitize name
                 const isDup = (l.line === '4' && sName === "Sheppard-Yonge") ||
-                    (l.line === '1' && ["Spadina", "St George", "Bloor-Yonge"].includes(sName));
+                    (l.line === '1' && ["Spadina", "St George", "Bloor-Yonge", "Cedarvale"].includes(sName)) || // Cedarvale handled by Line 5 (to be below track)
+                    (l.line === '5' && ["Kennedy", "Eglinton"].includes(sName)); // Eglinton on Line 1, Kennedy on Line 2
 
                 if (!isDup) {
                     // Use displayName if available, otherwise use name
                     const labelName = s.displayName || sName;
                     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
                     text.textContent = labelName;
-                    if (i === 0 || i === l.stations.length - 1 || sName === "Finch West" || sName === "St George" || sName === "Spadina") {
+                    if (i === 0 || i === l.stations.length - 1 || sName === "Finch West" || sName === "St George" || sName === "Spadina" || sName === "Cedarvale" || sName === "Eglinton") {
                         text.setAttribute("class", "station-label terminal-label");
                     } else {
                         text.setAttribute("class", "station-label");
@@ -538,6 +596,9 @@ function renderMap() {
                     // Custom adjustments for specific lines and layout areas
                     if (l.line === '1') {
                         if (s.name === "Union") { tx = 0; ty = 28; anchor = "middle"; }
+                        else if (s.name === "St Clair West" || s.name === "Dupont") { tx = -15; ty = 5; anchor = "end"; } // Left of track
+                        else if (s.name === "Cedarvale") { tx = 15; ty = -15; anchor = "start"; } // Above Line 5, right of Line 1
+                        else if (s.name === "Eglinton") { tx = -15; ty = 25; anchor = "end"; } // Below Line 5, left of Line 1
                         else if (s.name === "St Andrew" || s.name === "Wellesley" || s.name === "Sheppard-Yonge") { tx = -15; ty = 5; anchor = "end"; }
                         else if (s.name === "Downsview Park" || s.name === "Sheppard West" || s.name === "Finch West" || s.name === "Vaughan Metropolitan Centre" || s.name === "Highway 407" || s.name === "Pioneer Village" || s.name === "York University") { tx = 15; ty = 5; anchor = "start"; }  // Right of track
                         else if (s.x < 360) { tx = -15; ty = 5; anchor = "end"; } // West side of U
@@ -546,6 +607,9 @@ function renderMap() {
                         // Rotate Line 2 labels to avoid track collision
                         if (s.name === 'Kipling') {
                             rot = 0; tx = -25; ty = 5; anchor = "end";
+                        } else if (s.name === 'Kennedy') {
+                            rot = 0; tx = 20; ty = 5; anchor = "start"; // 30px more left
+                            text.setAttribute("class", "station-label terminal-label"); // Bold
                         } else if (sName === 'St George') {
                             rot = 0; tx = 15; ty = -17; anchor = "start"; // 3px Down adjustment
                         } else if (sName === 'Spadina') {
@@ -563,11 +627,17 @@ function renderMap() {
                             tx = 0; ty = -15; anchor = "middle";
                         }
                     } else if (l.line === '5') {
-                        // Line 5 stations - labels above the track
+                        // Line 5 stations - labels start at station and go upward
                         if (s.name === 'Mount Dennis') {
-                            rot = 0; tx = -20; ty = 5; anchor = "end"; // 15px more right
+                            rot = 0; tx = -20; ty = 5; anchor = "end"; // Terminal - horizontal
+                        } else if (s.name === 'Kennedy') {
+                            rot = 0; tx = 20; ty = 5; anchor = "start"; // Terminal - horizontal
+                        } else if (s.name === 'Oakwood') {
+                            rot = -45; tx = 5; ty = -10; anchor = "start"; // Above Line 5 track
+                        } else if (s.name === 'Cedarvale') {
+                            rot = 0; tx = 15; ty = 25; anchor = "start"; // Horizontal, Below Line 5, Right of Line 1
                         } else {
-                            rot = -45; tx = 0; ty = -15; anchor = "end";
+                            rot = -45; tx = 5; ty = -10; anchor = "start"; // First letter near station, going upward
                         }
                     } else if (l.line === '6') {
                         // Line 6 stations - label positioning
@@ -594,8 +664,14 @@ function renderMap() {
                     }
 
                     text.setAttribute("text-anchor", anchor);
-                    if (rot !== 0) text.setAttribute("transform", `rotate(${rot}) translate(${tx}, ${ty})`);
-                    else text.setAttribute("transform", `translate(${tx}, ${ty})`);
+                    // For Line 5, translate first then rotate to move labels above track
+                    if (l.line === '5' && rot !== 0) {
+                        text.setAttribute("transform", `translate(${tx}, ${ty}) rotate(${rot})`);
+                    } else if (rot !== 0) {
+                        text.setAttribute("transform", `rotate(${rot}) translate(${tx}, ${ty})`);
+                    } else {
+                        text.setAttribute("transform", `translate(${tx}, ${ty})`);
+                    }
 
                     // Group text in a g to handle position relative to station g
                     const tg = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -607,7 +683,7 @@ function renderMap() {
             });
         });
         drawSpadinaTransfer();
-        drawKennedy();
+        // Kennedy is now fully handled by Line 2 station rendering
     } catch (e) { console.error("renderMap Error:", e); }
 }
 
@@ -1170,24 +1246,11 @@ function renderLists() {
     // Merge overlapping/directional duplicates for cleaner list
     const mergedFilteredAlerts = mergeOverlappingAlerts(filteredAlerts);
 
-    // Alerts List
-    // Line 5 Coming Soon Notice (always shown at top)
-    const line5Notice = `
-                <div class="alert-card" style="border-left: 4px solid var(--l5-color); opacity: 0.9;">
-                    <div class="alert-badge" style="background: var(--l5-color); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">5</div>
-                    <div class="alert-info">
-                        <div class="alert-title"><i class="fas fa-hard-hat" style="margin-right: 6px;"></i>Line 5 Eglinton - Coming Soon</div>
-                        <div class="alert-desc">This line is not yet in service. Real-time tracking will be available once the line opens.</div>
-                    </div>
-                </div>`;
-
     const dynamicAlertsHtml = mergedFilteredAlerts.length
         ? mergedFilteredAlerts.map(a => createAlertCard(a)).join('')
         : '<div style="text-align:center; padding:20px; color:gray">No alerts for this line</div>';
 
-    // Show Line 5 notice only when filter is 'all' or '5'
-    const showLine5Notice = selectedAlertLine === 'all' || selectedAlertLine === '5';
-    document.getElementById('alerts-list').innerHTML = (showLine5Notice ? line5Notice : '') + dynamicAlertsHtml;
+    document.getElementById('alerts-list').innerHTML = dynamicAlertsHtml;
 
     // Upcoming List
     const upcomingHtml = upcomingAlerts.length ? upcomingAlerts.map(a => createAlertCard(a, true)).join('') : '<div style="text-align:center; padding:20px; color:gray">No upcoming alerts</div>';
@@ -1386,14 +1449,14 @@ function setupPinchZoom() {
 function getMapBounds(scale) {
     const viewWidth = viewport.clientWidth;
     const viewHeight = viewport.clientHeight;
-    const mapWidth = 1300 * scale;
+    const mapWidth = 1600 * scale; // Synced with viewBox width in mobile.html
     const mapHeight = 800 * scale;
 
     // Custom Padding configuration as requested
     const PAD_TOP = 300;
-    const PAD_BOTTOM = 0; // Reduced to 0
+    const PAD_BOTTOM = 0;
     const PAD_LEFT = 200;
-    const PAD_RIGHT = -200; // Increased by 300 (from -500)
+    const PAD_RIGHT = 1200; // Maximum right panning space for Kennedy area
 
     let minX, maxX, minY, maxY;
 

@@ -200,28 +200,20 @@ canvas.vanta-canvas {
 
 .line-5 {
     stroke: var(--l5-color);
-    stroke-dasharray: 30 15;
-    /* 30px dash, 15px gap */
-    stroke-linecap: butt !important;
-    /* Clean rectangular dash ends */
-    animation: line5Snake 1.5s linear infinite;
-    filter: none;
-}
-
-@keyframes line5Snake {
-    0% {
-        stroke-dashoffset: 0;
-    }
-
-    100% {
-        stroke-dashoffset: 45;
-        /* Total of dash + gap */
-    }
+    /* Line 5 is now open - solid stroke like other lines */
 }
 
 .line-6 {
     stroke: var(--l6-color);
     stroke: var(--l6-color);
+}
+
+/* Line 5 Hollow Effect (Inner Line) */
+.line-5-inner {
+    stroke: var(--bg-color);
+    stroke-width: 10px;
+    fill: none;
+    pointer-events: none;
 }
 
 /* Line Filter Buttons */

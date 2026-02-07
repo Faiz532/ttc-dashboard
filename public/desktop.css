@@ -838,23 +838,11 @@ svg {
 
 .track.line-5 {
     stroke: var(--l5-color);
-    stroke-dasharray: 30 15;
-    stroke-linecap: butt !important;
-    animation: line5Snake 1.5s linear infinite;
+    /* Line 5 is now open - solid stroke like other lines */
 }
 
 .track.line-6 {
     stroke: var(--l6-color);
-}
-
-@keyframes line5Snake {
-    0% {
-        stroke-dashoffset: 0;
-    }
-
-    100% {
-        stroke-dashoffset: 45;
-    }
 }
 
 .station-marker {

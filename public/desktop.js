@@ -352,6 +352,28 @@ const rawMapData = [
         line: "5",
         stations: [
             { name: "Mount Dennis", x: 220, y: 380, interchange: true, accessible: true },
+            { name: "Keelesdale", x: 250, y: 380, accessible: true },
+            { name: "Caledonia", x: 280, y: 380, accessible: true },
+            { name: "Fairbank", x: 310, y: 380, accessible: true },
+            { name: "Oakwood", x: 340, y: 380, accessible: true },
+            { name: "Cedarvale", x: 360, y: 380, interchange: true, accessible: true },
+            { name: "Forest Hill", x: 390, y: 380, accessible: true },
+            { name: "Chaplin", x: 420, y: 380, accessible: true },
+            { name: "Avenue", x: 450, y: 380, accessible: true },
+            { name: "Eglinton", x: 560, y: 380, interchange: true, accessible: true },
+            { name: "Mount Pleasant", x: 595, y: 380, accessible: true },
+            { name: "Leaside", x: 630, y: 380, accessible: true },
+            { name: "Laird", x: 665, y: 380, accessible: true },
+            { name: "Don Valley", x: 700, y: 380, accessible: true },
+            { name: "Wynford", x: 730, y: 380, accessible: true },
+            { name: "Sloane", x: 755, y: 380, accessible: true },
+            { name: "O'Connor", x: 780, y: 380, accessible: true },
+            { name: "Aga Khan Park & Museum", x: 805, y: 380, accessible: true },
+            { name: "Sunnybrook Park", x: 825, y: 380, accessible: true },
+            { name: "Pharmacy", x: 845, y: 400, accessible: true },
+            { name: "Birchmount", x: 860, y: 418, accessible: true },
+            { name: "Ionview", x: 872, y: 435, accessible: true },
+            { name: "Victoria Park", x: 835, y: 455, interchange: true, accessible: true },
             { name: "Kennedy", x: 885, y: 380, interchange: true, accessible: true }
         ]
     },
@@ -459,46 +481,21 @@ function renderTracks() {
     rawMapData.forEach(lineData => {
         const d = getPathFromStations(lineData.stations, lineData.line);
 
+        const OPENING_DATE = new Date('2026-02-08T05:00:00'); // Sunday Feb 8 2026 5AM
+        const isLine5Open = Date.now() >= OPENING_DATE;
+
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("d", d); path.setAttribute("class", `track line-${lineData.line}`);
+        path.setAttribute("d", d);
+        path.setAttribute("class", `track line-${lineData.line}`);
+
         tracksLayer.appendChild(path);
 
-        // Line 4 label is rendered with the Don Mills terminal badge instead
-
-        if (lineData.line === '5') {
-            const maskId = "line-5-mask";
-            let svg = tracksLayer.closest("svg");
-            if (svg) {
-                let defs = svg.querySelector("defs");
-                if (!defs) {
-                    defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-                    svg.prepend(defs);
-                }
-
-                if (!document.getElementById(maskId)) {
-                    const mask = document.createElementNS("http://www.w3.org/2000/svg", "mask");
-                    mask.setAttribute("id", maskId);
-                    mask.setAttribute("maskUnits", "userSpaceOnUse");
-
-                    const maskBase = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    maskBase.setAttribute("d", d);
-                    maskBase.setAttribute("stroke", "white");
-                    maskBase.setAttribute("stroke-width", "18");
-                    maskBase.setAttribute("fill", "none");
-                    mask.appendChild(maskBase);
-
-                    const maskCutout = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    maskCutout.setAttribute("d", d);
-                    maskCutout.setAttribute("stroke", "black");
-                    maskCutout.setAttribute("stroke-width", "8");
-                    maskCutout.setAttribute("fill", "none");
-                    mask.appendChild(maskCutout);
-
-                    defs.appendChild(mask);
-                }
-            }
-
-            path.setAttribute("mask", `url(#${maskId})`);
+        // Line 5 Hollow Effect (Inner Line)
+        if (lineData.line === '5' && !isLine5Open) {
+            const innerPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            innerPath.setAttribute("d", d);
+            innerPath.setAttribute("class", "line-5-inner");
+            tracksLayer.appendChild(innerPath);
         }
     });
 }
@@ -1456,46 +1453,130 @@ function getTimeUntil(date) {
     }
 }
 
-function mergeOverlappingAlerts(alerts) {
-    // Group alerts by line and station range
-    const alertsByKey = {};
 
-    alerts.forEach(alert => {
-        if (alert.singleStation) {
-            // Keep single station alerts as-is
-            const key = `${alert.line}-single-${alert.start}`;
-            if (!alertsByKey[key]) alertsByKey[key] = [];
-            alertsByKey[key].push(alert);
+// Helper to calculate flow direction for animations
+function calculateFlow(line, startName, endName, direction) {
+    if (direction === 'Both Ways') return 'both';
+    const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return 'forward';
+    const idx1 = findStationIndex(lineObj, startName);
+    const idx2 = findStationIndex(lineObj, endName);
+
+    // Line 1 is North-South
+    if (line === '1') {
+        const unionIdx = 21; const midIdx = (idx1 + idx2) / 2;
+        if (midIdx < unionIdx) {
+            if (direction === 'Northbound') return 'reverse'; if (direction === 'Southbound') return 'forward';
         } else {
-            // Group path alerts by line and normalized station range
-            const stations = [alert.start, alert.end].sort();
-            const key = `${alert.line}-${stations[0]}-${stations[1]}`;
-            if (!alertsByKey[key]) alertsByKey[key] = [];
-            alertsByKey[key].push(alert);
+            if (direction === 'Northbound') return 'forward'; if (direction === 'Southbound') return 'reverse';
         }
+    }
+
+    // Lines 2, 4, 5, 6 are East-West
+    if (direction === 'Eastbound') return 'forward';
+    if (direction === 'Westbound') return 'reverse';
+
+    // Default fallback based on station order
+    if (idx1 < idx2) return 'forward';
+    return 'reverse';
+}
+
+function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay, isPreview = false) {
+    const layer = document.getElementById('alerts-layer');
+    const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
+    const idx1 = findStationIndex(lineObj, startName); const idx2 = findStationIndex(lineObj, endName);
+    if (idx1 === -1 || idx2 === -1) return;
+    const segment = lineObj.stations.slice(Math.min(idx1, idx2), Math.max(idx1, idx2) + 1);
+    const d = getPathFromStations(segment, line);
+
+    if (isShuttle) {
+        const shuttlePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        shuttlePath.setAttribute("d", d);
+        shuttlePath.setAttribute("class", "shuttle-outline");
+        if (isPreview) shuttlePath.classList.add("alert-preview");
+        // Apply same animation class as alert for directional flows
+        if (flow === 'both') shuttlePath.classList.add("pulse-solid");
+        else if (flow === 'reverse') shuttlePath.classList.add("flow-reverse");
+        else shuttlePath.classList.add("flow-forward");
+        layer.appendChild(shuttlePath);
+    }
+
+    // Create Main Path (Foreground)
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", d); path.setAttribute("class", "alert-base");
+    if (isDelay) path.classList.add("delay");
+    if (isPreview) path.classList.add("alert-preview");
+
+    if (flow === 'both') path.classList.add("pulse-solid");
+    else if (flow === 'reverse') path.classList.add("flow-reverse");
+    else path.classList.add("flow-forward");
+
+    layer.appendChild(path);
+}
+
+function mergeOverlappingAlerts(alerts) {
+    const pointAlerts = alerts.filter(a => a.singleStation);
+    const pathAlerts = alerts.filter(a => !a.singleStation);
+
+    const alertsByLine = {};
+    pathAlerts.forEach(a => {
+        if (!alertsByLine[a.line]) alertsByLine[a.line] = [];
+        alertsByLine[a.line].push(a);
     });
 
-    // Merge alerts with same key but different directions
-    const mergedAlerts = [];
-    Object.values(alertsByKey).forEach(group => {
-        if (group.length === 1) {
-            mergedAlerts.push(group[0]);
-        } else {
-            // Check if we have different directions
-            const directions = new Set(group.map(a => a.direction));
-            if (directions.size > 1 || directions.has('Northbound') && directions.has('Southbound')) {
-                // Merge into Both Ways
-                const merged = { ...group[0], direction: 'Both Ways' };
-                mergedAlerts.push(merged);
+    const mergedPathAlerts = [];
+
+    Object.keys(alertsByLine).forEach(line => {
+        const lineVal = rawMapData.find(l => l.line === line);
+        if (!lineVal) return;
+
+        const mapped = alertsByLine[line].map(a => {
+            const idx1 = findStationIndex(lineVal, a.start);
+            const idx2 = findStationIndex(lineVal, a.end);
+            return {
+                original: a,
+                startIdx: Math.min(idx1, idx2),
+                endIdx: Math.max(idx1, idx2),
+                isDelay: (a.effect === 'SIGNIFICANT_DELAYS' || a.effect === 'REDUCED_SPEED'),
+                isShuttle: !!a.shuttle,
+                direction: a.direction
+            };
+        }).filter(item => item.startIdx !== -1 && item.endIdx !== -1);
+
+        mapped.sort((a, b) => a.startIdx - b.startIdx);
+
+        if (mapped.length === 0) return;
+
+        const merged = [mapped[0]];
+        for (let i = 1; i < mapped.length; i++) {
+            const current = mapped[i];
+            const last = merged[merged.length - 1];
+
+            if (current.startIdx <= last.endIdx) {
+                last.endIdx = Math.max(last.endIdx, current.endIdx);
+                last.isDelay = last.isDelay && current.isDelay;
+                last.isShuttle = last.isShuttle || current.isShuttle;
+                if (last.direction !== current.direction) last.direction = 'Both Ways';
             } else {
-                // Same direction, just take first
-                mergedAlerts.push(group[0]);
+                merged.push(current);
             }
         }
+
+        merged.forEach(m => {
+            mergedPathAlerts.push({
+                line: line,
+                start: lineVal.stations[m.startIdx].name,
+                end: lineVal.stations[m.endIdx].name,
+                direction: m.direction,
+                shuttle: m.isShuttle,
+                effect: m.isDelay ? 'SIGNIFICANT_DELAYS' : 'SUSPENSION',
+                singleStation: false
+            });
+        });
     });
 
-    return mergedAlerts;
+    return [...pointAlerts, ...mergedPathAlerts];
 }
+
 
 /**
  * Re-render all alert paths on the map
@@ -1534,21 +1615,6 @@ function renderAlertsList() {
     filteredAlerts = mergeOverlappingAlerts(filteredAlerts);
 
     if (filteredAlerts.length === 0) {
-        // For Line 5, we still want to show the Opening Soon notice
-        if (selectedAlertLine === '5') {
-            const line5Notice = `
-                <div class="alert-card" style="border-left-color: var(--l5-color); opacity: 0.9;">
-                    <div class="alert-card-header">
-                        <div class="alert-line-badge" style="background: var(--l5-color); color: white;">5</div>
-                        <div class="alert-title"><i class="fas fa-hard-hat" style="margin-right: 6px;"></i>Line 5 Eglinton - Opening Soon</div>
-                    </div>
-                    <div class="alert-description">
-                        This line is not yet in service. Real-time tracking will be available once the line opens.
-                    </div>
-                </div>`;
-            listContainer.innerHTML = line5Notice;
-            return;
-        }
         if (selectedAlertLine === 'all') {
             listContainer.innerHTML = '<p style="color: var(--text-muted);">No active alerts at this time.</p>';
         } else {
@@ -1598,21 +1664,6 @@ function renderAlertsList() {
         </div>
     `;
     }).join('');
-
-    // Add Line 5 Coming Soon notice when filter is 'all' or '5'
-    if (selectedAlertLine === 'all' || selectedAlertLine === '5') {
-        const line5Notice = `
-            <div class="alert-card" style="border-left-color: var(--l5-color); opacity: 0.9;">
-                <div class="alert-card-header">
-                    <div class="alert-line-badge" style="background: var(--l5-color); color: white;">5</div>
-                    <div class="alert-title"><i class="fas fa-hard-hat" style="margin-right: 6px;"></i>Line 5 Eglinton - Opening Soon</div>
-                </div>
-                <div class="alert-description">
-                    This line is not yet in service. Real-time tracking will be available once the line opens.
-                </div>
-            </div>`;
-        listContainer.innerHTML = line5Notice + listContainer.innerHTML;
-    }
 }
 
 // Filter button click handlers

@@ -220,6 +220,28 @@ const rawMapData = [
         line: "5",
         stations: [
             { name: "Mount Dennis", x: 220, y: 380, interchange: true, accessible: true },
+            { name: "Keelesdale", x: 250, y: 380, accessible: true },
+            { name: "Caledonia", x: 280, y: 380, accessible: true },
+            { name: "Fairbank", x: 310, y: 380, accessible: true },
+            { name: "Oakwood", x: 340, y: 380, accessible: true },
+            { name: "Cedarvale", x: 360, y: 380, interchange: true, accessible: true },
+            { name: "Forest Hill", x: 390, y: 380, accessible: true },
+            { name: "Chaplin", x: 420, y: 380, accessible: true },
+            { name: "Avenue", x: 450, y: 380, accessible: true },
+            { name: "Eglinton", x: 560, y: 380, interchange: true, accessible: true },
+            { name: "Mount Pleasant", x: 595, y: 380, accessible: true },
+            { name: "Leaside", x: 630, y: 380, accessible: true },
+            { name: "Laird", x: 665, y: 380, accessible: true },
+            { name: "Don Valley", x: 700, y: 380, accessible: true },
+            { name: "Wynford", x: 730, y: 380, accessible: true },
+            { name: "Sloane", x: 755, y: 380, accessible: true },
+            { name: "O'Connor", x: 780, y: 380, accessible: true },
+            { name: "Aga Khan Park & Museum", x: 805, y: 380, accessible: true },
+            { name: "Sunnybrook Park", x: 825, y: 380, accessible: true },
+            { name: "Pharmacy", x: 845, y: 400, accessible: true },
+            { name: "Birchmount", x: 860, y: 418, accessible: true },
+            { name: "Ionview", x: 872, y: 435, accessible: true },
+            { name: "Victoria Park", x: 835, y: 455, interchange: true, accessible: true },
             { name: "Kennedy", x: 885, y: 380, interchange: true, accessible: true }
         ]
     },
@@ -275,41 +297,7 @@ function renderTracks() {
 
         // Line 4 label is rendered with the Don Mills terminal badge instead
 
-        if (lineData.line === '5') {
-            const maskId = "line-5-mask";
-            let svg = tracksLayer.closest("svg");
-            if (svg) {
-                let defs = svg.querySelector("defs");
-                if (!defs) {
-                    defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-                    svg.prepend(defs);
-                }
-
-                if (!document.getElementById(maskId)) {
-                    const mask = document.createElementNS("http://www.w3.org/2000/svg", "mask");
-                    mask.setAttribute("id", maskId);
-                    mask.setAttribute("maskUnits", "userSpaceOnUse");
-
-                    const maskBase = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    maskBase.setAttribute("d", d);
-                    maskBase.setAttribute("stroke", "white");
-                    maskBase.setAttribute("stroke-width", "18");
-                    maskBase.setAttribute("fill", "none");
-                    mask.appendChild(maskBase);
-
-                    const maskCutout = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    maskCutout.setAttribute("d", d);
-                    maskCutout.setAttribute("stroke", "black");
-                    maskCutout.setAttribute("stroke-width", "8");
-                    maskCutout.setAttribute("fill", "none");
-                    mask.appendChild(maskCutout);
-
-                    defs.appendChild(mask);
-                }
-            }
-
-            path.setAttribute("mask", `url(#${maskId})`);
-        }
+        // Line 5 is now open - render as solid track (no hollow mask)
     });
 }
 
