@@ -428,8 +428,6 @@ function renderMap() {
         const stations = document.getElementById('stations-layer');
         console.log("renderMap called. Data length:", rawMapData ? rawMapData.length : "UNDEFINED");
 
-        const OPENING_DATE = new Date('2026-02-08T05:00:00'); // Sunday Feb 8 2026 5AM
-        const isLine5Open = Date.now() >= OPENING_DATE;
 
         // Render Tracks
         rawMapData.forEach(lineData => {
@@ -439,17 +437,8 @@ function renderMap() {
             path.setAttribute("d", d);
             path.setAttribute("class", `track line-${lineData.line}`);
 
-
             // 1. Draw the main track first (Background/Width)
             tracks.appendChild(path);
-
-            // 2. Draw the hollow inner line on top if Line 5 is closed
-            if (lineData.line === '5' && !isLine5Open) {
-                const innerPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                innerPath.setAttribute("d", d);
-                innerPath.setAttribute("class", "line-5-inner");
-                tracks.appendChild(innerPath);
-            }
         });
 
         // Render Stations
@@ -1246,22 +1235,7 @@ function renderLists() {
     // Merge overlapping/directional duplicates for cleaner list
     const mergedFilteredAlerts = mergeOverlappingAlerts(filteredAlerts);
 
-    // Inject Line 5 Opening Alert (Static)
-    if (selectedAlertLine === 'all' || selectedAlertLine === '5') {
-        mergedFilteredAlerts.unshift({
-            id: 'l5-opening',
-            line: '5',
-            reason: 'Opening Soon',
-            effect: 'OPENING_SOON',
-            start: 'Mount Dennis',
-            end: 'Kennedy',
-            direction: 'Both Ways',
-            singleStation: false,
-            originalText: 'Line 5 Eglinton Crosstown opens Sunday, February 8, 2026 at 5:00 AM.',
-            status: 'active',
-            shuttle: false
-        });
-    }
+
 
     const dynamicAlertsHtml = mergedFilteredAlerts.length
         ? mergedFilteredAlerts.map(a => createAlertCard(a)).join('')

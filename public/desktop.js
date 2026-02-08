@@ -481,22 +481,11 @@ function renderTracks() {
     rawMapData.forEach(lineData => {
         const d = getPathFromStations(lineData.stations, lineData.line);
 
-        const OPENING_DATE = new Date('2026-02-08T05:00:00'); // Sunday Feb 8 2026 5AM
-        const isLine5Open = Date.now() >= OPENING_DATE;
-
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("d", d);
         path.setAttribute("class", `track line-${lineData.line}`);
 
         tracksLayer.appendChild(path);
-
-        // Line 5 Hollow Effect (Inner Line)
-        if (lineData.line === '5' && !isLine5Open) {
-            const innerPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            innerPath.setAttribute("d", d);
-            innerPath.setAttribute("class", "line-5-inner");
-            tracksLayer.appendChild(innerPath);
-        }
     });
 }
 
@@ -1614,23 +1603,7 @@ function renderAlertsList() {
     // This prevents double alerts in the list
     filteredAlerts = mergeOverlappingAlerts(filteredAlerts);
 
-    // Inject Line 5 Opening Alert (Static)
-    if (selectedAlertLine === 'all' || selectedAlertLine === '5') {
-        const l5Opening = {
-            id: 'l5-opening-static',
-            line: '5',
-            reason: 'Opening Soon',
-            effect: 'OPENING_SOON',
-            start: 'Mount Dennis',
-            end: 'Kennedy',
-            direction: 'Both Ways',
-            singleStation: false,
-            originalText: 'Line 5 Eglinton Crosstown opens Sunday, February 8, 2026 at 5:00 AM.',
-            status: 'active'
-        };
-        // Add to front of list
-        filteredAlerts.unshift(l5Opening);
-    }
+
 
     if (filteredAlerts.length === 0) {
         if (selectedAlertLine === 'all') {
@@ -1643,9 +1616,7 @@ function renderAlertsList() {
 
     // Sort alerts: 1) Active before Cleared, 2) Suspensions before Delays, 3) By line number
     const sortedAlerts = [...filteredAlerts].sort((a, b) => {
-        // Opening Soon comes first
-        if (a.effect === 'OPENING_SOON') return -1;
-        if (b.effect === 'OPENING_SOON') return 1;
+
 
         // Active alerts first
         if (a.status === 'active' && b.status !== 'active') return -1;
