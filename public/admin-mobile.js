@@ -1,12 +1,43 @@
-// --- State Management ---
-let activeTab = 'map';
-let activeAlerts = [];
-let upcomingAlerts = [];
-let mapDraggable = null;
-let pollingInterval = null;
-let manualAlertCounter = 1; // For generating unique IDs
+/**
+ * ============================================================================
+ * TTC DASHBOARD - ADMIN MOBILE APPLICATION
+ * ============================================================================
+ * 
+ * This is the ADMIN version of the mobile map interface. It allows TTC staff
+ * or administrators to:
+ * - Create custom alerts manually (without API)
+ * - Preview how alerts will appear on the map
+ * - Test different alert scenarios
+ * 
+ * KEY DIFFERENCES FROM PUBLIC MOBILE VERSION:
+ * - No automatic API data fetching (alerts are manually created)
+ * - Has a "Create Alert" sheet for adding new alerts
+ * - Includes preview mode functionality
+ * - Alerts are stored locally (not persisted to server)
+ * 
+ * DEPENDENCIES:
+ * - GSAP (GreenSock Animation Platform) for animations
+ * - Vanta.js for animated background
+ * - Three.js (required by Vanta)
+ * - Font Awesome for icons
+ * 
+ * ============================================================================
+ */
 
-// --- Map Configuration (Easy to adjust) ---
+// ============================================================================
+// STATE MANAGEMENT - Global variables tracking the app's current state
+// ============================================================================
+
+let activeTab = 'map';           // Current active tab: 'map', 'alerts', 'upcoming', or 'create'
+let activeAlerts = [];           // Manually created active alerts
+let upcomingAlerts = [];         // Manually created upcoming/scheduled alerts
+let mapDraggable = null;         // GSAP Draggable instance for map panning
+let pollingInterval = null;      // Not used in admin mode (no API polling)
+let manualAlertCounter = 1;      // Counter for generating unique alert IDs
+
+// ============================================================================
+// MAP CONFIGURATION - Easy-to-adjust settings for map display
+// ============================================================================
 const MAP_CONFIG = {
     // Visual center point on the map (SVG coordinates)
     centerX: 430,            // Horizontal center of the map SVG

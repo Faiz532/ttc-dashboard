@@ -1,6 +1,29 @@
-/* Mobile-specific CSS overrides */
+/**
+ * ============================================================================
+ * TTC DASHBOARD - MOBILE-SPECIFIC CSS OVERRIDES
+ * ============================================================================
+ * 
+ * This stylesheet contains CSS rules that are ONLY applied to the mobile
+ * version of the TTC Dashboard. It works alongside style.css (shared styles).
+ * 
+ * CONTENTS:
+ * 1. Preview Mode Styles - Admin preview functionality appearance
+ * 2. Shuttle Bus Styles - Blue animated outlines for shuttle alerts
+ * 3. Closed State Styles - Appearance when subway is not operating
+ * 
+ * NOTE: Most mobile styles are in style.css. This file only contains
+ * overrides and mobile-specific features like preview mode.
+ * 
+ * ============================================================================
+ */
 
-/* PREVIEW MODE STYLES */
+
+/* ============================================================================
+   SECTION 1: PREVIEW MODE STYLES (Admin Feature)
+   When an admin is previewing an alert before publishing, these styles
+   give visual feedback with an amber/orange color scheme.
+   ============================================================================ */
+
 .status-indicator.preview {
     border-color: #d97706;
     /* Amber-600 */
@@ -66,13 +89,18 @@
     transform: scale(1.1);
 }
 
-/* Map Elements Preview Glow */
-/* Map Elements Preview Glow */
+/* ============================================================================
+   SECTION 2: SHUTTLE BUS ALERT STYLES
+   When shuttle buses are replacing subway service, a blue animated outline
+   appears around the affected segment to indicate alternative transportation.
+   ============================================================================ */
+
+/* Preview glow effect - adds shadow when previewing an alert */
 .alert-preview {
-    /* Restore native color, just add shadow/opacity */
     filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.5));
 }
 
+/* Main shuttle outline - blue border around the affected path */
 .shuttle-outline {
     stroke: var(--shuttle-color) !important;
     stroke-width: 36px;
@@ -135,7 +163,13 @@
     justify-content: center;
 }
 
-/* Closed State (Subway not operating) */
+/* ============================================================================
+   SECTION 3: SUBWAY CLOSED STATE
+   When the subway is not operating (late night hours), these styles show
+   a moon icon and grey styling to indicate the system is closed.
+   Operating hours: Mon-Sat 6AM-2AM, Sunday 8AM-2AM
+   ============================================================================ */
+
 .status-indicator.closed .status-spinner,
 .status-indicator.closed .live-dot {
     display: none;

@@ -1,5 +1,42 @@
+/**
+ * ============================================================================
+ * TTC DASHBOARD - DESKTOP STYLES
+ * ============================================================================
+ * 
+ * Main stylesheet for the desktop version of the TTC Dashboard. This file
+ * contains all styles specific to larger screen layouts (laptops, desktops).
+ * 
+ * CONTENTS:
+ * 1. CSS Variables (Design Tokens) - Colors, glass effects, borders
+ * 2. Viewport & Map Styles - Full-screen SVG map container
+ * 3. Floating UI Layer - Clock, status indicator, FAB buttons
+ * 4. Menu Panel - Slide-out navigation drawer
+ * 5. Legend Popup - Map layer toggles
+ * 6. Content Panels - Alerts, upcoming, about screens
+ * 7. Alert Cards - Individual alert display styling
+ * 8. Track & Station SVG - Subway line and station markers
+ * 9. Animations - Pulsing alerts, shuttle buses, transitions
+ * 10. Light Mode - Theme override styles
+ * 
+ * DESIGN PRINCIPLES:
+ * - Glassmorphism: Frosted glass effect with backdrop-filter blur
+ * - Dark mode first, with light mode as an opt-in theme
+ * - Responsive: Designed for 1024px+ screens
+ * 
+ * DEPENDENCIES:
+ * - Google Fonts: Inter (400-800 weights)
+ * - Font Awesome 6 (icons)
+ * 
+ * ============================================================================
+ */
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+/* ============================================================================
+   CSS VARIABLES (Design Tokens)
+   These define the core visual properties used throughout the app.
+   Changing these will update the entire theme.
+   ============================================================================ */
 :root {
     --bg-color: #0f1115;
     --surface-glass: rgba(22, 22, 24, 0.85);

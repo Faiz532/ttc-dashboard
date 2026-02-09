@@ -1,18 +1,62 @@
+/**
+ * ============================================================================
+ * TTC DASHBOARD - ADMIN DESKTOP APPLICATION
+ * ============================================================================
+ * 
+ * This is the ADMIN version of the desktop map interface. It provides the same
+ * functionality as admin-mobile.js but optimized for larger screens.
+ * 
+ * ADMIN FEATURES:
+ * - Create custom alerts manually (without API)
+ * - Preview how alerts will appear on the map
+ * - Test different alert scenarios and edge cases
+ * - No automatic API polling (alerts are manually controlled)
+ * 
+ * KEY DIFFERENCES FROM PUBLIC DESKTOP VERSION:
+ * - No automatic API data fetching
+ * - Has a "Create Alert" panel for adding new alerts
+ * - Includes preview mode with focus/centering
+ * - Alerts are stored locally (not persisted to server)
+ * 
+ * DEPENDENCIES:
+ * - GSAP (GreenSock) for smooth animations and map dragging
+ * - Lucide Icons for UI icons
+ * - No Vanta.js background (uses solid dark background)
+ * 
+ * STRUCTURE:
+ * - Menu Panel Toggle (lines ~20-70)
+ * - Legend Popup Toggle (lines ~70-90)
+ * - Clock Display (lines ~110-130)
+ * - Map Data & Rendering (lines ~130-720)
+ * - Drag & Zoom (lines ~720-810)
+ * - Alert Rendering (lines ~900+)
+ * - Admin Form Handling (lines ~1400+)
+ * 
+ * ============================================================================
+ */
+
 // Desktop Map Application - Toronto Transit Live
 // Floating UI Version
 
 lucide.createIcons();
-let activeAlerts = [];
-let upcomingAlerts = [];
-let pollingInterval = null;
-let currentTab = 'lines';
-let manualAlertCounter = 1; // For generating unique IDs
+
+// ============================================================================
+// STATE MANAGEMENT - Global variables tracking the app's current state
+// ============================================================================
+
+let activeAlerts = [];           // Manually created active alerts
+let upcomingAlerts = [];         // Manually created upcoming/scheduled alerts
+let pollingInterval = null;      // Not used in admin mode (no API polling)
+let currentTab = 'lines';        // Current panel: 'lines', 'alerts', 'upcoming', 'create', 'about'
+let manualAlertCounter = 1;      // Counter for generating unique alert IDs
+
+// DOM element references for convenience
 const mapRoot = document.getElementById('map-root');
 const viewport = document.getElementById('viewport');
 const tracksLayer = document.getElementById('tracks-layer');
 const stationsLayer = document.getElementById('stations-layer');
 const alertsLayer = document.getElementById('alerts-layer');
-let mapDraggable = null;
+let mapDraggable = null;         // GSAP Draggable instance for map panning
 
 // ==========================================
 // MENU PANEL TOGGLE
