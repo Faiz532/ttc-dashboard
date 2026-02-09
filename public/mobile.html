@@ -136,15 +136,55 @@
                 <!-- Info Popup -->
                 <div id="info-popup" class="layer-popup hidden" style="left: 60px; right: auto; top: 0;">
                     <div class="layer-popup-title">Toronto Transit Live <span
-                            style="font-size: 10px; opacity: 0.6; font-weight: 400; margin-left: 4px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">ALPHA</span>
+                            style="font-size: 11px; opacity: 1; font-weight: 600; margin-left: 6px; background: rgba(255,196,37,0.2); color: var(--l1-color); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(255,196,37,0.3);">ALPHA</span>
                     </div>
-                    <div class="info-popup-content">
-                        Real-time tracking of TTC subway alerts, outages, and delays.
-                        <br><br>
-                        v1.2.0 Alpha • 2026
+
+                    <!-- What is this app section -->
+                    <div class="walkthrough-section">
+                        <div class="walkthrough-title"><i class="fas fa-subway" style="color: var(--l1-color);"></i>
+                            What is this app?</div>
+                        <p class="walkthrough-text">
+                            A real-time visualization of TTC subway alerts, outages, and delays on an interactive map.
+                            See exactly where disruptions are happening on the network.
+                        </p>
                     </div>
+
+                    <!-- How to use section -->
+                    <div class="walkthrough-section">
+                        <div class="walkthrough-title"><i class="fas fa-hand-pointer"
+                                style="color: var(--l2-color);"></i> How to use</div>
+                        <ul class="walkthrough-list">
+                            <li><strong>Map:</strong> Drag and pinch to explore</li>
+                            <li class="walkthrough-visual-item">
+                                <span class="visual-indicator red-indicator"></span>
+                                <span><strong>Red:</strong> Service suspended</span>
+                            </li>
+                            <li class="walkthrough-visual-item">
+                                <span class="visual-indicator orange-indicator"></span>
+                                <span><strong>Orange:</strong> Delays / slow</span>
+                            </li>
+                            <li class="walkthrough-visual-item">
+                                <span class="visual-indicator blue-indicator"></span>
+                                <span><strong>Blue:</strong> Shuttle bus</span>
+                            </li>
+                            <li><strong>Alerts:</strong> View active alerts list</li>
+                            <li><strong>Upcoming:</strong> Planned closures</li>
+                        </ul>
+                    </div>
+
+                    <!-- Disclaimer section -->
+                    <div class="walkthrough-section"
+                        style="background: rgba(255, 183, 0, 0.1); border-radius: 8px; padding: 10px; margin-top: 8px;">
+                        <div class="walkthrough-title" style="font-size: 12px;"><i class="fas fa-exclamation-triangle"
+                                style="color: var(--l1-color);"></i> Disclaimer</div>
+                        <p class="walkthrough-text" style="font-size: 11px; margin-top: 4px;">
+                            This is a personal project, not an official TTC app. Data may be delayed or inaccurate.
+                            Always verify with official TTC sources.
+                        </p>
+                    </div>
+
                     <div class="info-popup-footer">
-                        Made by Faiz P
+                        Made by Faiz P • v1.2.0
                     </div>
                 </div>
             </div>
@@ -285,8 +325,8 @@
     <div id="disclaimer-banner" class="disclaimer-banner">
         <div class="disclaimer-content">
             <i class="fas fa-exclamation-triangle" style="color: #FFB700; margin-right: 12px; font-size: 16px;"></i>
-            <span>This is a personal project. Data and alerts may be inaccurate or delayed. This app is not affiliated
-                with the Toronto Transit Commission (TTC).</span>
+            <span>This is a personal project. Data may be inaccurate. Not affiliated with the TTC. <strong
+                    style="color: var(--l1-color);">Tap ⓘ to learn more.</strong></span>
         </div>
         <button id="btn-accept-disclaimer">I Understand</button>
     </div>

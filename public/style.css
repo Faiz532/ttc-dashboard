@@ -826,6 +826,119 @@ canvas.vanta-canvas {
     letter-spacing: 0.5px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding-top: 10px;
+    margin-top: 12px;
+}
+
+/* Walkthrough Sections for Info Popup */
+.walkthrough-section {
+    margin-bottom: 12px;
+}
+
+.walkthrough-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.walkthrough-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.walkthrough-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.walkthrough-list li {
+    margin-bottom: 4px;
+    padding-left: 12px;
+    position: relative;
+}
+
+.walkthrough-list li::before {
+    content: "•";
+    color: var(--l1-color);
+    position: absolute;
+    left: 0;
+}
+
+.walkthrough-list li strong {
+    color: var(--text-main);
+}
+
+/* Light mode walkthrough */
+.light-mode .walkthrough-title {
+    color: #1f2937;
+}
+
+.light-mode .walkthrough-text,
+.light-mode .walkthrough-list {
+    color: #4b5563;
+}
+
+.light-mode .walkthrough-list li strong {
+    color: #1f2937;
+}
+
+/* Visual indicator items (with SVG previews) */
+.walkthrough-visual-item {
+    display: flex !important;
+    align-items: center;
+    padding-left: 0 !important;
+}
+
+.walkthrough-visual-item::before {
+    display: none !important;
+}
+
+/* Colored bar indicators */
+.visual-indicator {
+    display: inline-block;
+    width: 24px;
+    height: 4px;
+    border-radius: 2px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.red-indicator {
+    background: linear-gradient(90deg, #FF3B30, #FF6B6B);
+    box-shadow: 0 0 6px rgba(255, 59, 48, 0.6);
+    animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+.orange-indicator {
+    background: linear-gradient(90deg, #FF9500, #FFB340);
+    box-shadow: 0 0 6px rgba(255, 149, 0, 0.5);
+    animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+.blue-indicator {
+    background: linear-gradient(90deg, #3478F6, #5A9CFF);
+    box-shadow: 0 0 6px rgba(52, 120, 246, 0.5);
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
 }
 
 .layer-toggle {
@@ -1305,7 +1418,9 @@ body.light-mode .status-indicator {
 
 body.light-mode .status-indicator.live {
     border-color: rgba(34, 197, 94, 0.4);
-}/* Special Opening Alert Effect */
+}
+
+/* Special Opening Alert Effect */
 .special-opening-card {
     background: linear-gradient(135deg,
             rgba(243, 112, 33, 0.05) 0%,

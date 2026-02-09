@@ -1823,6 +1823,54 @@ if (themeBtn) {
 
 
 // ============================================================================
+// INFO POPUP - "What is this app?" walkthrough
+// ============================================================================
+const infoPopupDesktop = document.getElementById('info-popup-desktop');
+const infoBtnDesktop = document.getElementById('btn-info-desktop');
+
+if (infoBtnDesktop) {
+    infoBtnDesktop.addEventListener('click', (e) => {
+        e.stopPropagation();
+        infoPopupDesktop.classList.toggle('hidden');
+        // Close legend popup if open
+        if (legendPopup && !legendPopup.classList.contains('hidden')) {
+            legendPopup.classList.add('hidden');
+        }
+    });
+}
+
+// Close info popup when clicking outside
+document.addEventListener('click', (e) => {
+    if (infoPopupDesktop && !infoPopupDesktop.classList.contains('hidden') &&
+        !infoPopupDesktop.contains(e.target) && !infoBtnDesktop.contains(e.target)) {
+        infoPopupDesktop.classList.add('hidden');
+    }
+});
+
+// ============================================================================
+// DISCLAIMER BANNER - Shows on page load
+// ============================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    const banner = document.getElementById('disclaimer-banner');
+    const btn = document.getElementById('btn-accept-disclaimer');
+
+    // Show banner on load after a short delay
+    if (banner) {
+        setTimeout(() => {
+            banner.classList.add('visible');
+        }, 500);
+    }
+
+    // Handle dismiss button click
+    if (btn) {
+        btn.addEventListener('click', () => {
+            banner.classList.remove('visible');
+        });
+    }
+});
+
+
+// ============================================================================
 // APPLICATION ENTRY POINT
 // ============================================================================
 // Start the application when the page finishes loading
