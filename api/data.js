@@ -270,7 +270,7 @@ async function parseAlertWithAI(text) {
             reason: json.reason,
             status: json.status,
             direction: json.direction,
-            singleStation: json.start === json.end,
+            singleStation: (normalizeStation(json.start) || json.start) === (normalizeStation(json.end) || json.end),
             shuttle: text.toLowerCase().includes('shuttle'),
             originalText: text,
             activeStartTime: json.start_time ? new Date(json.start_time).getTime() : null,

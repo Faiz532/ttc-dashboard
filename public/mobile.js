@@ -989,6 +989,8 @@ let showDelays = true;
 function renderAlertsOnMap() {
     const layer = document.getElementById('alerts-layer');
     layer.innerHTML = '';
+    // Also clear station alert glows (they live in stations-layer)
+    document.querySelectorAll('#stations-layer .station-alert-glow, #stations-layer .station-alert-dot').forEach(el => el.remove());
 
     // Only render active alerts on the map
     let mapActiveAlerts = activeAlerts.filter(alert => alert.status === 'active');
@@ -1209,18 +1211,27 @@ function drawAlertPath(line, startName, endName, flow, isShuttle, isDelay, isPre
 }
 
 function drawStationAlert(line, stationName, isDelay, isPreview = false) {
-    const layer = document.getElementById('alerts-layer');
+    const layer = document.getElementById('stations-layer');
     const lineObj = rawMapData.find(l => l.line === line); if (!lineObj) return;
     const idx = findStationIndex(lineObj, stationName);
     if (idx === -1) return;
     const s = lineObj.stations[idx];
 
-    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle.setAttribute("cx", s.x); circle.setAttribute("cy", s.y); circle.setAttribute("r", 10); circle.setAttribute("class", "station-alert-glow");
-    if (isDelay) circle.style.stroke = "var(--delay-color)";
-    if (isDelay) circle.style.fill = "var(--delay-color)";
-    if (isPreview) circle.classList.add("alert-preview");
-    layer.appendChild(circle);
+    // Persistent dot (stays visible)
+    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    dot.setAttribute("cx", s.x); dot.setAttribute("cy", s.y); dot.setAttribute("r", 8);
+    dot.setAttribute("class", "station-alert-dot");
+    if (isDelay) { dot.style.stroke = "var(--delay-color)"; dot.style.fill = "var(--delay-color)"; }
+    if (isPreview) dot.classList.add("alert-preview");
+    layer.appendChild(dot);
+
+    // Pulsing ring (expands and fades like livePulse)
+    const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    ring.setAttribute("cx", s.x); ring.setAttribute("cy", s.y); ring.setAttribute("r", 10);
+    ring.setAttribute("class", "station-alert-glow");
+    if (isDelay) ring.style.stroke = "var(--delay-color)";
+    if (isPreview) ring.classList.add("alert-preview");
+    layer.appendChild(ring);
 }
 
 

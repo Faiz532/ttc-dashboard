@@ -1003,10 +1003,30 @@ svg {
 
 .station-alert-glow {
     fill: var(--alert-color);
-    stroke: var(--alert-color);
-    stroke-width: 1px;
+    stroke: none;
     pointer-events: none;
-    animation: station-pulse 1.5s ease-out infinite;
+    animation: stationPulse 2s ease-in-out infinite;
+}
+
+.station-alert-dot {
+    fill: var(--alert-color);
+    fill-opacity: 0.5;
+    stroke: none;
+    pointer-events: none;
+}
+
+@keyframes stationPulse {
+
+    0%,
+    100% {
+        r: 8px;
+        fill-opacity: 0.6;
+    }
+
+    50% {
+        r: 16px;
+        fill-opacity: 0;
+    }
 }
 
 @keyframes dash-fwd {
@@ -1035,18 +1055,6 @@ svg {
     100% {
         opacity: 0.6;
         stroke-width: 12px;
-    }
-}
-
-@keyframes station-pulse {
-    0% {
-        opacity: 0.8;
-        r: 10px;
-    }
-
-    100% {
-        opacity: 0;
-        r: 30px;
     }
 }
 

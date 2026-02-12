@@ -460,7 +460,7 @@ async function parseAlertWithAI(text) {
             reason: json.reason,
             status: json.status,
             direction: json.direction,
-            singleStation: json.start === json.end,  // True if only one station affected
+            singleStation: (normalizeStation(json.start) || json.start) === (normalizeStation(json.end) || json.end),  // True if only one station affected
             shuttle: text.toLowerCase().includes('shuttle'),  // Is there shuttle bus service?
             originalText: text,  // Keep original text for reference
             activeStartTime: json.start_time ? new Date(json.start_time).getTime() : null,

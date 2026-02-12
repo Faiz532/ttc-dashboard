@@ -349,23 +349,27 @@ canvas.vanta-canvas {
 
 .station-alert-glow {
     fill: var(--alert-color);
-    stroke: var(--alert-color);
-    stroke-width: 2;
-    fill-opacity: 0.4;
-    animation: pulseGlow 1.5s infinite;
+    stroke: none;
+    animation: stationPulse 2s ease-in-out infinite;
 }
 
+.station-alert-dot {
+    fill: var(--alert-color);
+    fill-opacity: 0.5;
+    stroke: none;
+}
 
+@keyframes stationPulse {
 
-@keyframes pulseGlow {
-    0% {
+    0%,
+    100% {
         r: 8;
-        opacity: 0.8;
+        fill-opacity: 0.6;
     }
 
-    100% {
-        r: 20;
-        opacity: 0;
+    50% {
+        r: 16;
+        fill-opacity: 0;
     }
 }
 
