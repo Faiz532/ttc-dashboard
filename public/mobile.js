@@ -316,6 +316,16 @@ function checkSubwayStatusAndFetch() {
             statusText.textContent = `Closed until ${getNextOpenTime()}`;
         }
 
+        // Show the closed overlay
+        const closedOverlay = document.getElementById('closed-overlay');
+        const reopenTimeSpan = document.getElementById('reopen-time');
+        if (closedOverlay) {
+            closedOverlay.classList.remove('hidden');
+            if (reopenTimeSpan) {
+                reopenTimeSpan.textContent = getNextOpenTime();
+            }
+        }
+
         // Clear any existing alerts from the map
         const alertsLayer = document.getElementById('alerts-layer');
         if (alertsLayer) alertsLayer.innerHTML = '';
@@ -330,6 +340,9 @@ function checkSubwayStatusAndFetch() {
         if (isSubwayCurrentlyClosed) {
             // Just reopened - reset status
             isSubwayCurrentlyClosed = false;
+            // Hide the closed overlay
+            const closedOverlay = document.getElementById('closed-overlay');
+            if (closedOverlay) closedOverlay.classList.add('hidden');
             console.log('Subway reopened - resuming API calls');
         }
         fetchData();

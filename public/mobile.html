@@ -112,6 +112,32 @@
         </svg>
     </div>
 
+    <!-- Subway Closed Overlay -->
+    <div id="closed-overlay" class="closed-overlay hidden">
+        <div class="closed-content">
+            <i class="fas fa-moon closed-icon"></i>
+            <h2 class="closed-title">Subway Closed</h2>
+            <p class="closed-subtitle">Service resumes at <span id="reopen-time">6:00 AM</span></p>
+            <div class="closed-divider"></div>
+            <p class="closed-note">The subway is closed at this time</p>
+            <div class="closed-hours">
+                <div class="hours-title"><i class="fas fa-clock"></i> Daily Operating Hours</div>
+                <div class="hours-row">
+                    <span class="hours-day">Mon - Sat</span>
+                    <span class="hours-time">6:00 AM – 2:00 AM</span>
+                </div>
+                <div class="hours-row">
+                    <span class="hours-day">Sunday</span>
+                    <span class="hours-time">8:00 AM – 2:00 AM</span>
+                </div>
+            </div>
+            <button id="close-overlay-btn" class="close-overlay-btn"
+                onclick="document.getElementById('closed-overlay').classList.add('hidden')">
+                <i class="fas fa-map"></i> View Map
+            </button>
+        </div>
+    </div>
+
     <!-- UI OVERLAY LAYER -->
     <div class="ui-layer">
 

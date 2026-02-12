@@ -191,3 +191,230 @@
     color: #9ca3af;
     margin-right: 4px;
 }
+
+/* ============================================================================
+   SUBWAY CLOSED OVERLAY
+   Full-screen overlay shown when subway is not in service (2 AM - 6/8 AM)
+   ============================================================================ */
+.closed-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+.closed-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.closed-content {
+    text-align: center;
+    padding: 32px 28px;
+    background: var(--surface-glass);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid var(--surface-glass-border);
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    max-width: 340px;
+    width: 100%;
+    animation: floatIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes floatIn {
+    0% {
+        opacity: 0;
+        transform: translateY(30px) scale(0.9);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.closed-icon {
+    font-size: 44px;
+    color: #6366f1;
+    margin-bottom: 16px;
+    display: block;
+    animation: moonGlow 3s ease-in-out infinite;
+}
+
+@keyframes moonGlow {
+
+    0%,
+    100% {
+        text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+    }
+
+    50% {
+        text-shadow: 0 0 40px rgba(99, 102, 241, 0.8), 0 0 60px rgba(99, 102, 241, 0.4);
+    }
+}
+
+.closed-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+}
+
+.closed-subtitle {
+    font-size: 15px;
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.closed-subtitle span {
+    color: var(--l1-color);
+    font-weight: 700;
+}
+
+.closed-divider {
+    width: 50px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    margin: 20px auto;
+    border-radius: 2px;
+}
+
+.closed-note {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 16px;
+}
+
+.closed-hours {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.hours-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.hours-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 13px;
+}
+
+.hours-row+.hours-row {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.hours-day {
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.hours-time {
+    color: white;
+    font-weight: 600;
+}
+
+.close-overlay-btn {
+    margin-top: 18px;
+    padding: 10px 24px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    color: #9ca3af;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.close-overlay-btn:active {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+/* Light mode overrides for closed overlay */
+body.light-mode .closed-overlay {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+body.light-mode .closed-content {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .closed-title {
+    color: #111827;
+}
+
+body.light-mode .closed-subtitle {
+    color: #6b7280;
+}
+
+body.light-mode .closed-note {
+    color: #9ca3af;
+}
+
+body.light-mode .closed-divider {
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.15), transparent);
+}
+
+body.light-mode .closed-hours {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .hours-title {
+    color: #6b7280;
+}
+
+body.light-mode .hours-day {
+    color: #6b7280;
+}
+
+body.light-mode .hours-time {
+    color: #111827;
+}
+
+body.light-mode .hours-row+.hours-row {
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .close-overlay-btn {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.12);
+    color: #6b7280;
+}
+
+body.light-mode .close-overlay-btn:active {
+    background: rgba(0, 0, 0, 0.1);
+    color: #111827;
+}
