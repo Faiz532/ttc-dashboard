@@ -380,9 +380,6 @@ function buildLargeWidget(summary, upcoming, mapImage) {
         imgStack.addSpacer();
         const img = imgStack.addImage(mapImage);
         img.imageSize = new Size(290, 194);
-        img.cornerRadius = 10;
-        img.borderWidth = 1;
-        img.borderColor = new Color("#ffffff", 0.08);
         imgStack.addSpacer();
         w.addSpacer(6);
     }

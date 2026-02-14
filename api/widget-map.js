@@ -238,8 +238,8 @@ function generateMapSVG(alerts, theme = 'dark') {
 
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-150 20 1080 720" width="1080" height="720">`;
 
-    // Background
-    svg += `<rect x="-150" y="20" width="1080" height="720" fill="${bgColor}" rx="16"/>`;
+    // Background — no rounded corners so it blends with widget
+    svg += `<rect x="-150" y="20" width="1080" height="720" fill="${bgColor}"/>`;
 
     // CSS for animations
     svg += `<style>
