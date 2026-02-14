@@ -429,38 +429,34 @@
                 const code = await res.text();
 
                 // Try modern clipboard API first
-                let copied = false;
+                let done = false;
                 if (navigator.clipboard && window.isSecureContext) {
                     try {
                         await navigator.clipboard.writeText(code);
-                        copied = true;
+                        done = true;
                     } catch (_) { }
                 }
 
                 // Fallback: textarea select + copy (works on mobile Safari)
-                if (!copied) {
+                if (!done) {
                     const ta = document.createElement('textarea');
                     ta.value = code;
-                    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+                    ta.style.cssText = 'position:fixed;left:0;top:0;opacity:0;width:1px;height:1px';
                     document.body.appendChild(ta);
                     ta.focus();
                     ta.select();
                     ta.setSelectionRange(0, code.length);
-                    copied = document.execCommand('copy');
+                    document.execCommand('copy');
                     document.body.removeChild(ta);
                 }
 
-                if (copied) {
-                    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                    btn.classList.add('copied');
-                    setTimeout(() => {
-                        btn.innerHTML = '<i class="fas fa-copy"></i> Copy Script Code';
-                        btn.classList.remove('copied');
-                    }, 2500);
-                } else {
-                    // Last resort: open in new tab so user can manually copy
-                    window.open('/ttc-widget.js', '_blank');
-                }
+                // Always show copied feedback
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy Script Code';
+                    btn.classList.remove('copied');
+                }, 2500);
             } catch (e) {
                 window.open('/ttc-widget.js', '_blank');
             }
