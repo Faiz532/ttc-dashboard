@@ -12,7 +12,7 @@
  * ============================================
  */
 
-const WIDGET_CODE_URL = "https://subwaystatus.live/ttc-widget-code.js";
+const WIDGET_CODE_URL = "https://subwaystatus.live/ttc-widget-code.js?t=" + Date.now();
 
 async function loadWidget() {
     try {
