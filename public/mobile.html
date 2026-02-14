@@ -198,6 +198,23 @@
                         </ul>
                     </div>
 
+                    <!-- iOS Widget section -->
+                    <div class="walkthrough-section widget-section">
+                        <div class="walkthrough-title"><i class="fas fa-mobile-alt" style="color: var(--l5-color);"></i>
+                            iOS Widget</div>
+                        <p class="walkthrough-text" style="margin-bottom: 8px;">
+                            Get live subway alerts right on your home screen with a Scriptable widget.
+                        </p>
+                        <div class="widget-preview-container">
+                            <img id="widget-preview-img" src="/api/widget-map?theme=dark" alt="TTC Widget Map Preview"
+                                class="widget-preview-img" loading="lazy" />
+                        </div>
+                        <button id="btn-widget-setup" class="widget-setup-btn"
+                            onclick="document.getElementById('widget-modal').classList.remove('hidden')">
+                            <i class="fas fa-arrow-right"></i> Setup Instructions
+                        </button>
+                    </div>
+
                     <!-- Disclaimer section -->
                     <div class="walkthrough-section"
                         style="background: rgba(255, 183, 0, 0.1); border-radius: 8px; padding: 10px; margin-top: 8px;">
@@ -356,6 +373,102 @@
         </div>
         <button id="btn-accept-disclaimer">I Understand</button>
     </div>
+
+    <!-- Widget Setup Modal -->
+    <div id="widget-modal" class="widget-modal hidden">
+        <div class="widget-modal-content">
+            <div class="widget-modal-header">
+                <div class="widget-modal-title">
+                    <i class="fas fa-mobile-alt" style="color: var(--l5-color);"></i>
+                    iOS Widget Setup
+                </div>
+                <button class="widget-modal-close"
+                    onclick="document.getElementById('widget-modal').classList.add('hidden')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="widget-modal-body">
+                <div class="widget-step">
+                    <div class="widget-step-number">1</div>
+                    <div class="widget-step-content">
+                        <div class="widget-step-title">Install Scriptable</div>
+                        <p class="widget-step-text">Download <strong>Scriptable</strong> from the App Store. It's free
+                            and lets you run custom widgets.</p>
+                        <a href="https://apps.apple.com/app/scriptable/id1405459188" target="_blank"
+                            class="widget-app-link">
+                            <i class="fab fa-app-store-ios"></i> Open App Store
+                        </a>
+                    </div>
+                </div>
+
+                <div class="widget-step">
+                    <div class="widget-step-number">2</div>
+                    <div class="widget-step-content">
+                        <div class="widget-step-title">Add the Script</div>
+                        <p class="widget-step-text">Open Scriptable, tap <strong>+</strong> to create a new script, then
+                            paste the code below.</p>
+                        <button id="btn-copy-widget-code" class="widget-copy-btn" onclick="copyWidgetCode()">
+                            <i class="fas fa-copy"></i> Copy Script Code
+                        </button>
+                    </div>
+                </div>
+
+                <div class="widget-step">
+                    <div class="widget-step-number">3</div>
+                    <div class="widget-step-content">
+                        <div class="widget-step-title">Name the Script</div>
+                        <p class="widget-step-text">Tap the title at the top and rename it to <strong>TTC
+                                Dashboard</strong> (or anything you like).</p>
+                    </div>
+                </div>
+
+                <div class="widget-step">
+                    <div class="widget-step-number">4</div>
+                    <div class="widget-step-content">
+                        <div class="widget-step-title">Add Widget to Home Screen</div>
+                        <p class="widget-step-text">Long-press your home screen → tap <strong>+</strong> → search
+                            <strong>Scriptable</strong> → choose <strong>Large</strong> widget.</p>
+                    </div>
+                </div>
+
+                <div class="widget-step">
+                    <div class="widget-step-number">5</div>
+                    <div class="widget-step-content">
+                        <div class="widget-step-title">Configure</div>
+                        <p class="widget-step-text">Long-press the widget → <strong>Edit Widget</strong> → select your
+                            <strong>TTC Dashboard</strong> script.</p>
+                    </div>
+                </div>
+
+                <div class="widget-step-done">
+                    <i class="fas fa-check-circle"></i>
+                    <span>You're all set! The widget will auto-refresh with live alerts.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function copyWidgetCode() {
+            const btn = document.getElementById('btn-copy-widget-code');
+            try {
+                const res = await fetch('/ttc-widget.js');
+                const code = await res.text();
+                await navigator.clipboard.writeText(code);
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy Script Code';
+                    btn.classList.remove('copied');
+                }, 2500);
+            } catch (e) {
+                // Fallback for non-HTTPS or clipboard API not available
+                btn.innerHTML = '<i class="fas fa-external-link-alt"></i> Open Script';
+                btn.onclick = () => window.open('/ttc-widget.js', '_blank');
+            }
+        }
+    </script>
 
 </body>
 

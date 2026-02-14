@@ -418,3 +418,324 @@ body.light-mode .close-overlay-btn:active {
     background: rgba(0, 0, 0, 0.1);
     color: #111827;
 }
+
+
+/* ============================================================================
+   SECTION 4: iOS WIDGET SETUP UI
+   Widget preview in info popup + setup modal with step-by-step instructions
+   ============================================================================ */
+
+/* Widget section in info popup */
+.widget-section {
+    background: rgba(243, 112, 33, 0.08);
+    border-radius: 10px;
+    padding: 12px;
+    border: 1px solid rgba(243, 112, 33, 0.15);
+}
+
+/* Map preview thumbnail */
+.widget-preview-container {
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0f1115;
+}
+
+.widget-preview-img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Setup button in info popup */
+.widget-setup-btn {
+    width: 100%;
+    padding: 9px 16px;
+    background: linear-gradient(135deg, var(--l5-color), #e05a10);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: transform 0.15s, opacity 0.15s;
+}
+
+.widget-setup-btn:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+}
+
+/* ---- Widget Setup Modal ---- */
+.widget-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 300;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.widget-modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.widget-modal-content {
+    width: 100%;
+    max-height: 90vh;
+    background: #16191f;
+    border-radius: 24px 24px 0 0;
+    overflow-y: auto;
+    animation: slideUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpModal {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.widget-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 0;
+    position: sticky;
+    top: 0;
+    background: #16191f;
+    z-index: 1;
+}
+
+.widget-modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.widget-modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #9ca3af;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.widget-modal-close:active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.widget-modal-body {
+    padding: 20px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+
+/* Individual steps */
+.widget-step {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+/* Connecting line between steps */
+.widget-step::after {
+    content: '';
+    position: absolute;
+    left: 17px;
+    top: 36px;
+    bottom: -14px;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.widget-step:last-of-type::after {
+    display: none;
+}
+
+.widget-step-number {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--l5-color), #e05a10);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+}
+
+.widget-step-content {
+    flex: 1;
+    padding-top: 4px;
+}
+
+.widget-step-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 4px;
+}
+
+.widget-step-text {
+    font-size: 13px;
+    color: #9ca3af;
+    line-height: 1.5;
+    margin: 0 0 8px;
+}
+
+.widget-step-text strong {
+    color: #e0e0e0;
+}
+
+/* App Store link */
+.widget-app-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: rgba(52, 120, 246, 0.15);
+    border: 1px solid rgba(52, 120, 246, 0.25);
+    border-radius: 8px;
+    color: #5A9CFF;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.widget-app-link:active {
+    background: rgba(52, 120, 246, 0.25);
+}
+
+/* Copy code button */
+.widget-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #e0e0e0;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.widget-copy-btn:active {
+    transform: scale(0.97);
+}
+
+.widget-copy-btn.copied {
+    background: rgba(0, 150, 57, 0.2);
+    border-color: rgba(0, 150, 57, 0.35);
+    color: #4ade80;
+}
+
+/* Done message */
+.widget-step-done {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    background: rgba(0, 150, 57, 0.1);
+    border: 1px solid rgba(0, 150, 57, 0.2);
+    border-radius: 12px;
+    color: #4ade80;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 8px;
+}
+
+.widget-step-done i {
+    font-size: 18px;
+}
+
+/* ---- Light Mode Overrides ---- */
+body.light-mode .widget-section {
+    background: rgba(243, 112, 33, 0.06);
+    border-color: rgba(243, 112, 33, 0.12);
+}
+
+body.light-mode .widget-preview-container {
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .widget-modal-content {
+    background: #f8f9fa;
+}
+
+body.light-mode .widget-modal-header {
+    background: #f8f9fa;
+}
+
+body.light-mode .widget-modal-title {
+    color: #111827;
+}
+
+body.light-mode .widget-modal-close {
+    background: rgba(0, 0, 0, 0.06);
+    color: #6b7280;
+}
+
+body.light-mode .widget-step::after {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .widget-step-title {
+    color: #111827;
+}
+
+body.light-mode .widget-step-text {
+    color: #6b7280;
+}
+
+body.light-mode .widget-step-text strong {
+    color: #111827;
+}
+
+body.light-mode .widget-copy-btn {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #374151;
+}
+
+body.light-mode .widget-step-done {
+    background: rgba(0, 150, 57, 0.06);
+    border-color: rgba(0, 150, 57, 0.15);
+    color: #15803d;
+}
