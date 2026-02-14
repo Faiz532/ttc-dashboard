@@ -422,17 +422,54 @@
     </div>
 
     <script>
+        const WIDGET_SCRIPT = `// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: yellow; icon-glyph: subway;
+
+/*
+ * ============================================
+ * TTC DASHBOARD - Auto-Updating Widget Loader
+ * ============================================
+ * This script automatically downloads the latest
+ * widget code from subwaystatus.live every time
+ * it runs. You never need to update this script!
+ * ============================================
+ */
+
+const WIDGET_CODE_URL = "https://subwaystatus.live/ttc-widget-code.js";
+
+try {
+    const req = new Request(WIDGET_CODE_URL);
+    req.timeoutInterval = 10;
+    const code = await req.loadString();
+    await eval(code);
+} catch (e) {
+    const w = new ListWidget();
+    w.backgroundColor = new Color("#0f1115");
+    w.setPadding(14, 14, 14, 14);
+    const err = w.addText("⚠️ Update failed");
+    err.font = Font.boldSystemFont(14);
+    err.textColor = new Color("#f59e0b");
+    err.centerAlignText();
+    w.addSpacer(4);
+    const sub = w.addText("Check your connection");
+    sub.font = Font.systemFont(12);
+    sub.textColor = new Color("#6b7280");
+    sub.centerAlignText();
+    w.url = "https://subwaystatus.live";
+    if (config.runsInWidget) Script.setWidget(w);
+    else w.presentMedium();
+    Script.complete();
+}`;
+
         async function copyWidgetCode() {
             const btn = document.getElementById('btn-copy-widget-code');
             try {
-                const res = await fetch('/ttc-widget.js');
-                const code = await res.text();
-
                 // Try modern clipboard API first
                 let done = false;
                 if (navigator.clipboard && window.isSecureContext) {
                     try {
-                        await navigator.clipboard.writeText(code);
+                        await navigator.clipboard.writeText(WIDGET_SCRIPT);
                         done = true;
                     } catch (_) { }
                 }
@@ -440,17 +477,17 @@
                 // Fallback: textarea select + copy (works on mobile Safari)
                 if (!done) {
                     const ta = document.createElement('textarea');
-                    ta.value = code;
+                    ta.value = WIDGET_SCRIPT;
                     ta.style.cssText = 'position:fixed;left:0;top:0;opacity:0;width:1px;height:1px';
                     document.body.appendChild(ta);
                     ta.focus();
                     ta.select();
-                    ta.setSelectionRange(0, code.length);
+                    ta.setSelectionRange(0, WIDGET_SCRIPT.length);
                     document.execCommand('copy');
                     document.body.removeChild(ta);
                 }
 
-                // Always show copied feedback
+                // Show copied feedback
                 btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                 btn.classList.add('copied');
                 setTimeout(() => {
