@@ -6,11 +6,19 @@
             "use": "@vercel/node"
         },
         {
+            "src": "api/widget-map.js",
+            "use": "@vercel/node"
+        },
+        {
             "src": "public/**",
             "use": "@vercel/static"
         }
     ],
     "routes": [
+        {
+            "src": "/api/widget-map",
+            "dest": "/api/widget-map.js"
+        },
         {
             "src": "/api/data",
             "dest": "/api/data.js"
