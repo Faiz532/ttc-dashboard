@@ -198,23 +198,6 @@
                         </ul>
                     </div>
 
-                    <!-- iOS Widget section -->
-                    <div class="walkthrough-section widget-section">
-                        <div class="walkthrough-title"><i class="fas fa-mobile-alt" style="color: var(--l5-color);"></i>
-                            iOS Widget</div>
-                        <p class="walkthrough-text" style="margin-bottom: 8px;">
-                            Get live subway alerts right on your home screen with a Scriptable widget.
-                        </p>
-                        <div class="widget-preview-container">
-                            <img id="widget-preview-img" src="/api/widget-map?theme=dark" alt="TTC Widget Map Preview"
-                                class="widget-preview-img" loading="lazy" />
-                        </div>
-                        <button id="btn-widget-setup" class="widget-setup-btn"
-                            onclick="document.getElementById('widget-modal').classList.remove('hidden')">
-                            <i class="fas fa-arrow-right"></i> Setup Instructions
-                        </button>
-                    </div>
-
                     <!-- Disclaimer section -->
                     <div class="walkthrough-section"
                         style="background: rgba(255, 183, 0, 0.1); border-radius: 8px; padding: 10px; margin-top: 8px;">
@@ -249,26 +232,9 @@
             <!-- Right Side FABs -->
             <div class="fab-stack">
                 <div class="fab" id="btn-recenter"><i class="fas fa-crosshairs"></i></div>
-                <div class="fab" id="btn-legend">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span class="fab-icon"><i class="fas fa-layer-group"></i></span>
-                </div>
-                <!-- Layer Toggle Popup -->
-                <div id="layer-popup" class="layer-popup hidden">
-                    <div class="layer-popup-title">Map Layers</div>
-                    <label class="layer-toggle">
-                        <input type="checkbox" id="toggle-outages" checked>
-                        <span class="toggle-indicator outage"></span>
-                        <span>Outages (Service Suspension)</span>
-                    </label>
-                    <label class="layer-toggle">
-                        <input type="checkbox" id="toggle-delays" checked>
-                        <span class="toggle-indicator delay"></span>
-                        <span>Delays (Reduced Speed)</span>
-                    </label>
+                <div class="fab" id="btn-widget"
+                    onclick="document.getElementById('widget-modal').classList.remove('hidden')">
+                    <i class="fas fa-mobile-alt"></i>
                 </div>
             </div>
         </div>
@@ -428,7 +394,8 @@
                     <div class="widget-step-content">
                         <div class="widget-step-title">Add Widget to Home Screen</div>
                         <p class="widget-step-text">Long-press your home screen → tap <strong>+</strong> → search
-                            <strong>Scriptable</strong> → choose <strong>Large</strong> widget.</p>
+                            <strong>Scriptable</strong> → choose <strong>Large</strong> widget.
+                        </p>
                     </div>
                 </div>
 
@@ -437,7 +404,8 @@
                     <div class="widget-step-content">
                         <div class="widget-step-title">Configure</div>
                         <p class="widget-step-text">Long-press the widget → <strong>Edit Widget</strong> → select your
-                            <strong>TTC Dashboard</strong> script.</p>
+                            <strong>TTC Dashboard</strong> script.
+                        </p>
                     </div>
                 </div>
 

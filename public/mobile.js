@@ -1029,60 +1029,33 @@ function renderAlertsOnMap() {
     });
 }
 
-// Layer button toggle
-document.getElementById('btn-legend').addEventListener('click', (e) => {
-    e.stopPropagation(); // Prevent document click from firing
-    document.getElementById('layer-popup').classList.toggle('hidden');
-    document.getElementById('btn-legend').classList.toggle('active');
-    // Close info popup if open
-    document.getElementById('info-popup').classList.add('hidden');
-    document.getElementById('btn-info').classList.remove('active');
-});
-
 // Info button toggle
 document.getElementById('btn-info').addEventListener('click', (e) => {
     e.stopPropagation();
     document.getElementById('info-popup').classList.toggle('hidden');
     document.getElementById('btn-info').classList.toggle('active');
-    // Close layer popup if open
-    document.getElementById('layer-popup').classList.add('hidden');
-    document.getElementById('btn-legend').classList.remove('active');
 });
 
 // Close popup when clicking outside
 document.addEventListener('click', (e) => {
-    const layerPopup = document.getElementById('layer-popup');
     const infoPopup = document.getElementById('info-popup');
-    const legendBtn = document.getElementById('btn-legend');
     const infoBtn = document.getElementById('btn-info');
-
-    // Close Layer Popup
-    if (!layerPopup.classList.contains('hidden') && !layerPopup.contains(e.target) && !legendBtn.contains(e.target)) {
-        layerPopup.classList.add('hidden');
-        legendBtn.classList.remove('active');
-    }
 
     // Close Info Popup
     if (!infoPopup.classList.contains('hidden') && !infoPopup.contains(e.target) && !infoBtn.contains(e.target)) {
         infoPopup.classList.add('hidden');
         infoBtn.classList.remove('active');
     }
+
+    // Close Widget Modal if clicking backdrop
+    const widgetModal = document.getElementById('widget-modal');
+    if (widgetModal && !widgetModal.classList.contains('hidden') && e.target === widgetModal) {
+        widgetModal.classList.add('hidden');
+    }
 });
 
 // Prevent closing when clicking inside popups
-document.getElementById('layer-popup').addEventListener('click', (e) => e.stopPropagation());
 document.getElementById('info-popup').addEventListener('click', (e) => e.stopPropagation());
-
-// Layer toggle checkboxes
-document.getElementById('toggle-outages').addEventListener('change', (e) => {
-    showOutages = e.target.checked;
-    renderAlertsOnMap();
-});
-
-document.getElementById('toggle-delays').addEventListener('change', (e) => {
-    showDelays = e.target.checked;
-    renderAlertsOnMap();
-});
 
 // Clock Logic
 function updateClock() {
