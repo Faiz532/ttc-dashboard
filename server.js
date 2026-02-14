@@ -755,6 +755,16 @@ app.get('/api/upcoming-alerts', (req, res) => {
 });
 
 /**
+ * GET /api/widget-map
+ * Returns a PNG image of the subway map with live alert overlays
+ * Used by the Scriptable iOS widget to display a visual map
+ */
+const widgetMapHandler = require('./api/widget-map.js');
+app.get('/api/widget-map', (req, res) => {
+    widgetMapHandler(req, res);
+});
+
+/**
  * GET /debug/cache
  * Debug endpoint to inspect internal server state
  * Useful for troubleshooting

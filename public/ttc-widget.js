@@ -492,7 +492,7 @@ function buildClosedWidget(widgetSize) {
 // MAIN
 // ============================================
 async function main() {
-    const widgetSize = config.widgetFamily || "medium";
+    const widgetSize = config.widgetFamily || "large";
 
     // Check subway hours first
     if (isSubwayClosed()) {
@@ -554,10 +554,8 @@ async function main() {
     if (config.runsInWidget) {
         Script.setWidget(widget);
     } else {
-        // Preview when run in-app
-        if (widgetSize === "small") widget.presentSmall();
-        else if (widgetSize === "large") widget.presentLarge();
-        else widget.presentMedium();
+        // Preview when run in-app — default to large to show map
+        widget.presentLarge();
     }
 
     Script.complete();
